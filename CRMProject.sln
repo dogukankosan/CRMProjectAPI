@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36623.8
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CRMProjectAPI", "CRMProjectAPI\CRMProjectAPI.csproj", "{3C72C128-1EC2-4982-B62E-A4545049219E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CRMProjectUI", "CRMProjectUI\CRMProjectUI.csproj", "{19BF2BA8-31F5-461A-993A-9DC1BC47581F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3C72C128-1EC2-4982-B62E-A4545049219E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C72C128-1EC2-4982-B62E-A4545049219E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C72C128-1EC2-4982-B62E-A4545049219E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C72C128-1EC2-4982-B62E-A4545049219E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19BF2BA8-31F5-461A-993A-9DC1BC47581F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19BF2BA8-31F5-461A-993A-9DC1BC47581F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19BF2BA8-31F5-461A-993A-9DC1BC47581F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19BF2BA8-31F5-461A-993A-9DC1BC47581F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D84A4964-290A-4D79-A837-8E9D90BEC874}
+	EndGlobalSection
+EndGlobal
