@@ -1,7 +1,24 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\DOGUKAN\\source\\repos\\CRMProject\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{19BF2BA8-31F5-461A-993A-9DC1BC47581F}|CRMProjectUI\\CRMProjectUI.csproj|c:\\users\\dogukan\\source\\repos\\crmproject\\crmprojectui\\views\\admincompany\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{19BF2BA8-31F5-461A-993A-9DC1BC47581F}|CRMProjectUI\\CRMProjectUI.csproj|solutionrelative:crmprojectui\\views\\admincompany\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{19BF2BA8-31F5-461A-993A-9DC1BC47581F}|CRMProjectUI\\CRMProjectUI.csproj|c:\\users\\dogukan\\source\\repos\\crmproject\\crmprojectui\\wwwroot\\js\\site.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{19BF2BA8-31F5-461A-993A-9DC1BC47581F}|CRMProjectUI\\CRMProjectUI.csproj|solutionrelative:crmprojectui\\wwwroot\\js\\site.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{19BF2BA8-31F5-461A-993A-9DC1BC47581F}|CRMProjectUI\\CRMProjectUI.csproj|c:\\users\\dogukan\\source\\repos\\crmproject\\crmprojectui\\views\\shared\\_adminlayout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{19BF2BA8-31F5-461A-993A-9DC1BC47581F}|CRMProjectUI\\CRMProjectUI.csproj|solutionrelative:crmprojectui\\views\\shared\\_adminlayout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{19BF2BA8-31F5-461A-993A-9DC1BC47581F}|CRMProjectUI\\CRMProjectUI.csproj|c:\\users\\dogukan\\source\\repos\\crmproject\\crmprojectui\\wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{19BF2BA8-31F5-461A-993A-9DC1BC47581F}|CRMProjectUI\\CRMProjectUI.csproj|solutionrelative:crmprojectui\\wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,7 +26,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Bookmark",
@@ -18,6 +35,58 @@
             {
               "$type": "Bookmark",
               "Name": "ST:128:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\Users\\DOGUKAN\\source\\repos\\CRMProject\\CRMProjectUI\\Views\\AdminCompany\\Index.cshtml",
+              "RelativeDocumentMoniker": "CRMProjectUI\\Views\\AdminCompany\\Index.cshtml",
+              "ToolTip": "C:\\Users\\DOGUKAN\\source\\repos\\CRMProject\\CRMProjectUI\\Views\\AdminCompany\\Index.cshtml",
+              "RelativeToolTip": "CRMProjectUI\\Views\\AdminCompany\\Index.cshtml",
+              "ViewState": "AgIAABgAAAAAAAAAAAAAAB0AAABbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-12-13T16:27:20.754Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "_adminLayout.cshtml",
+              "DocumentMoniker": "C:\\Users\\DOGUKAN\\source\\repos\\CRMProject\\CRMProjectUI\\Views\\Shared\\_adminLayout.cshtml",
+              "RelativeDocumentMoniker": "CRMProjectUI\\Views\\Shared\\_adminLayout.cshtml",
+              "ToolTip": "C:\\Users\\DOGUKAN\\source\\repos\\CRMProject\\CRMProjectUI\\Views\\Shared\\_adminLayout.cshtml",
+              "RelativeToolTip": "CRMProjectUI\\Views\\Shared\\_adminLayout.cshtml",
+              "ViewState": "AgIAAF0CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-12-13T16:26:04.665Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "site.js",
+              "DocumentMoniker": "C:\\Users\\DOGUKAN\\source\\repos\\CRMProject\\CRMProjectUI\\wwwroot\\js\\site.js",
+              "RelativeDocumentMoniker": "CRMProjectUI\\wwwroot\\js\\site.js",
+              "ToolTip": "C:\\Users\\DOGUKAN\\source\\repos\\CRMProject\\CRMProjectUI\\wwwroot\\js\\site.js",
+              "RelativeToolTip": "CRMProjectUI\\wwwroot\\js\\site.js",
+              "ViewState": "AgIAAK8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2025-12-13T16:25:56.911Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "site.css",
+              "DocumentMoniker": "C:\\Users\\DOGUKAN\\source\\repos\\CRMProject\\CRMProjectUI\\wwwroot\\css\\site.css",
+              "RelativeDocumentMoniker": "CRMProjectUI\\wwwroot\\css\\site.css",
+              "ToolTip": "C:\\Users\\DOGUKAN\\source\\repos\\CRMProject\\CRMProjectUI\\wwwroot\\css\\site.css",
+              "RelativeToolTip": "CRMProjectUI\\wwwroot\\css\\site.css",
+              "ViewState": "AgIAAH0BAAAAAAAAAAArwJMBAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2025-12-13T16:19:04.222Z",
+              "EditorCaption": ""
             }
           ]
         }

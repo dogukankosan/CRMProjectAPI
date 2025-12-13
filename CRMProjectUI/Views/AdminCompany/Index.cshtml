@@ -1,0 +1,116 @@
+﻿@model List<CRMProjectUI.Models.CompanyDto>
+
+@{
+    ViewData["Title"] = "Şirket Bilgisi";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+@if (Model == null || !Model.Any())
+{
+    <div class="alert alert-warning">
+        Firma bilgisi bulunamadı
+    </div>
+}
+else
+{
+    <div class="section-body">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3><u>Şirket Bilgisi</u></h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped" id="tableExport" style="width:100%;">
+                                <thead class="custom-table-header">
+                                    <tr>
+                                        <th>Logo</th>
+                                        <th>Şirket Adı</th>
+                                        <th>Kısa Ad</th>
+                                        <th>İletişim</th>
+                                        <th>Web Sitesi</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (CompanyDto item in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(item.LogoPath))
+                                                {
+                                                    <img src="@item.LogoPath"
+                                                         alt="@item.CompanyName"
+                                                         class="rounded-circle shadow-sm"
+                                                         style="width:50px;height:50px;object-fit:cover;"
+                                                         loading="lazy" />
+                                                }
+                                                else
+                                                {
+                                                    <i class="fas fa-building text-muted" style="font-size:30px;"></i>
+                                                }
+                                            </td>
+
+                                            <td>@item.CompanyName</td>
+                                            <td>@item.ShortCompanyName</td>
+                                            <td>
+                                                <div class="text-sm">
+                                                    <a href="mailto:@item.Email" class="text-info">
+                                                        <i class="fas fa-envelope mr-1"></i> @item.Email
+                                                    </a>
+                                                </div>
+
+                                                <div class="text-sm">
+                                                    @{
+                                                        string rawPhone = item.Phone
+                                                        .Replace(" ", "")
+                                                        .Replace("(", "")
+                                                        .Replace(")", "")
+                                                        .Replace("+", "");
+
+                                                        string whatsappLink = rawPhone.StartsWith("90")
+                                                        ? $"https://wa.me/{rawPhone}"
+                                                        : $"https://wa.me/90{rawPhone}";
+                                                    }
+
+                                                    <a href="@whatsappLink" target="_blank" class="text-success">
+                                                        <i class="fab fa-whatsapp mr-1"></i> @item.Phone
+                                                    </a>
+                                                </div>
+                                            </td>
+
+                                            <td>
+                                                <strong>@item.WebSiteTitle</strong><br />
+                                                <a href="@item.WebSiteLink"
+                                                   target="_blank"
+                                                   class="text-primary text-sm">
+                                                    @item.WebSiteLink
+                                                    <i class="fas fa-external-link-alt ml-1"></i>
+                                                </a>
+                                            </td>
+
+                                            <td>
+                                                <a href="/AdminSirket/Guncelle"
+                                                   class="btn btn-sm btn-info text-white"
+                                                   title="Düzenle">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+}

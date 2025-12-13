@@ -1,0 +1,38 @@
+[
+  {
+    "ContainingType": "CRMProjectAPI.Controllers.CompanyController",
+    "Method": "List",
+    "RelativePath": "api/company",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CRMProjectAPI.Controllers.CompanyController",
+    "Method": "Update",
+    "RelativePath": "api/company",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "CRMProjectAPI.Models.CompanyDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CRMProjectAPI.Controllers.CompanyController",
+    "Method": "GetSingle",
+    "RelativePath": "api/company/single",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  }
+]

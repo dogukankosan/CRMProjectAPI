@@ -20,8 +20,6 @@ C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\rjsmrazor
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\scopedcss\bundle\CRMProjectUI.styles.css
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\scopedcss\projectbundle\CRMProjectUI.bundle.scp.css
-C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\75ainb81bf-{0}-b9sayid5wm-b9sayid5wm.gz
-C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\rkvv89txqe-{0}-xtxxf3hu2r-xtxxf3hu2r.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\hl79ptzk4g-{0}-bqjiyaj88i-bqjiyaj88i.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\azkkgr11un-{0}-c2jlpeoesf-c2jlpeoesf.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\amrd639tpo-{0}-erw9l3u2r3-erw9l3u2r3.gz
@@ -312,7 +310,6 @@ C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compresse
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\o29f0v76ib-{0}-gd9xrtzyh9-gd9xrtzyh9.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\3sxveq440j-{0}-6sa96ubtuw-6sa96ubtuw.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\fsz701tmpl-{0}-f2tidfv7wf-f2tidfv7wf.gz
-C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\pnlwrjapqr-{0}-8imr5qndch-8imr5qndch.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\hjl6k5nagp-{0}-x21vwzc7v1-x21vwzc7v1.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\nfiiams3ht-{0}-yxn1nt6cc9-yxn1nt6cc9.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\idxqgf3zu1-{0}-v6y8yxpzbm-v6y8yxpzbm.gz
@@ -877,10 +874,8 @@ C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compresse
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\47lb3tm7ii-{0}-6egocf03xy-6egocf03xy.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\9royjg5259-{0}-06ltqepdom-06ltqepdom.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\3sezb8svu3-{0}-f5trfxhwl4-f5trfxhwl4.gz
-C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\iw58osb30g-{0}-w9uyrihy6v-w9uyrihy6v.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\r7czmp8889-{0}-erovnmw77d-erovnmw77d.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\eo457bdqon-{0}-hlp50ms3kj-hlp50ms3kj.gz
-C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\z9f7q134ck-{0}-kvkx7gordq-kvkx7gordq.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\vrjlmctutp-{0}-hlp50ms3kj-hlp50ms3kj.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\3b23hysn6y-{0}-e9v6po3lcz-e9v6po3lcz.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\tw9bqnicqw-{0}-o80asewi6u-o80asewi6u.gz
@@ -889,7 +884,6 @@ C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compresse
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\9kz034tvwa-{0}-t5bep1pzsh-t5bep1pzsh.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\toient29x8-{0}-yhxp2dliuf-yhxp2dliuf.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\cemkdtgvv4-{0}-oozw2brrx9-oozw2brrx9.gz
-C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\ilaez8v47i-{0}-c18sjr1ndy-c18sjr1ndy.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\kxk7sjy0mj-{0}-qrd8eh3ps4-qrd8eh3ps4.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\0pors3nug5-{0}-5shzfq2dzu-5shzfq2dzu.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\avkqvapci6-{0}-f8azpk5yzf-f8azpk5yzf.gz
@@ -1018,3 +1012,19 @@ C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compresse
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\0p0przk9an-{0}-jq3cjltxlg-jq3cjltxlg.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\keuquq6w48-{0}-igip5iv7lb-igip5iv7lb.gz
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\g3592u0e3j-{0}-avnqvz4qis-avnqvz4qis.gz
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Debug\net9.0\System.Data.SqlClient.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Debug\net9.0\runtimes\win-arm64\native\sni.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Debug\net9.0\runtimes\win-x64\native\sni.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Debug\net9.0\runtimes\win-x86\native\sni.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Debug\net9.0\runtimes\unix\lib\net8.0\System.Data.SqlClient.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Debug\net9.0\runtimes\win\lib\net8.0\System.Data.SqlClient.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\pnlwrjapqr-{0}-8imr5qndch-8imr5qndch.gz
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\iw58osb30g-{0}-3wb7mpjcxz-3wb7mpjcxz.gz
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\z9f7q134ck-{0}-gyj485muq5-gyj485muq5.gz
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Debug\net9.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Debug\net9.0\System.Drawing.Common.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Debug\net9.0\runtimes\win\lib\net8.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\ilaez8v47i-{0}-n7ntaly8d9-n7ntaly8d9.gz
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\08vzcq0b7m-{0}-n7ntaly8d9-n7ntaly8d9.gz
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\rkvv89txqe-{0}-zfl7pck8be-zfl7pck8be.gz
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Debug\net9.0\compressed\75ainb81bf-{0}-kiui7wkk8y-kiui7wkk8y.gz

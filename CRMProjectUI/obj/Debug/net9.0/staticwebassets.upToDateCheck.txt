@@ -958,6 +958,7 @@ wwwroot\lib\jquery\dist\jquery.slim.js
 wwwroot\lib\jquery\dist\jquery.slim.min.js
 wwwroot\lib\jquery\dist\jquery.slim.min.map
 wwwroot\lib\jquery\LICENSE.txt
+wwwroot\tema\assets\img\favicon.ico
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\wwwroot\adminThema\advance-table.html
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\wwwroot\adminThema\alert.html
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\wwwroot\adminThema\assets\bundles\amcharts4\animated.js
@@ -1755,3 +1756,4 @@ C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\wwwroot\lib\jquery\dist\jq
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\wwwroot\lib\jquery\dist\jquery.slim.min.js
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\wwwroot\lib\jquery\dist\jquery.slim.min.map
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\wwwroot\lib\jquery\LICENSE.txt
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\wwwroot\tema\assets\img\favicon.ico

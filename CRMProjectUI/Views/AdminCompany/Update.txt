@@ -1,0 +1,527 @@
+﻿@model CRMProjectUI.Models.Company
+@{
+    ViewData["Title"] = "Şirket Bilgileri Güncelleme";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+}
+
+<style>
+    .preview-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .preview-remove {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: #dc3545;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        font-size: 14px;
+        line-height: 24px;
+        text-align: center;
+        cursor: pointer;
+        box-shadow: 0 0 4px rgba(0,0,0,0.3);
+    }
+
+    .required-asterisk {
+        color: #dc3545;
+        margin-left: 3px;
+    }
+
+    .form-select {
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+        .form-select:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+    .form-floating {
+        position: relative;
+    }
+
+        .form-floating > .form-select {
+            padding-top: 1.625rem;
+            padding-bottom: 0.625rem;
+            height: calc(3.5rem + 2px);
+        }
+
+        .form-floating > label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            padding: 1rem 0.75rem;
+            pointer-events: none;
+            border: 1px solid transparent;
+            transform-origin: 0 0;
+            transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
+        }
+
+        .form-floating > .form-select ~ label {
+            opacity: 0.65;
+            transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+        }
+</style>
+
+<!-- SweetAlert2 CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="section-body">
+    <div class="row">
+        <div class="col-12 col-md-8 col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Şirket Ayarları Güncelleme</h4>
+                    <a href="/AdminSirket/Liste" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Listeye Dön
+                    </a>
+                </div>
+
+                <form action="/AdminSirket/Guncelle" method="post" enctype="multipart/form-data" id="companyForm">
+                    @* @Html.AntiForgeryToken() *@
+                    <div class="card-body">
+
+                        <input type="hidden" asp-for="ID" />
+                        <input type="hidden" name="Picture" id="hiddenPicture" value="@Model.Picture" />
+
+                        <!-- Şirket Adı -->
+                        <div class="form-group mb-3">
+                            <label asp-for="CompanyName">
+                                Şirket Tam Adı<span style="color:red !important" class="required-asterisk">*</span>
+                            </label>
+                            <input asp-for="CompanyName" class="form-control" maxlength="100" required />
+                            <span asp-validation-for="CompanyName" class="text-danger"></span>
+                        </div>
+
+                        <!-- Kısa Adı -->
+                        <div class="form-group mb-3">
+                            <label asp-for="ShortCompanyName">
+                                Kısa Adı<span style="color:red !important" class="required-asterisk">*</span>
+                            </label>
+                            <input asp-for="ShortCompanyName" class="form-control" maxlength="50" required />
+                            <span asp-validation-for="ShortCompanyName" class="text-danger"></span>
+                        </div>
+
+                        <!-- Web Site Title -->
+                        <div class="form-group mb-3">
+                            <label asp-for="WebSiteTitle">
+                                Web Sitesi Başlığı (SEO)<span style="color:red !important" class="required-asterisk">*</span>
+                            </label>
+                            <input asp-for="WebSiteTitle" class="form-control" maxlength="300" required />
+                            <span asp-validation-for="WebSiteTitle" class="text-danger"></span>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="form-group mb-3">
+                            <label asp-for="EMail">
+                                E-posta Adresi<span style="color:red !important" class="required-asterisk">*</span>
+                            </label>
+                            <input asp-for="EMail" class="form-control" type="email" maxlength="75" required />
+                            <span asp-validation-for="EMail" class="text-danger"></span>
+                        </div>
+
+                        <!-- Ülke Kodu Seçimi -->
+                        <div class="form-group mb-3">
+                            <div class="form-floating">
+                                <select class="form-select" id="countryCodeSelect" required>
+                                    <option value="+90" selected>🇹🇷 Türkiye (+90)</option>
+                                    <option value="+1">🇺🇸 ABD/Kanada (+1)</option>
+                                    <option value="+44">🇬🇧 İngiltere (+44)</option>
+                                    <option value="+49">🇩🇪 Almanya (+49)</option>
+                                    <option value="+33">🇫🇷 Fransa (+33)</option>
+                                    <option value="+39">🇮🇹 İtalya (+39)</option>
+                                    <option value="+7">🇷🇺 Rusya (+7)</option>
+                                    <option value="+86">🇨🇳 Çin (+86)</option>
+                                    <option value="+91">🇮🇳 Hindistan (+91)</option>
+                                    <option value="+81">🇯🇵 Japonya (+81)</option>
+                                    <option value="+82">🇰🇷 Güney Kore (+82)</option>
+                                    <option value="+46">🇸🇪 İsveç (+46)</option>
+                                    <option value="+41">🇨🇭 İsviçre (+41)</option>
+                                    <option value="+963">🇸🇾 Suriye (+963)</option>
+                                    <option value="+886">🇹🇼 Tayvan (+886)</option>
+                                    <option value="+966">🇸🇦 Suudi Arabistan (+966)</option>
+                                    <option value="+971">🇦🇪 BAE (+971)</option>
+                                    <option value="+20">🇪🇬 Mısır (+20)</option>
+                                    <option value="+27">🇿🇦 Güney Afrika (+27)</option>
+                                    <option value="+55">🇧🇷 Brezilya (+55)</option>
+                                    <option value="+52">🇲🇽 Meksika (+52)</option>
+                                </select>
+                                <label for="countryCodeSelect">
+                                    Ülke Kodu<span style="color:red !important" class="required-asterisk">*</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Telefon -->
+                        <div class="form-group mb-3">
+                            <label asp-for="Phone">
+                                Telefon Numarası<span style="color:red !important" class="required-asterisk">*</span>
+                            </label>
+                            <input asp-for="Phone"
+                                   id="Phone"
+                                   class="form-control"
+                                   maxlength="30"
+                                   required
+                                   inputmode="numeric" />
+                            <span asp-validation-for="Phone" class="text-danger"></span>
+                        </div>
+
+                        <!-- WebLink -->
+                        <div class="form-group mb-3">
+                            <label asp-for="WebSiteLink">
+                                Web Sitesi Linki<span style="color:red !important" class="required-asterisk">*</span>
+                            </label>
+                            <input asp-for="WebSiteLink"
+                                   id="WebSiteLink"
+                                   class="form-control"
+                                   type="url"
+                                   maxlength="150"
+                                   required
+                                   placeholder="https://example.com" />
+                            <span asp-validation-for="WebSiteLink" class="text-danger"></span>
+                            <span id="websiteLinkError" class="text-danger" style="display:none;">Geçerli bir URL giriniz (https://example.com)</span>
+                        </div>
+
+                        <!-- Mevcut Resim -->
+                        <div class="form-group mb-3">
+                            <label>Mevcut Logo/Resim<span style="color:red !important" class="required-asterisk">*</span></label><br />
+
+                            @if (!string.IsNullOrEmpty(Model.Picture))
+                            {
+                                <div class="preview-wrapper" id="existingPreview">
+                                    <img src="data:image/png;base64,@Model.Picture"
+                                         class="img-thumbnail"
+                                         style="max-width:200px; max-height:100px; object-fit:contain;" />
+                                    <div class="preview-remove" onclick="removeExistingImage()">×</div>
+                                </div>
+                                <input type="hidden" id="originalPicture" value="@Model.Picture" />
+                            }
+                            else
+                            {
+                                <p class="text-muted">Mevcut bir görsel bulunmuyor.</p>
+                            }
+                        </div>
+
+                        <!-- Yeni Resim -->
+                        <div class="form-group mb-3">
+                            <label>Yeni Resim Yükle (Logo)</label>
+                            <input id="PictureFile" name="PictureFile" type="file" class="form-control" accept="image/*" />
+                            <small class="form-text text-muted">Yeni bir dosya seçersen mevcut resim değişir. Favicon olarak da kullanılacaktır.</small>
+
+                            <!-- Yeni önizleme -->
+                            <div id="newPreview" class="mt-3" style="display:none;">
+                                <div class="preview-wrapper">
+                                    <img id="previewImage"
+                                         class="img-thumbnail"
+                                         style="max-width:200px; max-height:100px; object-fit:contain;" />
+                                    <div class="preview-remove" onclick="removeNewImage()">×</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="card-footer text-right">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Bilgileri Güncelle
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Sayfa yüklendiğinde başarı veya hata mesajlarını göster
+    document.addEventListener('DOMContentLoaded', function() {
+        @if (TempData["SuccessMessage"] != null)
+        {
+                <text>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Başarılı!',
+                    text: '@TempData["SuccessMessage"]',
+                    confirmButtonText: 'Tamam',
+                    confirmButtonColor: '#28a745'
+                });
+                </text>
+        }
+
+        @if (ViewData.ModelState.Count > 0 && !ViewData.ModelState.IsValid)
+        {
+                var errors = string.Join("\\n", ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                <text>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Hata!',
+                    html: '@Html.Raw(errors.Replace("\n", "<br>"))',
+                    confirmButtonText: 'Tamam',
+                    confirmButtonColor: '#dc3545'
+                });
+                </text>
+        }
+    });
+
+    // URL Validasyon
+    function validateURL(url) {
+        try {
+            const urlObj = new URL(url);
+            return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    document.getElementById('WebSiteLink').addEventListener('blur', function() {
+        const errorSpan = document.getElementById('websiteLinkError');
+        if (this.value && !validateURL(this.value)) {
+            errorSpan.style.display = 'block';
+            this.classList.add('is-invalid');
+        } else {
+            errorSpan.style.display = 'none';
+            this.classList.remove('is-invalid');
+        }
+    });
+
+    // Form submit validasyonu
+    document.getElementById('companyForm').addEventListener('submit', function(e) {
+        const websiteLink = document.getElementById('WebSiteLink').value;
+        if (!validateURL(websiteLink)) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Geçersiz URL',
+                text: 'Lütfen geçerli bir web sitesi adresi giriniz (https://example.com)',
+                confirmButtonText: 'Tamam',
+                confirmButtonColor: '#dc3545'
+            });
+            document.getElementById('WebSiteLink').focus();
+            return false;
+        }
+
+        // Resim kontrolü - eğer resim yoksa ve yeni yüklenmemişse
+        const existingPicture = document.getElementById('hiddenPicture').value;
+        const newPicture = document.getElementById('PictureFile').files.length > 0;
+
+        if (!existingPicture && !newPicture) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Logo Gerekli',
+                text: 'Lütfen bir logo/resim yükleyiniz.',
+                confirmButtonText: 'Tamam',
+                confirmButtonColor: '#dc3545'
+            });
+            return false;
+        }
+    });
+
+    // Resim önizleme
+    document.getElementById("PictureFile").addEventListener("change", function () {
+        const file = this.files[0];
+
+        if (file) {
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                document.getElementById("previewImage").src = e.target.result;
+                document.getElementById("newPreview").style.display = "block";
+
+                // Mevcudu kapat
+                if (document.getElementById("existingPreview")) {
+                    document.getElementById("existingPreview").style.display = "none";
+                }
+
+                // Favicon dönüşümü için Canvas kullan
+                convertToFavicon(e.target.result);
+            };
+
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Favicon'a dönüştür
+    function convertToFavicon(imageSrc) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 32, 32);
+
+            // Canvas'ı ICO formatına dönüştür (PNG olarak)
+            canvas.toBlob(function(blob) {
+                // Favicon'u güncelle
+                updateFavicon(canvas.toDataURL('image/png'));
+            }, 'image/png');
+        };
+        img.src = imageSrc;
+    }
+
+    // Favicon'u güncelle
+    function updateFavicon(dataUrl) {
+        // Mevcut favicon'ları bul ve güncelle
+        let link = document.querySelector("link[rel*='icon']");
+        if (!link) {
+            link = document.createElement('link');
+            link.rel = 'shortcut icon';
+            link.type = 'image/x-icon';
+            document.head.appendChild(link);
+        }
+        link.href = dataUrl;
+    }
+
+    // Yeni resmi sil
+    function removeNewImage() {
+        document.getElementById("PictureFile").value = "";
+        document.getElementById("newPreview").style.display = "none";
+
+        // Eski resim varsa geri göster
+        const existing = document.getElementById("existingPreview");
+        if (existing) existing.style.display = "inline-block";
+
+        // Orijinal resmi geri yükle
+        const originalPicture = document.getElementById("originalPicture");
+        if (originalPicture) {
+            document.getElementById("hiddenPicture").value = originalPicture.value;
+        }
+    }
+
+    // Mevcut resmi sil
+    function removeExistingImage() {
+        Swal.fire({
+            title: 'Emin misiniz?',
+            text: "Mevcut logoyu silmek istediğinize emin misiniz? Yeni bir logo yüklemeniz gerekecek!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Evet, Sil!',
+            cancelButtonText: 'İptal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById("existingPreview").style.display = "none";
+                document.getElementById("hiddenPicture").value = "";
+            }
+        });
+    }
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const phoneInput = document.getElementById('Phone');
+        const countrySelect = document.getElementById('countryCodeSelect');
+
+        const phoneFormats = {
+            "+90": { max: 10, pattern: [3, 3, 2, 2] },      // Türkiye: 555 123 45 67
+            "+1": { max: 10, pattern: [3, 3, 4] },          // ABD/Kanada: 555 123 4567
+            "+44": { max: 10, pattern: [4, 3, 3] },         // İngiltere: 7123 456 789
+            "+49": { max: 11, pattern: [3, 3, 2, 3] },      // Almanya: 171 123 45 678
+            "+33": { max: 9, pattern: [1, 2, 2, 2, 2] },    // Fransa: 1 23 45 67 89
+            "+39": { max: 10, pattern: [3, 3, 4] },         // İtalya: 312 345 6789
+            "+7": { max: 10, pattern: [3, 2, 2, 3] },       // Rusya: 912 34 56 789
+            "+86": { max: 11, pattern: [3, 4, 4] },         // Çin: 131 2345 6789
+            "+91": { max: 10, pattern: [4, 3, 3] },         // Hindistan: 9876 543 210
+            "+81": { max: 10, pattern: [3, 4, 3] },         // Japonya: 90 1234 5678
+            "+82": { max: 10, pattern: [3, 3, 4] },         // Güney Kore: 10 234 5678
+            "+966": { max: 9, pattern: [2, 3, 4] },         // Suudi Arabistan: 55 123 4567
+            "+971": { max: 9, pattern: [2, 3, 4] },         // BAE: 50 123 4567
+            "+20": { max: 10, pattern: [2, 3, 3, 2] },      // Mısır: 12 345 678 90
+            "+27": { max: 9, pattern: [2, 3, 4] },          // Güney Afrika: 12 345 6789
+            "+55": { max: 11, pattern: [2, 5, 4] },         // Brezilya: 11 98765 4321
+            "+52": { max: 10, pattern: [2, 4, 4] },         // Meksika: 55 1234 5678
+            "+46": { max: 9, pattern: [3, 2, 2, 2] },       // İsveç: 701 23 45 67
+            "+41": { max: 9, pattern: [2, 3, 2, 2] },       // İsviçre: 78 123 45 67
+            "+963": { max: 9, pattern: [3, 3, 3] },         // Suriye: 944 123 456
+            "+886": { max: 9, pattern: [3, 3, 3] },         // Tayvan: 912 345 678
+            "_default": { max: 15, pattern: [3, 3, 3, 3] }  // Varsayılan: 123 456 789 012
+        };
+
+        function formatPhoneNumber(number, code) {
+            const config = phoneFormats[code] || phoneFormats._default;
+            const digitsOnly = number.replace(/\D/g, '').substring(0, config.max);
+
+            let formattedNumber = code + ' ';
+            let position = 0;
+
+            for (const partLength of config.pattern) {
+                if (position >= digitsOnly.length) break;
+                const part = digitsOnly.substr(position, partLength);
+                if (part.length > 0) {
+                    formattedNumber += part + ' ';
+                    position += partLength;
+                }
+            }
+
+            if (position < digitsOnly.length) {
+                formattedNumber += digitsOnly.substr(position) + ' ';
+            }
+
+            return formattedNumber.trim();
+        }
+
+        function updateFormattedPhone() {
+            const code = countrySelect.value;
+            let current = phoneInput.value.replace(new RegExp(`^\\${code}\\s?`), '').replace(/\D/g, '');
+            phoneInput.value = formatPhoneNumber(current, code);
+        }
+
+        // Ülke kodu değiştiğinde
+        countrySelect.addEventListener('change', function() {
+            if (!phoneInput.value.startsWith(this.value)) {
+                phoneInput.value = this.value + ' ';
+            }
+        });
+
+        // Telefon inputuna yazarken
+        phoneInput.addEventListener('input', function(e) {
+            // Sadece ülke kodu kaldıysa, ülke kodunu koru
+            if ((e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward') &&
+                phoneInput.value.replace(/\D/g, '') === countrySelect.value.replace(/\D/g, '')) {
+                phoneInput.value = countrySelect.value + ' ';
+                return;
+            }
+            updateFormattedPhone();
+        });
+
+        // Sayfa yüklendiğinde mevcut telefon numarasını kontrol et
+        if (phoneInput.value.trim() && phoneInput.value !== '') {
+            // Mevcut numarada ülke kodu var mı kontrol et
+            let hasCountryCode = false;
+            for (let code in phoneFormats) {
+                if (code !== '_default' && phoneInput.value.startsWith(code)) {
+                    countrySelect.value = code;
+                    hasCountryCode = true;
+                    break;
+                }
+            }
+            // Eğer ülke kodu yoksa, varsayılan ülke kodunu ekle
+            if (!hasCountryCode) {
+                phoneInput.value = countrySelect.value + ' ' + phoneInput.value;
+            }
+        } else {
+            // Boşsa varsayılan ülke kodunu ekle
+            phoneInput.value = countrySelect.value + ' ';
+        }
+
+        // Focus olduğunda imleci sona al
+        phoneInput.addEventListener('focus', function() {
+            setTimeout(() => {
+                phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
+            }, 0);
+        });
+    });
+</script>
