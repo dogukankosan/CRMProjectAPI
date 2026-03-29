@@ -1,0 +1,983 @@
+﻿@using CRMProjectUI.Models
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    ViewData["Title"] = ViewBag.IsEdit == true ? "Kullanıcı Düzenle" : "Yeni Kullanıcı";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+    bool isEdit = ViewBag.IsEdit == true;
+    int userId = ViewBag.UserId ?? 0;
+    int customerId = ViewBag.CustomerId ?? 0;
+    string firmName = ViewBag.CustomerName ?? "";
+    string currentPic = ViewBag.CurrentPic ?? "";
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
+    string currentPicUrl = string.IsNullOrEmpty(currentPic)
+        ? ""
+        : $"{apiBase}{currentPic}";
+    string username = string.Empty;
+    string email = string.Empty;
+    string? fullName = null;
+    string? phone = null;
+    byte isAdmin = 0;
+    bool status = true;
+    bool sendEmail = true;
+    int companyId = customerId;
+    if (Model is UserCreateDto cd)
+    {
+        username = cd.Username;
+        email = cd.EMailAddress;
+        fullName = cd.FullName;
+        phone = cd.PhoneNumber;
+        isAdmin = cd.ISAdmin;
+        status = cd.Status;
+        sendEmail = cd.SendEmail;
+        companyId = cd.CompanyID > 0 ? cd.CompanyID : customerId;
+    }
+    else if (Model is UserUpdateDto ud)
+    {
+        username = ud.Username;
+        email = ud.EMailAddress;
+        fullName = ud.FullName;
+        phone = ud.PhoneNumber;
+        isAdmin = ud.ISAdmin;
+        status = ud.Status;
+        sendEmail = ud.SendEmail;
+        companyId = ud.CompanyID > 0 ? ud.CompanyID : customerId;
+    }
+    string? successMsg = TempData["Success"] as string;
+    string? errorMsg = TempData["Error"] as string;
+}
+<style>
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+    .role-card.superadmin-card.active {
+        border-color: #f59e0b;
+        background: #fffbeb;
+        box-shadow: 0 4px 12px rgba(245,158,11,.15);
+    }
+    .required-star {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .avatar-placeholder {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.3rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        border: 3px solid #e2e8f0;
+        letter-spacing: 1px;
+    }
+    .card-section {
+        margin-bottom: 1.5rem;
+    }
+
+        .card-section .card-header h6 {
+            margin-bottom: 0;
+        }
+
+    /* Firma banner */
+    .firma-banner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        background: linear-gradient(135deg,#f5f3ff,#ede9fe);
+        border: 2px solid #c4b5fd;
+        border-radius: 12px;
+        margin-bottom: 0;
+    }
+
+        .firma-banner i {
+            font-size: 1.4rem;
+            color: #7c3aed;
+            flex-shrink: 0;
+        }
+
+    .firma-banner-name {
+        font-weight: 700;
+        font-size: 1rem;
+        color: #4c1d95;
+    }
+
+    .firma-banner-sub {
+        font-size: .75rem;
+        color: #6d28d9;
+        margin-top: 1px;
+    }
+
+    /* Avatar */
+    .avatar-wrap {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 8px;
+    }
+
+    .avatar-preview {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #e2e8f0;
+        flex-shrink: 0;
+    }
+
+    .avatar-placeholder {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.5rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        border: 3px solid #e2e8f0;
+    }
+
+    .avatar-btns {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    /* Toggle row */
+    .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        background: #f7f8fc;
+    }
+
+        .toggle-row:last-child {
+            margin-bottom: 0;
+        }
+
+    .toggle-label {
+        font-weight: 600;
+        font-size: .88rem;
+        color: #0f1117;
+    }
+
+    .toggle-sub {
+        font-size: .75rem;
+        color: #4a4f5e;
+        margin-top: 2px;
+    }
+
+    /* Role cards */
+    .role-card {
+        padding: 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all .2s;
+        background: #fff;
+        text-align: center;
+    }
+
+        .role-card:hover {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .role-card.active {
+            border-color: #2563eb;
+            background: #eff6ff;
+            box-shadow: 0 4px 12px rgba(37,99,235,.15);
+        }
+
+        .role-card.admin-card.active {
+            border-color: #7c3aed;
+            background: #f5f3ff;
+            box-shadow: 0 4px 12px rgba(124,58,237,.15);
+        }
+
+        .role-card i {
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .role-card strong {
+            font-size: .9rem;
+            display: block;
+        }
+
+        .role-card small {
+            font-size: .75rem;
+            color: #4a4f5e;
+        }
+
+    .pass-generated {
+        display: none;
+        margin-left: 10px;
+        font-size: .82rem;
+        color: #4a4f5e;
+        font-family: monospace;
+        background: #f1f5f9;
+        padding: 3px 10px;
+        border-radius: 6px;
+    }
+
+    #usernameWarning, #emailWarning {
+        display: none;
+    }
+</style>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="text-center text-white">
+        <div class="spinner-border" style="width:3rem;height:3rem;" role="status"></div>
+        <p class="mt-2">Kaydediliyor...</p>
+    </div>
+</div>
+
+<div class="section-body">
+    <div class="row">
+        <div class="col-12 col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>
+                        <i class="fas @(isEdit ? "fa-user-edit" : "fa-user-plus") mr-2"></i>
+                        @(isEdit ? "Kullanıcı Düzenle" : "Yeni Kullanıcı Ekle")
+                    </h4>
+                    <a href="/AdminKullanici/Liste/@companyId" class="btn btn-sm btn-secondary" id="backBtn">
+                        <i class="fas fa-arrow-left"></i> Listeye Dön
+                    </a>
+                </div>
+                <div class="card-body">
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            <strong><i class="fas fa-exclamation-triangle"></i> Lütfen hataları düzeltin:</strong>
+                            <ul class="mb-0 mt-2">
+                                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                {
+                                    <li>@error.ErrorMessage</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    <form asp-action="@(isEdit ? "Duzenle" : "Ekle")"
+                          asp-controller="AdminKullanici"
+                          asp-route-id="@(isEdit ? userId.ToString() : null)"
+                          method="post" enctype="multipart/form-data" id="userForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="CompanyID" value="@companyId" />
+                        @if (isEdit)
+                        {
+                            <input type="hidden" name="Picture" value="@currentPic" id="currentPicHidden" />
+                        }
+
+                        <!-- FİRMA BANNER -->
+                        <div class="card card-section">
+                            <div class="card-header bg-light">
+                                <h6><i class="fas fa-building"></i> Firma</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="firma-banner">
+                                    <i class="fas fa-building"></i>
+                                    <div>
+                                        <div class="firma-banner-name">
+                                            @if (!string.IsNullOrEmpty(firmName))
+                                            {
+                                                @firmName
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Firma bilgisi yükleniyor...</span>
+                                            }
+                                        </div>
+                                        <div class="firma-banner-sub">
+                                            <i class="fas fa-lock mr-1" style="font-size:.65rem;"></i>
+                                            Kullanıcı bu firmaya bağlı olacak
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PROFİL RESMİ -->
+                        <div class="card card-section">
+                            <div class="card-header bg-light">
+                                <h6><i class="fas fa-image"></i> Profil Resmi <small class="text-muted font-weight-normal">(Opsiyonel)</small></h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="avatar-wrap">
+                                    @{
+                                        string displayName = !string.IsNullOrEmpty(fullName) ? fullName : username;
+                                        string initials = string.Concat(
+                                        displayName.Split(' ')
+                                        .Where(w => w.Length > 0)
+                                        .Take(2)
+                                        .Select(w => w[0].ToString().ToUpper()));
+                                        if (string.IsNullOrEmpty(initials))
+                                            initials = displayName.Length >= 1 ? displayName[0].ToString().ToUpper() : "?";
+                                    }
+                                    @if (!string.IsNullOrEmpty(currentPic))
+                                    {
+                                        <img src="@currentPicUrl" id="avatarPreview" class="avatar-preview" alt="Profil" />
+                                        <div class="avatar-placeholder" id="avatarPlaceholder" style="display:none; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff;">
+                                            @initials
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="avatar-placeholder" id="avatarPlaceholder" style="background:linear-gradient(135deg,#667eea,#764ba2); color:#fff;">
+                                            @initials
+                                        </div>
+                                        <img src="" id="avatarPreview" class="avatar-preview" alt="Profil" style="display:none;" />
+                                    }
+                                    <div class="avatar-btns">
+                                        <label for="PictureFile" class="btn btn-sm btn-outline-primary mb-0" style="cursor:pointer;">
+                                            <i class="fas fa-upload mr-1"></i> Resim Seç
+                                        </label>
+                                        <input type="file" id="PictureFile" name="PictureFile"
+                                               accept=".jpg,.jpeg,.png,.gif,.webp"
+                                               style="display:none;" onchange="previewAvatar(this)" />
+                                        @if (isEdit && !string.IsNullOrEmpty(currentPic))
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    onclick="deleteAvatar(@userId)">
+                                                <i class="fas fa-trash mr-1"></i> Resmi Sil
+                                            </button>
+                                        }
+                                        <small class="text-muted">JPG, PNG, GIF, WEBP — Max 5MB</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- TEMEL BİLGİLER -->
+                        <div class="card card-section">
+                            <div class="card-header bg-primary text-white">
+                                <h6><i class="fas fa-user"></i> Temel Bilgiler</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Kullanıcı Adı <span class="required-star">*</span></label>
+                                            <input type="text" name="Username" class="form-control"
+                                                   value="@username" maxlength="100" required
+                                                   id="usernameInput" onblur="checkUsername(this.value)"
+                                                   placeholder="ornek.kullanici" />
+                                            <small class="text-muted">Harf, rakam, nokta, alt çizgi, tire</small>
+                                            <div id="usernameWarning" class="text-danger mt-1">
+                                                <i class="fas fa-exclamation-circle mr-1"></i>
+                                                Bu kullanıcı adı zaten kullanılıyor!
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Ad Soyad <span class="required-star">*</span></label>
+                                            <input type="text" name="FullName" class="form-control"
+                                                   value="@fullName" maxlength="150" placeholder="Ad Soyad" required />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>E-posta <span class="required-star">*</span></label>
+                                            <input type="email" name="EMailAddress" class="form-control"
+                                                   value="@email" maxlength="75" required
+                                                   id="emailInput" onblur="checkEmail(this.value)"
+                                                   placeholder="ornek@mail.com" />
+                                            <div id="emailWarning" class="text-danger mt-1">
+                                                <i class="fas fa-exclamation-circle mr-1"></i>
+                                                Bu e-posta adresi zaten kullanılıyor!
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Telefon <small class="required-star">*</small></label>
+                                            <div style="display:flex; gap:10px;">
+                                                <select class="form-control" id="countryCodeSelect" style="width:180px; flex-shrink:0;">
+                                                    <option value="+90" selected>🇹🇷 Türkiye (+90)</option>
+                                                    <option value="+93">🇦🇫 Afganistan (+93)</option>
+                                                    <option value="+355">🇦🇱 Arnavutluk (+355)</option>
+                                                    <option value="+213">🇩🇿 Cezayir (+213)</option>
+                                                    <option value="+54">🇦🇷 Arjantin (+54)</option>
+                                                    <option value="+61">🇦🇺 Avustralya (+61)</option>
+                                                    <option value="+43">🇦🇹 Avusturya (+43)</option>
+                                                    <option value="+32">🇧🇪 Belçika (+32)</option>
+                                                    <option value="+55">🇧🇷 Brezilya (+55)</option>
+                                                    <option value="+86">🇨🇳 Çin (+86)</option>
+                                                    <option value="+45">🇩🇰 Danimarka (+45)</option>
+                                                    <option value="+20">🇪🇬 Mısır (+20)</option>
+                                                    <option value="+358">🇫🇮 Finlandiya (+358)</option>
+                                                    <option value="+33">🇫🇷 Fransa (+33)</option>
+                                                    <option value="+49">🇩🇪 Almanya (+49)</option>
+                                                    <option value="+30">🇬🇷 Yunanistan (+30)</option>
+                                                    <option value="+91">🇮🇳 Hindistan (+91)</option>
+                                                    <option value="+62">🇮🇩 Endonezya (+62)</option>
+                                                    <option value="+98">🇮🇷 İran (+98)</option>
+                                                    <option value="+964">🇮🇶 Irak (+964)</option>
+                                                    <option value="+353">🇮🇪 İrlanda (+353)</option>
+                                                    <option value="+972">🇮🇱 İsrail (+972)</option>
+                                                    <option value="+39">🇮🇹 İtalya (+39)</option>
+                                                    <option value="+81">🇯🇵 Japonya (+81)</option>
+                                                    <option value="+7">🇰🇿 Kazakistan (+7)</option>
+                                                    <option value="+965">🇰🇼 Kuveyt (+965)</option>
+                                                    <option value="+961">🇱🇧 Lübnan (+961)</option>
+                                                    <option value="+60">🇲🇾 Malezya (+60)</option>
+                                                    <option value="+52">🇲🇽 Meksika (+52)</option>
+                                                    <option value="+31">🇳🇱 Hollanda (+31)</option>
+                                                    <option value="+64">🇳🇿 Yeni Zelanda (+64)</option>
+                                                    <option value="+47">🇳🇴 Norveç (+47)</option>
+                                                    <option value="+92">🇵🇰 Pakistan (+92)</option>
+                                                    <option value="+48">🇵🇱 Polonya (+48)</option>
+                                                    <option value="+351">🇵🇹 Portekiz (+351)</option>
+                                                    <option value="+974">🇶🇦 Katar (+974)</option>
+                                                    <option value="+40">🇷🇴 Romanya (+40)</option>
+                                                    <option value="+7">🇷🇺 Rusya (+7)</option>
+                                                    <option value="+966">🇸🇦 Suudi Arabistan (+966)</option>
+                                                    <option value="+65">🇸🇬 Singapur (+65)</option>
+                                                    <option value="+27">🇿🇦 Güney Afrika (+27)</option>
+                                                    <option value="+82">🇰🇷 Güney Kore (+82)</option>
+                                                    <option value="+34">🇪🇸 İspanya (+34)</option>
+                                                    <option value="+46">🇸🇪 İsveç (+46)</option>
+                                                    <option value="+41">🇨🇭 İsviçre (+41)</option>
+                                                    <option value="+66">🇹🇭 Tayland (+66)</option>
+                                                    <option value="+380">🇺🇦 Ukrayna (+380)</option>
+                                                    <option value="+971">🇦🇪 BAE (+971)</option>
+                                                    <option value="+44">🇬🇧 İngiltere (+44)</option>
+                                                    <option value="+1">🇺🇸 ABD (+1)</option>
+                                                </select>
+                                                <input type="text" name="PhoneNumber" id="PhoneNumber"
+                                                       class="form-control" maxlength="25"
+                                                     required  value="@phone" placeholder="555 000 00 00" style="flex:1;" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ŞİFRE -->
+                        <div class="card card-section">
+                            <div class="card-header bg-warning">
+                                <h6>
+                                    <i class="fas fa-lock"></i> Şifre
+                                    @if (isEdit)
+                                    {
+                                        <small class="font-weight-normal">(boş bırakılırsa değişmez)</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="required-star">*</span>
+                                    }
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>
+                                                Şifre
+                                                @if (!isEdit)
+                                                {
+                                                    <span class="required-star">*</span>
+                                                }
+                                            </label>
+                                            @if (isEdit)
+                                            {
+                                                <div class="input-group">
+                                                    <input type="password" name="Password" class="form-control"
+                                                           id="passwordInput" maxlength="256"
+                                                           placeholder="Değiştirmek için yazın..."
+                                                           autocomplete="new-password" />
+                                                    <div class="input-group-append">
+                                                        <button type="button" class="btn btn-outline-secondary"
+                                                                onclick="togglePass('passwordInput', this)">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="input-group">
+                                                    <input type="password" name="Password" class="form-control"
+                                                           id="passwordInput" maxlength="256" required
+                                                           placeholder="En az 6 karakter"
+                                                           autocomplete="new-password" />
+                                                    <div class="input-group-append">
+                                                        <button type="button" class="btn btn-outline-secondary"
+                                                                onclick="togglePass('passwordInput', this)">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>
+                                                Şifre Tekrar
+                                                @if (!isEdit)
+                                                {
+                                                    <span class="required-star">*</span>
+                                                }
+                                            </label>
+                                            @if (isEdit)
+                                            {
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control"
+                                                           id="passwordConfirm" maxlength="256"
+                                                           placeholder="Değiştirmek için yazın..."
+                                                           autocomplete="new-password" />
+                                                    <div class="input-group-append">
+                                                        <button type="button" class="btn btn-outline-secondary"
+                                                                onclick="togglePass('passwordConfirm', this)">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control"
+                                                           id="passwordConfirm" maxlength="256" required
+                                                           placeholder="Şifreyi tekrar girin"
+                                                           autocomplete="new-password" />
+                                                    <div class="input-group-append">
+                                                        <button type="button" class="btn btn-outline-secondary"
+                                                                onclick="togglePass('passwordConfirm', this)">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            }
+                                            <div id="passwordMismatch" class="text-danger mt-1" style="display:none;">
+                                                <i class="fas fa-exclamation-circle mr-1"></i> Şifreler eşleşmiyor!
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            onclick="generatePassword()">
+                                        <i class="fas fa-magic mr-1"></i> Otomatik Şifre Üret
+                                    </button>
+                                    <span id="generatedPassDisplay" class="pass-generated"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- YETKİ & AYARLAR -->
+                        <div class="card card-section">
+                            <div class="card-header bg-info text-white">
+                                <h6><i class="fas fa-cog"></i> Yetki & Ayarlar</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="d-block mb-2">Kullanıcı Rolü <span class="required-star">*</span></label>
+                                    <div class="row">
+                                        @* Standart Kullanıcı Rolü - Herkes görebilir *@
+                                        <div class="col-4">
+                                            <div class="role-card @(isAdmin == 0 ? "active" : "")" onclick="selectRole(0, this)">
+                                                <i class="fas fa-user" style="color:#2563eb;"></i>
+                                                <strong>Kullanıcı</strong>
+                                                <small>Standart erişim</small>
+                                            </div>
+                                        </div>
+
+                                        @* Admin ve Süper Admin Rolleri - Sadece Süper Admin seçebilir *@
+                                        @if (User.IsInRole("SuperAdmin"))
+                                        {
+                                            <div class="col-4">
+                                                <div class="role-card admin-card @(isAdmin == 1 ? "active" : "")" onclick="selectRole(1, this)">
+                                                    <i class="fas fa-user-shield" style="color:#7c3aed;"></i>
+                                                    <strong>Admin</strong>
+                                                    <small>Firma yönetimi</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="role-card superadmin-card @(isAdmin == 2 ? "active" : "")" onclick="selectRole(2, this)">
+                                                    <i class="fas fa-crown" style="color:#f59e0b;"></i>
+                                                    <strong>Süper Admin</strong>
+                                                    <small>Tam yetki</small>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    <input type="hidden" name="ISAdmin" id="isAdminInput" value="@isAdmin" />
+                                </div>
+
+                                <hr />
+
+                                <div class="toggle-row">
+                                    <div>
+                                        <div class="toggle-label"><i class="fas fa-power-off mr-2 text-success"></i> Durum</div>
+                                        <div class="toggle-sub">Kullanıcı sisteme giriş yapabilsin mi?</div>
+                                    </div>
+
+                                    @if (User.IsInRole("SuperAdmin"))
+                                    {
+                                        @* Sadece SuperAdmin değiştirebilir *@
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="statusSwitch"
+                                                   @(status ? "checked" : "") />
+                                            <label class="custom-control-label" for="statusSwitch">
+                                                <span id="statusText">@(status ? "Aktif" : "Pasif")</span>
+                                            </label>
+                                        </div>
+                                        <input type="hidden" name="Status" id="statusHidden" value="@(status ? "true" : "false")" />
+                                    }
+                                    else
+                                    {
+                                        @* Admin veya diğerleri sadece görür *@
+                                        <div>
+                                            <span class="badge @(status ? "badge-success" : "badge-danger")">
+                                                @(status ? "Aktif" : "Pasif")
+                                            </span>
+                                            <input type="hidden" name="Status" value="@(status ? "true" : "false")" />
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="toggle-row">
+                                    <div>
+                                        <div class="toggle-label"><i class="fas fa-bell mr-2 text-warning"></i> E-posta Bildirimleri</div>
+                                        <div class="toggle-sub">Kullanıcıya sistem bildirimleri gönderilsin mi?</div>
+                                    </div>
+                                    @if (User.IsInRole("SuperAdmin") || (!isEdit && User.IsInRole("Admin")))
+                                    {
+                                        @* SuperAdmin her zaman, Admin sadece yeni kayıtta değiştirebilir *@
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="sendEmailSwitch"
+                                                   @(sendEmail ? "checked" : "") />
+                                            <label class="custom-control-label" for="sendEmailSwitch">
+                                                <span id="sendEmailText">@(sendEmail ? "Evet" : "Hayır")</span>
+                                            </label>
+                                        </div>
+                                        <input type="hidden" name="SendEmail" id="sendEmailHidden" value="@(sendEmail ? "true" : "false")" />
+                                    }
+                                    else
+                                    {
+                                        @* Admin düzenleme modunda sadece görür *@
+                                        <div>
+                                            <span class="badge badge-info">
+                                                @(sendEmail ? "Evet" : "Hayır")
+                                            </span>
+                                            <input type="hidden" name="SendEmail" value="@(sendEmail ? "true" : "false")" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BUTONLAR -->
+                        <div class="text-right mt-4">
+                            <a href="/AdminKullanici/Liste/@companyId" class="btn btn-secondary btn-lg mr-2">
+                                <i class="fas fa-times"></i> İptal
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-save"></i> @(isEdit ? "Güncelle" : "Kaydet")
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="currentUserId" value="@userId" />
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initSwitches();
+        initPhoneInput();
+
+        document.getElementById('passwordConfirm').addEventListener('input', checkPasswordMatch);
+        document.getElementById('passwordInput').addEventListener('input', checkPasswordMatch);
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+                @:Swal.fire({ icon: 'success', title: 'Başarılı!', text: '@Html.Raw(TempData["SuccessMessage"]?.ToString().Replace("'", "\\'"))', timer: 3000, showConfirmButton: false });
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+                @:Swal.fire({ icon: 'error', title: 'Hata!', text: '@Html.Raw(TempData["ErrorMessage"]?.ToString().Replace("'", "\\'"))', timer: 4000, showConfirmButton: true });
+        }
+    });
+
+    // --- ROL SEÇİMİ ---
+    function selectRole(level, el) {
+        document.querySelectorAll('.role-card').forEach(function(c) { c.classList.remove('active'); });
+        el.classList.add('active');
+        document.getElementById('isAdminInput').value = level;
+    }
+
+    // --- SWITCH KONTROLLERİ (Sadece varsa çalışır) ---
+    function initSwitches() {
+        var stSw = document.getElementById('statusSwitch');
+        if(stSw) {
+            stSw.addEventListener('change', function() {
+                document.getElementById('statusHidden').value = this.checked ? 'true' : 'false';
+                document.getElementById('statusText').textContent = this.checked ? 'Aktif' : 'Pasif';
+            });
+        }
+
+        var emSw = document.getElementById('sendEmailSwitch');
+        if(emSw) {
+            emSw.addEventListener('change', function() {
+                document.getElementById('sendEmailHidden').value = this.checked ? 'true' : 'false';
+                document.getElementById('sendEmailText').textContent = this.checked ? 'Evet' : 'Hayır';
+            });
+        }
+    }
+
+    // --- ŞİFRE İŞLEMLERİ ---
+    function togglePass(inputId, btn) {
+        var input = document.getElementById(inputId);
+        var icon  = btn.querySelector('i');
+        input.type = input.type === 'password' ? 'text' : 'password';
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
+    }
+
+    function checkPasswordMatch() {
+        var p1   = document.getElementById('passwordInput').value;
+        var p2   = document.getElementById('passwordConfirm').value;
+        var warn = document.getElementById('passwordMismatch');
+        if (p2 && p1 !== p2) { warn.style.display = 'block'; return false; }
+        warn.style.display = 'none';
+        return true;
+    }
+
+    function generatePassword() {
+        var upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', lower = 'abcdefghijklmnopqrstuvwxyz', digits = '0123456789', special = '!#$%&*+-?';
+        var all = upper + lower + digits + special;
+        var pass = '';
+        pass += upper[Math.floor(Math.random() * upper.length)];
+        pass += lower[Math.floor(Math.random() * lower.length)];
+        pass += digits[Math.floor(Math.random() * digits.length)];
+        pass += special[Math.floor(Math.random() * special.length)];
+        for (var i = 4; i < 12; i++) pass += all[Math.floor(Math.random() * all.length)];
+        pass = pass.split('').sort(function() { return Math.random() - .5; }).join('');
+
+        document.getElementById('passwordInput').value = pass;
+        document.getElementById('passwordConfirm').value = pass;
+        document.getElementById('passwordInput').type = 'text';
+        document.getElementById('passwordConfirm').type = 'text';
+
+        var display = document.getElementById('generatedPassDisplay');
+        if(display) { display.textContent = pass; display.style.display = 'inline'; }
+        checkPasswordMatch();
+
+        var html = 'Şifre: <strong style="font-family:monospace;">' + pass + '</strong>';
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(pass).then(function() {
+                Swal.fire({ icon:'success', title:'Şifre Üretildi!', html: html + '<br><small class="text-muted">Panoya kopyalandı</small>', timer:3500, showConfirmButton:false });
+            });
+        } else {
+            Swal.fire({ icon:'success', title:'Şifre Üretildi!', html: html, timer:3500, showConfirmButton:false });
+        }
+    }
+
+    // --- AVATAR / RESİM İŞLEMLERİ ---
+    function previewAvatar(input) {
+        if (!input.files || !input.files[0]) return;
+        var file = input.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+            Swal.fire({ icon:'error', title:'Hata!', text:'Resim boyutu 5MB\'dan büyük olamaz.' });
+            input.value = '';
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var preview = document.getElementById('avatarPreview');
+            var placeholder = document.getElementById('avatarPlaceholder');
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function deleteAvatar(userId) {
+        Swal.fire({
+            title:'Profil resmini sil?', icon:'warning',
+            showCancelButton:true, confirmButtonColor:'#ef4444',
+            confirmButtonText:'Evet, sil', cancelButtonText:'İptal'
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            fetch('/AdminKullanici/ResimSil/' + userId, {
+                method:'POST', headers:{'RequestVerificationToken':token,'Content-Type':'application/json'}
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.success) {
+                    var h = document.getElementById('currentPicHidden');
+                    if (h) h.value = '';
+                    document.getElementById('avatarPreview').style.display = 'none';
+                    var ph = document.getElementById('avatarPlaceholder');
+                    if (ph) ph.style.display = 'flex';
+                    Swal.fire({ icon:'success', title:'Silindi!', text:r.message, timer:1500, showConfirmButton:false });
+                } else { Swal.fire('Hata!', r.message, 'error'); }
+            });
+        });
+    }
+
+    // --- UNIQUE KONTROLLERİ ---
+    function checkUsername(val) {
+        if (!val || val.trim().length === 0) return;
+        var uIdEl = document.getElementById('currentUserId');
+        var currentId = uIdEl ? uIdEl.value : 0;
+        fetch('/AdminKullanici/KullaniciAdiKontrol?username=' + encodeURIComponent(val.trim()) + '&excludeId=' + currentId)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var warn = document.getElementById('usernameWarning');
+                var input = document.getElementById('usernameInput');
+                warn.style.display = data.exists ? 'block' : 'none';
+                data.exists ? input.classList.add('is-invalid') : input.classList.remove('is-invalid');
+            });
+    }
+
+    function checkEmail(val) {
+        if (!val || val.trim().length === 0) return;
+        var uIdEl = document.getElementById('currentUserId');
+        var currentId = uIdEl ? uIdEl.value : 0;
+        fetch('/AdminKullanici/EmailKontrol?email=' + encodeURIComponent(val.trim()) + '&excludeId=' + currentId)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var warn = document.getElementById('emailWarning');
+                var input = document.getElementById('emailInput');
+                warn.style.display = data.exists ? 'block' : 'none';
+                data.exists ? input.classList.add('is-invalid') : input.classList.remove('is-invalid');
+            });
+    }
+
+    // --- TELEFON FORMATLAMA (TAMİR EDİLDİ) ---
+    var phoneFormats = {
+        "+90": { max: 10, pattern: [3, 3, 2, 2] },
+        "+1":  { max: 10, pattern: [3, 3, 4] },
+        "+44": { max: 10, pattern: [4, 3, 3] },
+        "+49": { max: 11, pattern: [3, 3, 2, 3] },
+        "_default": { max: 15, pattern: [3, 3, 3, 3, 3] }
+    };
+
+    function initPhoneInput() {
+        var countrySelect = document.getElementById('countryCodeSelect');
+        var phoneInput = document.getElementById('PhoneNumber');
+        if (!countrySelect || !phoneInput) return;
+
+        function applyFormat() {
+            var code = countrySelect.value;
+            var config = phoneFormats[code] || phoneFormats["_default"];
+            var rawValue = phoneInput.value;
+
+            // Ülke kodunu baştan ayır
+            var digits = rawValue.replace(/\D/g, '');
+            var codeDigits = code.replace(/\D/g, '');
+
+            if (digits.startsWith(codeDigits)) {
+                digits = digits.substring(codeDigits.length);
+            }
+            digits = digits.substring(0, config.max);
+
+            var formatted = code + " ";
+            var pos = 0;
+            for (var i = 0; i < config.pattern.length; i++) {
+                var len = config.pattern[i];
+                if (pos >= digits.length) break;
+                formatted += digits.substr(pos, len) + " ";
+                pos += len;
+            }
+            phoneInput.value = formatted.trim();
+        }
+
+        phoneInput.addEventListener('input', function(e) {
+            applyFormat();
+        });
+
+        countrySelect.addEventListener('change', function() {
+            phoneInput.value = this.value + " ";
+            phoneInput.focus();
+            applyFormat();
+        });
+
+        // İlk yüklemede formatla
+        if (phoneInput.value.length > 5) applyFormat();
+    }
+
+    document.getElementById('userForm').addEventListener('submit', function(e) {
+        if (document.getElementById('usernameWarning').style.display === 'block' ||
+            document.getElementById('emailWarning').style.display === 'block') {
+            e.preventDefault();
+            Swal.fire({ icon:'error', title:'Hata!', text:'Lütfen benzersiz olması gereken alanları (Email/Kullanıcı Adı) düzeltin.' });
+            return false;
+        }
+        if (!checkPasswordMatch()) {
+            e.preventDefault();
+            Swal.fire({ icon:'error', title:'Hata!', text:'Şifreler birbiriyle eşleşmiyor!' });
+            return false;
+        }
+
+        // ── Telefon Zorunlu Kontrol ──
+        var countrySelect = document.getElementById('countryCodeSelect');
+        var phoneInput    = document.getElementById('PhoneNumber');
+        if (countrySelect && phoneInput) {
+            var digits = phoneInput.value.replace(/\D/g, '');
+            var codeDigits = countrySelect.value.replace(/\D/g, '');
+            // Ülke kodu rakamlarını çıkar, net numara rakamlarına bak
+            var netDigits = digits.startsWith(codeDigits)
+                ? digits.substring(codeDigits.length)
+                : digits;
+
+            var config = phoneFormats[countrySelect.value] || phoneFormats['_default'];
+
+            if (netDigits.length === 0) {
+                e.preventDefault();
+                phoneInput.focus();
+                Swal.fire({ icon:'warning', title:'Eksik Alan!', text:'Lütfen telefon numaranızı giriniz.' });
+                return false;
+            }
+            if (netDigits.length < config.max) {
+                e.preventDefault();
+                phoneInput.focus();
+                Swal.fire({ icon:'warning', title:'Geçersiz Numara!', text:'Telefon numarası eksik. Lütfen kontrol ediniz.' });
+                return false;
+            }
+        }
+
+        document.getElementById('loadingOverlay').classList.add('show');
+        var btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+    });
+</script>

@@ -1,0 +1,793 @@
+﻿@{
+    ViewData["Title"] = "Raporlama & Analiz";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+}
+
+<style>
+    /* ── GENEL ── */
+    .report-header {
+        background: linear-gradient(135deg, #0f1117 0%, #1e2433 50%, #0f1117 100%);
+        border-radius: 16px;
+        padding: 28px 32px;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .report-header::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(99,102,241,.3) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .report-header::after {
+            content: '';
+            position: absolute;
+            bottom: -40px;
+            left: 40px;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(16,185,129,.2) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .report-header h3 {
+            color: #fff;
+            font-weight: 800;
+            font-size: 1.5rem;
+            margin: 0 0 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .report-header p {
+            color: rgba(255,255,255,.6);
+            margin: 0;
+            font-size: .9rem;
+            position: relative;
+            z-index: 1;
+        }
+
+    /* ── STAT KARTLARI ── */
+    .stat-card {
+        border-radius: 14px;
+        padding: 20px 22px;
+        position: relative;
+        overflow: hidden;
+        border: none;
+        transition: transform .2s, box-shadow .2s;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(0,0,0,.15) !important;
+        }
+
+        .stat-card .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .stat-label {
+            font-size: .8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            opacity: .7;
+        }
+
+        .stat-card .stat-sub {
+            font-size: .78rem;
+            opacity: .6;
+            margin-top: 6px;
+        }
+
+    .stat-blue {
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        color: #1e40af;
+    }
+
+    .stat-green {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        color: #166534;
+    }
+
+    .stat-red {
+        background: linear-gradient(135deg, #fef2f2, #fee2e2);
+        color: #991b1b;
+    }
+
+    .stat-orange {
+        background: linear-gradient(135deg, #fff7ed, #fed7aa);
+        color: #9a3412;
+    }
+
+    .stat-purple {
+        background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+        color: #5b21b6;
+    }
+
+    .stat-teal {
+        background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+        color: #134e4a;
+    }
+
+    .stat-blue .stat-icon {
+        background: rgba(37,99,235,.15);
+        color: #2563eb;
+    }
+
+    .stat-green .stat-icon {
+        background: rgba(22,163,74,.15);
+        color: #16a34a;
+    }
+
+    .stat-red .stat-icon {
+        background: rgba(220,38,38,.15);
+        color: #dc2626;
+    }
+
+    .stat-orange .stat-icon {
+        background: rgba(234,88,12,.15);
+        color: #ea580c;
+    }
+
+    .stat-purple .stat-icon {
+        background: rgba(124,58,237,.15);
+        color: #7c3aed;
+    }
+
+    .stat-teal .stat-icon {
+        background: rgba(20,184,166,.15);
+        color: #14b8a6;
+    }
+
+    /* ── GRAFİK KARTLARI ── */
+    .chart-card {
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 20px 22px;
+        margin-bottom: 24px;
+    }
+
+        .chart-card .chart-title {
+            font-weight: 700;
+            font-size: .95rem;
+            color: #0f1117;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .chart-card .chart-title i {
+                color: #6366f1;
+            }
+
+    /* ── TABLO ── */
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .85rem;
+    }
+
+        .report-table th {
+            background: #f7f8fc;
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 700;
+            font-size: .75rem;
+            color: #4a4f5e;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .report-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #0f1117;
+            vertical-align: middle;
+        }
+
+        .report-table tr:hover td {
+            background: #f8fafd;
+        }
+
+        .report-table tr:last-child td {
+            border-bottom: none;
+        }
+
+    /* ── BADGE ── */
+    .rpt-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+
+    .rpt-badge-success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .rpt-badge-danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .rpt-badge-warning {
+        background: #fef9c3;
+        color: #854d0e;
+    }
+
+    .rpt-badge-info {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .rpt-badge-purple {
+        background: #ede9fe;
+        color: #5b21b6;
+    }
+
+    .rpt-badge-gray {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    /* ── USER AVATAR ── */
+    .user-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #e2e8f0;
+    }
+
+    .user-avatar-placeholder {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: .8rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    /* ── PROGRESS ── */
+    .mini-progress {
+        height: 6px;
+        background: #f1f5f9;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 4px;
+    }
+
+    .mini-progress-bar {
+        height: 100%;
+        border-radius: 3px;
+        transition: width .6s ease;
+    }
+
+    /* ── LOADING ── */
+    #reportLoading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 0;
+        color: #4a4f5e;
+    }
+
+    #reportContent {
+        display: none;
+    }
+
+    /* ── ÖZET SATIRI ── */
+    .period-tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    .period-tab {
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: .78rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1.5px solid #e2e8f0;
+        background: #fff;
+        color: #4a4f5e;
+        transition: all .2s;
+    }
+
+        .period-tab.active {
+            background: #6366f1;
+            border-color: #6366f1;
+            color: #fff;
+        }
+</style>
+
+<div class="section-body">
+
+    <!-- HEADER -->
+    <div class="report-header">
+        <h3><i class="fas fa-chart-line mr-2"></i>Raporlama & Analiz</h3>
+        <p id="reportTime">Veriler yükleniyor...</p>
+    </div>
+
+    <!-- LOADING -->
+    <div id="reportLoading">
+        <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
+        <p>Raporlar hazırlanıyor...</p>
+    </div>
+
+    <!-- İÇERİK -->
+    <div id="reportContent">
+
+        <!-- ── GENEL İSTATİSTİKLER ── -->
+        <div class="row mb-3" id="generalStatsRow"></div>
+
+        <!-- ── DÖNEM İSTATİSTİKLERİ ── -->
+        <div class="chart-card mb-4">
+            <div class="chart-title"><i class="fas fa-calendar-alt"></i> Dönem Karşılaştırması</div>
+            <div class="row" id="periodStatsRow"></div>
+        </div>
+
+        <!-- ── GRAFİKLER SATIRI 1 ── -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="chart-card">
+                    <div class="chart-title"><i class="fas fa-chart-bar"></i> Son 30 Gün — Günlük Ticket Trendi</div>
+                    <canvas id="dailyChart" height="100"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="chart-card">
+                    <div class="chart-title"><i class="fas fa-chart-pie"></i> Durum Dağılımı</div>
+                    <canvas id="statusChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── GRAFİKLER SATIRI 2 ── -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <div class="chart-title"><i class="fas fa-chart-line"></i> Aylık Trend (Son 12 Ay)</div>
+                    <canvas id="monthlyChart" height="120"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <div class="chart-title"><i class="fas fa-layer-group"></i> Logo Ürün Dağılımı</div>
+                    <canvas id="productChart" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── ADMİN PERFORMANSI ── -->
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-user-shield"></i> Admin / SuperAdmin Performansı</div>
+            <div class="table-responsive">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Kullanıcı</th>
+                            <th>Rol</th>
+                            <th>Bugün</th>
+                            <th>Bu Hafta</th>
+                            <th>Bu Ay</th>
+                            <th>Bu Yıl</th>
+                            <th>Toplam</th>
+                            <th>Ort. Süre</th>
+                            <th>Başarı</th>
+                            <th>Açık</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminPerfTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── FİRMA BAZLI ── -->
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-building"></i> Firma Bazlı İstatistikler (Top 15)</div>
+            <div class="table-responsive">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Firma</th>
+                            <th>Önem</th>
+                            <th>Toplam</th>
+                            <th>Açık</th>
+                            <th>Çözüldü</th>
+                            <th>Bu Ay</th>
+                            <th>Kalan Hak</th>
+                            <th>Ort. Süre</th>
+                            <th>Başarı</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customerStatsTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── EN ÇOK TİCKET AÇAN KULLANICILAR ── -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <div class="chart-title"><i class="fas fa-users"></i> En Çok Ticket Açan Kullanıcılar (Top 10)</div>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Kullanıcı</th>
+                                <th>Firma</th>
+                                <th>Toplam</th>
+                                <th>Bu Ay</th>
+                                <th>Bugün</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topUsersTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-card">
+                    <div class="chart-title"><i class="fas fa-exclamation-triangle"></i> Öncelik Dağılımı</div>
+                    <canvas id="priorityChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── YILLIK TREND ── -->
+        <div class="chart-card">
+            <div class="chart-title"><i class="fas fa-history"></i> Yıllık Trend (Son 5 Yıl)</div>
+            <canvas id="yearlyChart" height="80"></canvas>
+        </div>
+
+    </div><!-- /reportContent -->
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        function minuteDisplay(min) {
+            min = Math.round(min || 0);
+            if (min === 0) return '—';
+            if (min < 60) return min + ' dk';
+            var h = Math.floor(min / 60), m = min % 60;
+            return m > 0 ? h + ' sa ' + m + ' dk' : h + ' sa';
+        }
+        function successBadge(rate) {
+            rate = Math.round(rate || 0);
+            var cls = rate >= 80 ? 'rpt-badge-success' : rate >= 50 ? 'rpt-badge-warning' : 'rpt-badge-danger';
+            return '<span class="rpt-badge ' + cls + '">' + rate + '%</span>';
+        }
+        function avatarHtml(picture, name, apiBase) {
+            if (picture)
+                return '<img src="' + apiBase + picture + '" class="user-avatar mr-2" />';
+            var initials = (name || '?').split(' ').map(function(w){ return w[0]; }).slice(0,2).join('');
+            return '<span class="user-avatar-placeholder mr-2">' + initials + '</span>';
+        }
+        function importanceBadge(imp) {
+            var map = {
+                'VIP':    ['rpt-badge-purple', '👑 VIP'],
+                'Önemli': ['rpt-badge-danger',  '⭐ Önemli'],
+                'Normal': ['rpt-badge-info',    'Normal'],
+                'Düşük':  ['rpt-badge-gray',    'Düşük']
+            };
+            var v = map[imp] || ['rpt-badge-gray', imp || '—'];
+            return '<span class="rpt-badge ' + v[0] + '">' + v[1] + '</span>';
+        }
+
+        var apiBase = '@(ViewBag.ApiBase ?? "")';
+
+        fetch('/AdminTicket/SuperAdminReport')
+            .then(function(r) { return r.json(); })
+            .then(function(json) {
+                var d = json.data;
+                if (!d) {
+                    document.getElementById('reportLoading').innerHTML =
+                        '<i class="fas fa-exclamation-triangle fa-2x text-danger mb-3"></i><p>Rapor verisi boş geldi.</p>';
+                    return;
+                }
+                renderGeneralStats(d.generalStats);
+                renderPeriodStats(d.generalStats);
+                renderAdminPerf(d.adminPerformance);
+                renderCustomerStats(d.customerStats);
+                renderTopUsers(d.topUsers);
+                renderDailyChart(d.dailyTrend);
+                renderStatusChart(d.statusDist);
+                renderMonthlyChart(d.monthlyTrend);
+                renderProductChart(d.productDist);
+                renderPriorityChart(d.priorityDist);
+                renderYearlyChart(d.yearlyTrend);
+                document.getElementById('reportLoading').style.display = 'none';
+                document.getElementById('reportContent').style.display = 'block';
+                document.getElementById('reportTime').textContent =
+                    'Son güncelleme: ' + new Date().toLocaleString('tr-TR');
+            })
+            .catch(function(err) {
+                console.error('HATA:', err);
+                document.getElementById('reportLoading').innerHTML =
+                    '<i class="fas fa-exclamation-triangle fa-2x text-danger mb-3"></i><p>Rapor yüklenemedi: ' + err.message + '</p>';
+            });
+
+        function renderGeneralStats(s) {
+            if (!s) return;
+            var cards = [
+                { label: 'Toplam Ticket', value: s.Total,          sub: 'Tüm zamanlar',     cls: 'stat-blue',   icon: 'fa-ticket-alt' },
+                { label: 'Açık Ticket',   value: s.ActiveCount,    sub: 'Şu an aktif',      cls: 'stat-orange', icon: 'fa-clock' },
+                { label: 'Çözüldü',       value: s.Resolved,       sub: 'Başarılı kapandı', cls: 'stat-green',  icon: 'fa-check-circle' },
+                { label: 'Çözülemedi',    value: s.Failed,         sub: 'Kapandı',          cls: 'stat-red',    icon: 'fa-times-circle' },
+                { label: 'Kritik Açık',   value: s.CriticalOpen,   sub: 'Acil müdahale',    cls: 'stat-purple', icon: 'fa-fire' },
+                { label: 'Atanmamış',     value: s.UnassignedOpen, sub: 'Bekliyor',         cls: 'stat-teal',   icon: 'fa-user-slash' },
+            ];
+            var html = '';
+            cards.forEach(function(c) {
+                html += '<div class="col-md-2 col-sm-4 col-6 mb-3">' +
+                    '<div class="stat-card ' + c.cls + ' shadow-sm">' +
+                    '<div class="stat-icon"><i class="fas ' + c.icon + '"></i></div>' +
+                    '<div class="stat-value">' + (c.value || 0) + '</div>' +
+                    '<div class="stat-label">' + c.label + '</div>' +
+                    '<div class="stat-sub">' + c.sub + '</div>' +
+                    '</div></div>';
+            });
+            document.getElementById('generalStatsRow').innerHTML = html;
+        }
+
+        function renderPeriodStats(s) {
+            if (!s) return;
+            var periods = [
+                { label: 'Bugün',    opened: s.TodayOpened,     resolved: s.TodayResolved },
+                { label: 'Bu Hafta', opened: s.ThisWeekOpened,  resolved: s.ThisWeekResolved },
+                { label: 'Bu Ay',    opened: s.ThisMonthOpened, resolved: s.ThisMonthResolved },
+                { label: 'Bu Yıl',   opened: s.ThisYearOpened,  resolved: s.ThisYearResolved },
+            ];
+            var html = '';
+            periods.forEach(function(p) {
+                var successRate = p.opened > 0 ? Math.round((p.resolved / p.opened) * 100) : 0;
+                html += '<div class="col-md-3 col-6 mb-3">' +
+                    '<div style="background:#f7f8fc;border-radius:12px;padding:16px 18px;">' +
+                    '<div style="font-weight:700;color:#0f1117;font-size:.9rem;margin-bottom:10px;">' + p.label + '</div>' +
+                    '<div class="d-flex justify-content-between mb-1">' +
+                    '<span style="font-size:.78rem;color:#4a4f5e;">Açılan</span>' +
+                    '<span style="font-weight:700;color:#2563eb;">' + (p.opened || 0) + '</span></div>' +
+                    '<div class="d-flex justify-content-between mb-2">' +
+                    '<span style="font-size:.78rem;color:#4a4f5e;">Çözülen</span>' +
+                    '<span style="font-weight:700;color:#16a34a;">' + (p.resolved || 0) + '</span></div>' +
+                    '<div class="mini-progress"><div class="mini-progress-bar" style="width:' + successRate + '%;background:#16a34a;"></div></div>' +
+                    '<div style="font-size:.72rem;color:#9ca3af;margin-top:4px;">Çözüm oranı: ' + successRate + '%</div>' +
+                    '</div></div>';
+            });
+            document.getElementById('periodStatsRow').innerHTML = html;
+        }
+
+        function renderAdminPerf(list) {
+            if (!list || !list.length) {
+                document.getElementById('adminPerfTable').innerHTML =
+                    '<tr><td colspan="10" class="text-center text-muted py-4">Veri bulunamadı</td></tr>';
+                return;
+            }
+            var html = '';
+            list.forEach(function(u) {
+                var roleCls  = u.IsAdmin == 2 ? 'rpt-badge-purple' : 'rpt-badge-info';
+                var roleText = u.IsAdmin == 2 ? '👑 SuperAdmin' : '🛡 Admin';
+                html += '<tr>' +
+                    '<td><div class="d-flex align-items-center">' +
+                    avatarHtml(u.UserPicture, u.UserName, apiBase) +
+                    '<strong>' + (u.UserName || '—') + '</strong></div></td>' +
+                    '<td><span class="rpt-badge ' + roleCls + '">' + roleText + '</span></td>' +
+                    '<td><strong style="color:#16a34a;">' + (u.TodayResolved || 0) + '</strong></td>' +
+                    '<td>' + (u.ThisWeekResolved || 0) + '</td>' +
+                    '<td>' + (u.ThisMonthResolved || 0) + '</td>' +
+                    '<td>' + (u.ThisYearResolved || 0) + '</td>' +
+                    '<td><strong>' + (u.TotalResolved || 0) + '</strong> / ' + (u.TotalAssigned || 0) + '</td>' +
+                    '<td>' + minuteDisplay(u.AvgWorkingMinute) + '</td>' +
+                    '<td>' + successBadge(u.SuccessRate) + '</td>' +
+                    '<td><span class="rpt-badge rpt-badge-warning">' + (u.ActiveCount || 0) + '</span></td>' +
+                    '</tr>';
+            });
+            document.getElementById('adminPerfTable').innerHTML = html;
+        }
+
+        function renderCustomerStats(list) {
+            if (!list || !list.length) return;
+            var html = '';
+            list.forEach(function(c) {
+                var remainColor = c.RemainingTickets < 10 ? '#dc2626' : c.RemainingTickets < 30 ? '#ea580c' : '#16a34a';
+                html += '<tr>' +
+                    '<td><strong>' + (c.CustomerName || '—') + '</strong>' +
+                    '<br><small class="text-muted">' + (c.CustomerCode || '') + '</small></td>' +
+                    '<td>' + importanceBadge(c.Importance) + '</td>' +
+                    '<td><strong>' + (c.TotalTickets || 0) + '</strong></td>' +
+                    '<td><span class="rpt-badge rpt-badge-warning">' + (c.ActiveTickets || 0) + '</span></td>' +
+                    '<td><span class="rpt-badge rpt-badge-success">' + (c.ResolvedTickets || 0) + '</span></td>' +
+                    '<td>' + (c.ThisMonthTickets || 0) + '</td>' +
+                    '<td><strong style="color:' + remainColor + ';">' + (c.RemainingTickets || 0) + '</strong></td>' +
+                    '<td>' + minuteDisplay(c.AvgWorkingMinute) + '</td>' +
+                    '<td>' + successBadge(c.SuccessRate) + '</td>' +
+                    '</tr>';
+            });
+            document.getElementById('customerStatsTable').innerHTML = html;
+        }
+
+        function renderTopUsers(list) {
+            if (!list || !list.length) return;
+            var html = '';
+            list.forEach(function(u, i) {
+                html += '<tr>' +
+                    '<td><strong style="color:#6366f1;">#' + (i + 1) + '</strong></td>' +
+                    '<td><div class="d-flex align-items-center">' +
+                    avatarHtml(u.UserPicture, u.UserName, apiBase) +
+                    (u.UserName || '—') + '</div></td>' +
+                    '<td><small>' + (u.CustomerName || '—') + '</small></td>' +
+                    '<td><strong>' + (u.TotalTickets || 0) + '</strong></td>' +
+                    '<td>' + (u.ThisMonthTickets || 0) + '</td>' +
+                    '<td>' + (u.TodayTickets || 0) + '</td>' +
+                    '</tr>';
+            });
+            document.getElementById('topUsersTable').innerHTML = html;
+        }
+
+        function renderDailyChart(data) {
+            if (!data || !data.length) return;
+            var labels = data.map(function(d) { return new Date(d.Date).toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit'}); });
+            var opened = data.map(function(d) { return d.Opened || 0; });
+            new Chart(document.getElementById('dailyChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{ label: 'Açılan', data: opened, backgroundColor: 'rgba(99,102,241,.7)', borderRadius: 6, borderSkipped: false }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderStatusChart(data) {
+            if (!data || !data.length) return;
+            var statusLabels = { 0:'Beklemede', 1:'İşlemde', 2:'Çözüldü', 3:'Çözülemedi', 4:'Müşteri Dönecek', 5:'Biz Döneceğiz', 6:'İptal' };
+            var colors = ['#f59e0b','#3b82f6','#10b981','#ef4444','#6b7280','#8b5cf6','#9ca3af'];
+            new Chart(document.getElementById('statusChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(function(d) { return statusLabels[d.Status] || d.Status; }),
+                    datasets: [{ data: data.map(function(d){ return d.Count; }), backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+                },
+                options: {
+                    responsive: true, cutout: '65%',
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+                }
+            });
+        }
+
+        function renderMonthlyChart(data) {
+            if (!data || !data.length) return;
+            var monthNames = ['','Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+            var labels   = data.map(function(d) { return monthNames[d.Month] + ' ' + d.Year; });
+            var opened   = data.map(function(d) { return d.Opened || 0; });
+            var resolved = data.map(function(d) { return d.Resolved || 0; });
+            new Chart(document.getElementById('monthlyChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Açılan',  data: opened,   borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.1)', fill: true, tension: .4, pointRadius: 4 },
+                        { label: 'Çözülen', data: resolved, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.1)', fill: true, tension: .4, pointRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderProductChart(data) {
+            if (!data || !data.length) return;
+            var colors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#14b8a6','#f97316'];
+            new Chart(document.getElementById('productChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.map(function(d) { return d.LogoProductName || 'Bilinmiyor'; }),
+                    datasets: [{ label: 'Toplam Ticket', data: data.map(function(d){ return d.TotalTickets || 0; }), backgroundColor: colors, borderRadius: 6 }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderPriorityChart(data) {
+            if (!data || !data.length) return;
+            var priorityLabels = { 1:'Düşük', 2:'Normal', 3:'Yüksek', 4:'Kritik' };
+            var colors = ['#9ca3af','#3b82f6','#f59e0b','#ef4444'];
+            new Chart(document.getElementById('priorityChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(function(d) { return priorityLabels[d.Priority] || d.Priority; }),
+                    datasets: [{ data: data.map(function(d){ return d.Total; }), backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+                },
+                options: {
+                    responsive: true, cutout: '65%',
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+                }
+            });
+        }
+
+        function renderYearlyChart(data) {
+            if (!data || !data.length) return;
+            var labels   = data.map(function(d) { return String(d.Year); });
+            var opened   = data.map(function(d) { return d.Opened || 0; });
+            var resolved = data.map(function(d) { return d.Resolved || 0; });
+            var failed   = data.map(function(d) { return d.Failed || 0; });
+            new Chart(document.getElementById('yearlyChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Açılan',     data: opened,   backgroundColor: 'rgba(99,102,241,.7)',  borderRadius: 6 },
+                        { label: 'Çözüldü',    data: resolved, backgroundColor: 'rgba(16,185,129,.7)',  borderRadius: 6 },
+                        { label: 'Çözülemedi', data: failed,   backgroundColor: 'rgba(239,68,68,.7)',   borderRadius: 6 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+    </script>
+}

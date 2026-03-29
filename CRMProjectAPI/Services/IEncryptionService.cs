@@ -10,79 +10,105 @@ namespace CRMProjectAPI.Services
         string HashPassword(string password);
         bool VerifyPassword(string password, string hashedPassword);
     }
-
     public class EncryptionService : IEncryptionService
     {
         private readonly byte[] _key;
-        private readonly byte[] _iv;
+        // PBKDF2 parametreleri
+        private const int SaltSize = 16;       // 128 bit
+        private const int HashSize = 32;       // 256 bit
+        private const int Iterations = 100_000;  // OWASP önerisi
         public EncryptionService(IConfiguration configuration)
         {
-            // appsettings.json'dan key al
             string secretKey = configuration["Encryption:SecretKey"]
-                ?? "CRMProject2025GizliAnahtar32Chr"; // 32 karakter = 256 bit
-            // Key 32 byte olmalı (AES-256)
-            _key = Encoding.UTF8.GetBytes(secretKey.PadRight(32).Substring(0, 32));
-            // IV 16 byte olmalı
-            _iv = Encoding.UTF8.GetBytes(secretKey.PadRight(16).Substring(0, 16));
+                ?? throw new InvalidOperationException("Encryption:SecretKey konfigürasyonda tanımlı değil!");
+            if (secretKey.Length < 32)
+                throw new InvalidOperationException("SecretKey en az 32 karakter olmalı!");
+           // Direkt byte çevirme yerine PBKDF2 ile güvenli key türet
+            byte[] salt = Encoding.UTF8.GetBytes("crm-encryption-salt");
+            _key = Rfc2898DeriveBytes.Pbkdf2(
+                Encoding.UTF8.GetBytes(secretKey),
+                salt,
+                100_000,
+                HashAlgorithmName.SHA256,
+                32
+            );
         }
+
+        #region AES-GCM Encryption (CBC yerine GCM — authenticated encryption)
+
         /// <summary>
-        /// Metni şifreler (AES-256)
+        /// Metni şifreler (AES-256-GCM + Rastgele Nonce)
         /// </summary>
         public string Encrypt(string plainText)
         {
-            if (string.IsNullOrEmpty(plainText))
-                return string.Empty;
-            using Aes aes = Aes.Create();
-            aes.Key = _key;
-            aes.IV = _iv;
-            var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
-            using MemoryStream ms = new MemoryStream();
-            using (CryptoStream cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
-            using (StreamWriter sw = new StreamWriter(cs))
-            {
-                sw.Write(plainText);
-            }
-            return Convert.ToBase64String(ms.ToArray());
+            if (string.IsNullOrEmpty(plainText)) return string.Empty;
+            byte[] nonce = RandomNumberGenerator.GetBytes(AesGcm.NonceByteSizes.MaxSize); // 12 byte
+            byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
+            byte[] cipher = new byte[plainBytes.Length];
+            byte[] tag = new byte[AesGcm.TagByteSizes.MaxSize]; // 16 byte
+            using AesGcm aes = new AesGcm(_key, AesGcm.TagByteSizes.MaxSize);
+            aes.Encrypt(nonce, plainBytes, cipher, tag);
+            // Format: nonce(12) + tag(16) + ciphertext
+            byte[] result = new byte[nonce.Length + tag.Length + cipher.Length];
+            Buffer.BlockCopy(nonce, 0, result, 0, nonce.Length);
+            Buffer.BlockCopy(tag, 0, result, nonce.Length, tag.Length);
+            Buffer.BlockCopy(cipher, 0, result, nonce.Length + tag.Length, cipher.Length);
+            return Convert.ToBase64String(result);
         }
         /// <summary>
         /// Şifreli metni çözer
         /// </summary>
         public string Decrypt(string cipherText)
         {
-            if (string.IsNullOrEmpty(cipherText))
-                return string.Empty;
+            if (string.IsNullOrEmpty(cipherText)) return string.Empty;
             try
             {
-                byte[] buffer = Convert.FromBase64String(cipherText);
-                using Aes aes = Aes.Create();
-                aes.Key = _key;
-                aes.IV = _iv;
-                var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-                using MemoryStream ms = new MemoryStream(buffer);
-                using CryptoStream cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
-                using StreamReader sr = new StreamReader(cs);
-                return sr.ReadToEnd();
+                byte[] fullBytes = Convert.FromBase64String(cipherText);
+                int nonceSize = AesGcm.NonceByteSizes.MaxSize; // 12
+                int tagSize = AesGcm.TagByteSizes.MaxSize;   // 16
+                if (fullBytes.Length < nonceSize + tagSize) return string.Empty;
+                byte[] nonce = fullBytes[..nonceSize];
+                byte[] tag = fullBytes[nonceSize..(nonceSize + tagSize)];
+                byte[] cipher = fullBytes[(nonceSize + tagSize)..];
+                byte[] plain = new byte[cipher.Length];
+                using AesGcm aes = new AesGcm(_key, tagSize);
+                aes.Decrypt(nonce, cipher, tag, plain);
+                return Encoding.UTF8.GetString(plain);
             }
-            catch
+            catch (CryptographicException)
             {
-                return string.Empty; // Çözülemezse boş dön
+                // Tampered data veya yanlış key
+                return string.Empty;
+            }
+            catch (FormatException)
+            {
+                // Geçersiz Base64
+                return string.Empty;
             }
         }
+        #endregion
+
+        #region Password Hashing (PBKDF2 — OWASP standartları)
+
         /// <summary>
-        /// Şifre hashler (tek yönlü - geri alınamaz)
+        /// Şifre hashler (PBKDF2-SHA256)
         /// </summary>
         public string HashPassword(string password)
         {
-            if (string.IsNullOrEmpty(password))
-                return string.Empty;
-            // Salt + SHA256
-            byte[] salt = GenerateSalt();
-            byte[] hash = ComputeHash(password, salt);
-            // Salt ve hash'i birleştir: salt:hash
-            return $"{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+           if (string.IsNullOrEmpty(password)) return string.Empty;
+            byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
+            byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
+                password: Encoding.UTF8.GetBytes(password),
+                salt: salt,
+                iterations: Iterations,
+                hashAlgorithm: HashAlgorithmName.SHA256,
+                outputLength: HashSize
+            );
+            // Format: iterations.salt.hash (base64)
+            return $"{Iterations}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
         }
         /// <summary>
-        /// Şifre doğrular
+        /// Şifre doğrular (timing-safe)
         /// </summary>
         public bool VerifyPassword(string password, string hashedPassword)
         {
@@ -90,34 +116,28 @@ namespace CRMProjectAPI.Services
                 return false;
             try
             {
-                string[] parts = hashedPassword.Split(':');
-                if (parts.Length != 2)
+                string[] parts = hashedPassword.Split('.');
+                if (parts.Length != 3) return false;
+                if (!int.TryParse(parts[0], out int iterations) || iterations <= 0)
                     return false;
-                byte[] salt = Convert.FromBase64String(parts[0]);
-                byte[] storedHash = Convert.FromBase64String(parts[1]);
-                byte[] computedHash = ComputeHash(password, salt);
-                return storedHash.SequenceEqual(computedHash);
+                byte[] salt = Convert.FromBase64String(parts[1]);
+                byte[] storedHash = Convert.FromBase64String(parts[2]);
+                byte[] computedHash = Rfc2898DeriveBytes.Pbkdf2(
+                    password: Encoding.UTF8.GetBytes(password),
+                    salt: salt,
+                    iterations: iterations,
+                    hashAlgorithm: HashAlgorithmName.SHA256,
+                    outputLength: storedHash.Length
+                );
+                // Timing-safe karşılaştırma
+                return CryptographicOperations.FixedTimeEquals(storedHash, computedHash);
             }
             catch
             {
                 return false;
             }
         }
-        private static byte[] GenerateSalt()
-        {
-            byte[] salt = new byte[16];
-            using RandomNumberGenerator rng = RandomNumberGenerator.Create();
-            rng.GetBytes(salt);
-            return salt;
-        }
-        private static byte[] ComputeHash(string password, byte[] salt)
-        {
-            using SHA256 sha256 = SHA256.Create();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
-            byte[] saltedPassword = new byte[passwordBytes.Length + salt.Length];
-            Buffer.BlockCopy(passwordBytes, 0, saltedPassword, 0, passwordBytes.Length);
-            Buffer.BlockCopy(salt, 0, saltedPassword, passwordBytes.Length, salt.Length);
-            return sha256.ComputeHash(saltedPassword);
-        }
+
+        #endregion
     }
 }

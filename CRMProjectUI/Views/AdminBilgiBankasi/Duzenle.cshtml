@@ -1,0 +1,923 @@
+﻿@{
+    ViewData["Title"] = "Makale Düzenle";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+    var products = ViewBag.Products as List<CRMProjectUI.Models.LogoProductDto> ?? new List<CRMProjectUI.Models.LogoProductDto>();
+    var categories = ViewBag.Categories as List<string> ?? new List<string>();
+    var existingFiles = ViewBag.ExistingFiles as List<CRMProjectUI.Models.KnowledgeBaseFileDto> ?? new List<CRMProjectUI.Models.KnowledgeBaseFileDto>();
+    int kbId = ViewBag.KbId is int k ? k : 0;
+    string? successMsg = TempData["Success"] as string;  // ← EKLE
+    string? errorMsg = TempData["Error"] as string;
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --ink: #0f1117;
+        --ink-soft: #4a4f5e;
+        --surface: #f7f8fc;
+        --white: #fff;
+        --accent: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --purple: #7c3aed;
+        --border: #e2e8f0;
+        --radius: 12px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.10);
+    }
+
+    body {
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .kb-form-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 18px;
+        overflow: hidden;
+    }
+
+    .kb-form-card-header {
+        padding: 13px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .kb-form-card-header h6 {
+            margin: 0;
+            font-weight: 700;
+            font-size: .9rem;
+            color: var(--ink);
+        }
+
+    .kb-form-card-body {
+        padding: 20px;
+    }
+
+    .kb-label {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .kb-required {
+        color: var(--danger);
+        margin-left: 2px;
+    }
+
+    .kb-input, .kb-textarea, .kb-select {
+        width: 100%;
+        padding: 9px 13px;
+        border: 1.5px solid var(--border);
+        border-radius: 9px;
+        font-size: .85rem;
+        color: var(--ink);
+        background: var(--white);
+        outline: none;
+        transition: border-color .2s;
+        font-family: 'DM Sans', sans-serif;
+    }
+
+        .kb-input:focus, .kb-textarea:focus, .kb-select:focus {
+            border-color: var(--accent);
+        }
+
+    .kb-textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .kb-code-block {
+        font-family: 'Courier New', monospace;
+        font-size: .82rem;
+        min-height: 180px;
+        background: #1e1e2e;
+        color: #cdd6f4;
+        border-color: #313244;
+    }
+
+        .kb-code-block:focus {
+            border-color: var(--accent);
+        }
+
+    .kb-product-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .kb-product-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all .15s;
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        background: var(--surface);
+        user-select: none;
+    }
+
+        .kb-product-item:hover {
+            border-color: var(--purple);
+            color: var(--purple);
+            background: #f5f3ff;
+        }
+
+        .kb-product-item.selected {
+            border-color: var(--purple);
+            color: var(--purple);
+            background: #f5f3ff;
+        }
+
+            .kb-product-item.selected::before {
+                content: '✓ ';
+            }
+
+    .kb-file-zone {
+        border: 2px dashed var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all .2s;
+        background: var(--surface);
+    }
+
+        .kb-file-zone:hover, .kb-file-zone.dragover {
+            border-color: var(--accent);
+            background: #eff6ff;
+        }
+
+        .kb-file-zone i {
+            font-size: 1.5rem;
+            color: var(--ink-soft);
+            opacity: .4;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+    .kb-file-zone-text {
+        font-size: .82rem;
+        color: var(--ink-soft);
+    }
+
+    .kb-file-zone-sub {
+        font-size: .72rem;
+        color: var(--ink-soft);
+        opacity: .7;
+        margin-top: 3px;
+    }
+
+    .kb-file-list {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .kb-file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: .8rem;
+    }
+
+        .kb-file-item.existing {
+            border-color: #bbf7d0;
+            background: #f0fdf4;
+        }
+
+    .kb-file-item-name {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--ink);
+        font-weight: 500;
+    }
+
+    .kb-file-item-remove {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #fef2f2;
+        color: var(--danger);
+        border: none;
+        cursor: pointer;
+        font-size: .7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .kb-toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+    }
+
+    .kb-toggle-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .kb-toggle-item label {
+            font-size: .85rem;
+            color: var(--ink);
+            font-weight: 500;
+            cursor: pointer;
+            margin: 0;
+        }
+
+    .kb-switch {
+        position: relative;
+        display: inline-block;
+        width: 42px;
+        height: 24px;
+    }
+
+        .kb-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+    .kb-switch-slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: #cbd5e1;
+        border-radius: 24px;
+        transition: .3s;
+    }
+
+        .kb-switch-slider::before {
+            content: '';
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: .3s;
+        }
+
+    .kb-switch input:checked + .kb-switch-slider {
+        background: var(--success);
+    }
+
+        .kb-switch input:checked + .kb-switch-slider::before {
+            transform: translateX(18px);
+        }
+
+    .kb-save-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 24px;
+        border-radius: 9px;
+        background: var(--accent);
+        color: #fff;
+        font-size: .88rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 3px 10px rgba(37,99,235,.3);
+        transition: all .15s;
+    }
+
+        .kb-save-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+    .kb-cancel-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 20px;
+        border-radius: 9px;
+        border: 1.5px solid var(--border);
+        background: var(--white);
+        color: var(--ink-soft);
+        font-size: .88rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .15s;
+    }
+
+        .kb-cancel-btn:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+            text-decoration: none;
+        }
+
+    .kb-form-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 16px 20px;
+        border-top: 1px solid var(--border);
+        background: var(--surface);
+    }
+</style>
+
+<!-- BAŞLIK -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h5 style="font-family:'Syne',sans-serif; font-weight:700; margin:0;">
+            <i class="fas fa-edit mr-2 text-primary"></i> Makale Düzenle
+        </h5>
+        <small style="color:var(--ink-soft);">
+            <a asp-action="Liste" asp-controller="AdminBilgiBankasi" style="color:var(--accent);">Bilgi Bankası</a>
+            <i class="fas fa-chevron-right mx-1" style="font-size:.6rem;"></i> Düzenle
+        </small>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(errorMsg))
+{
+    <div class="alert alert-danger" style="border-radius:var(--radius);">
+        <i class="fas fa-exclamation-triangle mr-2"></i>@errorMsg
+    </div>
+}
+
+<form method="post" asp-action="Duzenle" asp-controller="AdminBilgiBankasi"
+      asp-route-id="@kbId" enctype="multipart/form-data" id="kbForm">
+    @Html.AntiForgeryToken()
+
+    <div class="row">
+        <!-- SOL KOLON -->
+        <div class="col-md-8">
+
+            <!-- TEMEL BİLGİLER -->
+            <div class="kb-form-card">
+                <div class="kb-form-card-header">
+                    <i class="fas fa-info-circle" style="color:var(--accent);"></i>
+                    <h6>Temel Bilgiler</h6>
+                </div>
+                <div class="kb-form-card-body">
+                    <div class="mb-4">
+                        <label class="kb-label">Başlık <span class="kb-required">*</span></label>
+                        <input type="text" name="Title" value="@Model?.Title" required
+                               class="kb-input" placeholder="Makale başlığı..." maxlength="300" />
+                    </div>
+                    <div class="mb-0">
+                        <label class="kb-label">Açıklama <span class="kb-required">*</span></label>
+                        <textarea name="Description" class="kb-textarea" required
+                                  placeholder="Makale içeriği..." rows="6">@Model?.Description</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KOD BLOĞU -->
+            <div class="kb-form-card">
+                <div class="kb-form-card-header">
+                    <i class="fas fa-code" style="color:var(--success);"></i>
+                    <h6>Kod Bloğu <small style="font-weight:400; color:var(--ink-soft);">(isteğe bağlı)</small></h6>
+                </div>
+                <div class="kb-form-card-body">
+                    <div class="mb-3">
+                        <label class="kb-label">Kod Dili</label>
+                        <select name="CodeLanguage" id="codeLanguage" class="kb-select" onchange="onCodeLangChange()">
+                            <option value="">Seçiniz</option>
+                            <optgroup label="── SQL & Veritabanı ──">
+                                <option value="SQL" selected="@(Model?.CodeLanguage == "SQL")">SQL</option>
+                                <option value="T-SQL" selected="@(Model?.CodeLanguage == "T-SQL")">T-SQL</option>
+                                <option value="PL/SQL" selected="@(Model?.CodeLanguage == "PL/SQL")">PL/SQL</option>
+                                <option value="MongoDB" selected="@(Model?.CodeLanguage == "MongoDB")">MongoDB</option>
+                            </optgroup>
+                            <optgroup label="── Microsoft & Office ──">
+                                <option value="C#" selected="@(Model?.CodeLanguage == "C#")">C#</option>
+                                <option value="VB.NET" selected="@(Model?.CodeLanguage == "VB.NET")">VB.NET</option>
+                                <option value="VBA" selected="@(Model?.CodeLanguage == "VBA")">VBA</option>
+                                <option value="PowerShell" selected="@(Model?.CodeLanguage == "PowerShell")">PowerShell</option>
+                                <option value="XAML" selected="@(Model?.CodeLanguage == "XAML")">XAML</option>
+                            </optgroup>
+                            <optgroup label="── Web ──">
+                                <option value="JavaScript" selected="@(Model?.CodeLanguage == "JavaScript")">JavaScript</option>
+                                <option value="TypeScript" selected="@(Model?.CodeLanguage == "TypeScript")">TypeScript</option>
+                                <option value="HTML" selected="@(Model?.CodeLanguage == "HTML")">HTML</option>
+                                <option value="CSS" selected="@(Model?.CodeLanguage == "CSS")">CSS</option>
+                                <option value="PHP" selected="@(Model?.CodeLanguage == "PHP")">PHP</option>
+                                <option value="XML" selected="@(Model?.CodeLanguage == "XML")">XML</option>
+                                <option value="XSLT" selected="@(Model?.CodeLanguage == "XSLT")">XSLT</option>
+                                <option value="JSON" selected="@(Model?.CodeLanguage == "JSON")">JSON</option>
+                            </optgroup>
+                            <optgroup label="── Diğer ──">
+                                <option value="Python" selected="@(Model?.CodeLanguage == "Python")">Python</option>
+                                <option value="Java" selected="@(Model?.CodeLanguage == "Java")">Java</option>
+                                <option value="Bash" selected="@(Model?.CodeLanguage == "Bash")">Bash</option>
+                                <option value="YAML" selected="@(Model?.CodeLanguage == "YAML")">YAML</option>
+                                <option value="Markdown" selected="@(Model?.CodeLanguage == "Markdown")">Markdown</option>
+                                <option value="Diğer" selected="@(Model?.CodeLanguage == "Diğer")">Diğer</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div id="codeBlockGroup" style="display:@(!string.IsNullOrEmpty(Model?.CodeBlock) ? "block" : "none");">
+                        <label class="kb-label">Kod</label>
+                        <textarea name="CodeBlock" id="codeBlock"
+                                  class="kb-textarea kb-code-block"
+                                  placeholder="Kodunuzu buraya yazın..."
+                                  rows="10">@Model?.CodeBlock</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DOSYALAR -->
+            <div class="kb-form-card">
+                <div class="kb-form-card-header">
+                    <i class="fas fa-paperclip" style="color:var(--warning);"></i>
+                    <h6>Dosyalar <small style="font-weight:400; color:var(--ink-soft);">(yeni dosya ekleyebilirsiniz)</small></h6>
+                </div>
+                <div class="kb-form-card-body">
+                    <!-- Mevcut Dosyalar -->
+                    @if (existingFiles.Any())
+                    {
+                        <div style="margin-bottom:14px;">
+                            <div style="font-size:.78rem; font-weight:600; color:var(--ink-soft); margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em;">
+                                Mevcut Dosyalar
+                            </div>
+                       <div class="kb-file-list">
+    @foreach (var f in existingFiles)
+    {
+        bool isImage = f.FileType == "Image";
+        bool isPdf   = f.FileType == "PDF";
+        string fileUrl = $"/AdminBilgiBankasi/DosyaIndir/{f.ID}";
+
+        <div class="kb-file-item existing">
+            <span class="kb-file-item-name">
+                <i class="fas @f.FileIconClass.Split(' ')[0]" style="color:@f.FileIconColor;"></i>
+                @f.OriginalFileName
+                <span style="color:var(--ink-soft); font-size:.7rem;">(@f.FileSizeDisplay)</span>
+            </span>
+            <div style="display:flex; gap:4px; align-items:center;">
+                @if (isImage || isPdf)
+                {
+                    <button type="button" class="kb-file-item-remove"
+                            style="background:#eff6ff; color:var(--accent);"
+                            title="Önizle"
+                            onclick="previewFile('@fileUrl', '@f.FileType', '@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(f.OriginalFileName)')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                }
+                <a href="@fileUrl" class="kb-file-item-remove"
+                   style="background:#f0fdf4; color:var(--success); text-decoration:none; display:flex; align-items:center; justify-content:center;"
+                   title="İndir">
+                    <i class="fas fa-download"></i>
+                </a>
+                                            <button type="button" class="kb-file-item-remove"
+                                                    title="Sil"
+                                                    data-file-id="@f.ID"
+                                                    onclick="confirmFileDelete(@f.ID, '@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(f.OriginalFileName)', @kbId)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+            </div>
+        </div>
+    }
+</div>
+                        </div>
+                    }
+
+                    <!-- Yeni Dosya Yükleme -->
+                    <div style="font-size:.78rem; font-weight:600; color:var(--ink-soft); margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em;">
+                        Yeni Dosya Ekle
+                    </div>
+                    <div class="kb-file-zone" id="fileZone" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <div class="kb-file-zone-text">Dosya yüklemek için tıklayın veya sürükleyin</div>
+                        <div class="kb-file-zone-sub">PDF, Excel, Word, Resim, ZIP — Maks. 50MB</div>
+                    </div>
+                    <input type="file" id="fileInput" name="files" multiple style="display:none;"
+                           accept=".pdf,.xls,.xlsx,.doc,.docx,.jpg,.jpeg,.png,.txt,.zip"
+                           onchange="onFilesSelected(this)" />
+                    <div class="kb-file-list" id="newFileList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SAĞ KOLON -->
+        <div class="col-md-4">
+
+            <!-- LOGO ÜRÜNLERİ -->
+            <div class="kb-form-card">
+                <div class="kb-form-card-header">
+                    <i class="fas fa-cube" style="color:var(--purple);"></i>
+                    <h6>Logo Ürünleri <span class="kb-required">*</span></h6>
+                </div>
+                <div class="kb-form-card-body">
+                    <div style="font-size:.77rem; color:var(--ink-soft); margin-bottom:10px;">
+                        En az bir ürün seçilmelidir.
+                    </div>
+                    <div class="kb-product-grid" id="productGrid">
+                        @foreach (var p in products)
+                        {
+                            bool selected = Model?.LogoProductIDs?.Contains((short)p.ID) == true;
+                            <div class="kb-product-item @(selected ? "selected" : "")"
+                                 onclick="toggleProduct(this, @p.ID)" data-id="@p.ID">
+                                <i class="fas fa-cube" style="font-size:.7rem;"></i>
+                                @p.LogoProductName
+                            </div>
+                        }
+                    </div>
+                    <div id="productInputs"></div>
+                    <div id="productError" style="display:none; color:var(--danger); font-size:.78rem; margin-top:8px;">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> En az bir ürün seçin
+                    </div>
+                </div>
+            </div>
+
+            <!-- KATEGORİ -->
+            <div class="kb-form-card">
+                <div class="kb-form-card-header">
+                    <i class="fas fa-tag" style="color:var(--warning);"></i>
+                    <h6>Kategori <span class="kb-required">*</span></h6>
+                </div>
+                <div class="kb-form-card-body">
+                    <select name="Category" class="kb-select" required>
+                        <option value="">Kategori seçiniz...</option>
+                        @foreach (var c in categories)
+                        {
+                            <option value="@c" selected="@(Model?.Category == c)">@c</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- GÖRÜNÜRLÜK -->
+            <!-- GÖRÜNÜRLÜK -->
+            <div class="kb-form-card">
+                <div class="kb-form-card-header">
+                    <i class="fas fa-eye" style="color:var(--accent);"></i>
+                    <h6>Görünürlük</h6>
+                </div>
+                <div class="kb-form-card-body">
+                    <div class="kb-toggle-row">
+                        <div class="kb-toggle-item">
+                            <label class="kb-switch">
+                                <input type="checkbox" name="IsActive" value="true"
+                                       id="isActive" @(Model?.IsActive != false ? "checked" : "") />
+                                <span class="kb-switch-slider"></span>
+                            </label>
+                            <input type="hidden" name="IsActive" value="false" />
+                            <label for="isActive">
+                                <span style="font-weight:600;">Aktif</span>
+                                <div style="font-size:.72rem; color:var(--ink-soft);">Sistemde görünsün</div>
+                            </label>
+                        </div>
+                        <div class="kb-toggle-item">
+                            <label class="kb-switch">
+                                <input type="checkbox" name="IsPublic" value="true"
+                                       id="isPublic" @(Model?.IsPublic == true ? "checked" : "") />
+                                <span class="kb-switch-slider"></span>
+                            </label>
+                            <input type="hidden" name="IsPublic" value="false" />
+                            <label for="isPublic">
+                                <span style="font-weight:600;">Müşteri Görebilir</span>
+                                <div style="font-size:.72rem; color:var(--ink-soft);">Kullanıcılara açık</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="kb-form-card">
+        <div class="kb-form-footer">
+            <a asp-action="Liste" asp-controller="AdminBilgiBankasi"
+               asp-route-id="" class="kb-cancel-btn">
+                <i class="fas fa-times"></i> İptal
+            </a>
+            <button type="submit" class="kb-save-btn" onclick="return validateForm()">
+                <i class="fas fa-save"></i> Güncelle
+            </button>
+        </div>
+    </div>
+</form>
+<!-- ÖNİZLEME MODAL -->
+<div id="previewModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999; background:rgba(0,0,0,.75);">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:16px; width:90vw; max-width:900px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.4);">
+        <div style="padding:12px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface);">
+            <span id="previewTitle" style="font-weight:600; font-size:.88rem; color:var(--ink);"></span>
+            <button onclick="closePreview()" style="border:none; background:none; font-size:1.2rem; color:var(--ink-soft); cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div style="flex:1; overflow:auto; display:flex; align-items:center; justify-content:center; background:#1a1a1a; min-height:400px;">
+            <img id="previewImg" src="" style="display:none; max-width:100%; max-height:80vh; object-fit:contain;" />
+            <iframe id="previewPdf" src="" style="display:none; width:100%; height:80vh; border:none;"></iframe>
+            <div id="previewLoading" style="color:#fff; font-size:.88rem; display:none;">
+                <i class="fas fa-spinner fa-spin mr-2"></i> Yükleniyor...
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Dosya Sil Form -->
+<form id="fileDeleteForm" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="kbId" id="fileDeleteKbId" value="@kbId" />
+</form>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/vbscript/vbscript.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/powershell/powershell.js"></script>
+    <script>
+        var __success = '@Html.Raw(successMsg?.Replace("'", "\\'") ?? "")';
+        var __error   = '@Html.Raw(errorMsg?.Replace("'", "\\'") ?? "")';
+        if (__success) Swal.fire({ icon:'success', title:'Başarılı!', text:__success, timer:2500, showConfirmButton:false });
+        if (__error)   Swal.fire({ icon:'error',   title:'Hata!',     text:__error });
+        var editor = null;
+        var selectedProducts = [@Html.Raw(string.Join(",", Model?.LogoProductIDs ?? new List<short>()))];
+        var selectedFiles    = [];
+
+        document.addEventListener('DOMContentLoaded', function () {
+            renderProductInputs();
+
+            // Mevcut kod bloğu varsa CodeMirror'ı başlat
+            var lang = document.getElementById('codeLanguage').value;
+            if (lang) {
+                onCodeLangChange();
+            }
+
+            var zone = document.getElementById('fileZone');
+            zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('dragover'); });
+            zone.addEventListener('dragleave', function()  { zone.classList.remove('dragover'); });
+            zone.addEventListener('drop', function(e) {
+                e.preventDefault(); zone.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+        });
+
+        function toggleProduct(el, id) {
+            var idx = selectedProducts.indexOf(id);
+            if (idx === -1) { selectedProducts.push(id); el.classList.add('selected'); }
+            else { selectedProducts.splice(idx, 1); el.classList.remove('selected'); }
+            renderProductInputs();
+            document.getElementById('productError').style.display = 'none';
+        }
+
+        function renderProductInputs() {
+            var container = document.getElementById('productInputs');
+            container.innerHTML = '';
+            selectedProducts.forEach(function(id) {
+                var inp = document.createElement('input');
+                inp.type = 'hidden'; inp.name = 'LogoProductIDs'; inp.value = id;
+                container.appendChild(inp);
+            });
+        }
+
+        function onCodeLangChange() {
+            var lang  = document.getElementById('codeLanguage').value;
+            var group = document.getElementById('codeBlockGroup');
+            group.style.display = lang ? 'block' : 'none';
+
+            if (!lang) {
+                if (editor) { editor.setValue(''); }
+                return;
+            }
+
+            var modeMap = {
+                'SQL':        'text/x-sql',
+                'T-SQL':      'text/x-sql',
+                'PL/SQL':     'text/x-sql',
+                'C#':         'text/x-csharp',
+                'VB.NET':     'text/x-vb',
+                'VBA':        'text/vbscript',
+                'Java':       'text/x-java',
+                'JavaScript': 'javascript',
+                'TypeScript': 'text/typescript',
+                'HTML':       'text/html',
+                'XML':        'application/xml',
+                'XSLT':       'application/xml',
+                'CSS':        'text/css',
+                'PHP':        'application/x-httpd-php',
+                'Python':     'text/x-python',
+                'Bash':       'text/x-sh',
+                'PowerShell': 'application/x-powershell',
+                'YAML':       'text/x-yaml',
+                'JSON':       'application/json',
+            };
+
+            var mode = modeMap[lang] || 'text/plain';
+
+            if (!editor) {
+                editor = CodeMirror.fromTextArea(document.getElementById('codeBlock'), {
+                    mode:           mode,
+                    theme:          'dracula',
+                    lineNumbers:    true,
+                    indentWithTabs: true,
+                    tabSize:        4,
+                    lineWrapping:   false,
+                    autofocus:      false,
+                    extraKeys: {
+                        'Tab': function(cm) { cm.replaceSelection('    '); }
+                    }
+                });
+                editor.setSize('100%', '350px');
+            } else {
+                editor.setOption('mode', mode);
+                editor.refresh();
+            }
+        }
+
+        function onFilesSelected(input) { handleFiles(input.files); }
+
+        function handleFiles(fileList) {
+            Array.from(fileList).forEach(function(file) {
+                if (!selectedFiles.find(function(f){ return f.name === file.name; }))
+                    selectedFiles.push(file);
+            });
+            renderNewFileList();
+            syncFileInput();
+        }
+
+        function removeNewFile(name) {
+            selectedFiles = selectedFiles.filter(function(f){ return f.name !== name; });
+            renderNewFileList();
+            syncFileInput();
+        }
+
+             function renderNewFileList() {
+            var list = document.getElementById('newFileList');
+            list.innerHTML = '';
+            selectedFiles.forEach(function(file) {
+                var ext  = file.name.split('.').pop().toLowerCase();
+                var icon = ext === 'pdf' ? 'fa-file-pdf text-danger'
+                         : ext === 'xlsx' || ext === 'xls' ? 'fa-file-excel text-success'
+                         : ext === 'docx' || ext === 'doc' ? 'fa-file-word text-primary'
+                         : ext === 'jpg' || ext === 'jpeg' || ext === 'png' ? 'fa-file-image text-warning'
+                         : 'fa-file text-muted';
+                var size = file.size < 1024 ? file.size + ' B'
+                         : file.size < 1048576 ? (file.size/1024).toFixed(1) + ' KB'
+                         : (file.size/1048576).toFixed(1) + ' MB';
+                var isPreviewable = ['jpg','jpeg','png','pdf'].indexOf(ext) !== -1;
+                var previewBtn = isPreviewable
+                    ? '<button type="button" class="kb-file-item-remove" style="background:#eff6ff;color:var(--accent);" title="Önizle" onclick="previewLocalFile(\'' + file.name.replace(/'/g, "\\'") + '\')"><i class="fas fa-eye"></i></button>'
+                    : '';
+                var div = document.createElement('div');
+                div.className = 'kb-file-item';
+                div.innerHTML = '<span class="kb-file-item-name"><i class="fas ' + icon + '"></i>' + file.name
+                    + ' <span style="color:var(--ink-soft);font-size:.7rem;">(' + size + ')</span></span>'
+                    + '<div style="display:flex;gap:4px;">'
+                    + previewBtn
+                    + '<button type="button" class="kb-file-item-remove" onclick="removeNewFile(\'' + file.name.replace(/'/g, "\\'") + '\')"><i class="fas fa-times"></i></button>'
+                    + '</div>';
+                list.appendChild(div);
+            });
+        }
+
+        function syncFileInput() {
+            var input = document.getElementById('fileInput');
+            var dt    = new DataTransfer();
+            selectedFiles.forEach(function(f){ dt.items.add(f); });
+            input.files = dt.files;
+        }
+
+        function validateForm() {
+            if (editor) { editor.save(); }
+            if (selectedProducts.length === 0) {
+                document.getElementById('productError').style.display = 'block';
+                document.getElementById('productGrid').scrollIntoView({ behavior:'smooth', block:'center' });
+                return false;
+            }
+            return true;
+        }
+
+           function confirmFileDelete(fileId, fileName, kbId) {
+            Swal.fire({
+                title: 'Dosya Silinsin mi?',
+                html: '<b>' + fileName + '</b>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Evet, Sil',
+                cancelButtonText: 'İptal'
+            }).then(function(result) {
+                if (!result.isConfirmed) return;
+
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                fetch('/AdminBilgiBankasi/DosyaSil/' + fileId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: 'kbId=' + kbId + '&__RequestVerificationToken=' + encodeURIComponent(token)
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        // DOM'dan dosyayı kaldır
+                        var btn = document.querySelector('[data-file-id="' + fileId + '"]');
+                        if (btn) btn.closest('.kb-file-item').remove();
+                        Swal.fire({ icon:'success', title:'Başarılı!', text:data.message, timer:2000, showConfirmButton:false });
+                    } else {
+                        Swal.fire({ icon:'error', title:'Hata!', text:data.message });
+                    }
+                })
+                .catch(function() {
+                    Swal.fire({ icon:'error', title:'Hata!', text:'İşlem başarısız' });
+                });
+            });
+        }
+                function previewFile(url, fileType, fileName) {
+            document.getElementById('previewTitle').textContent = fileName;
+            document.getElementById('previewModal').style.display = 'block';
+            document.getElementById('previewImg').style.display     = 'none';
+            document.getElementById('previewPdf').style.display     = 'none';
+            document.getElementById('previewLoading').style.display = 'block';
+
+            fetch(url)
+                .then(function(r) { return r.blob(); })
+                .then(function(blob) {
+                    document.getElementById('previewLoading').style.display = 'none';
+                    var blobUrl = URL.createObjectURL(blob);
+                    if (fileType === 'Image') {
+                        var img = document.getElementById('previewImg');
+                        img.src = blobUrl;
+                        img.style.display = 'block';
+                    } else if (fileType === 'PDF') {
+                        var pdf = document.getElementById('previewPdf');
+                        pdf.src = blobUrl;
+                        pdf.style.display = 'block';
+                    }
+                })
+                .catch(function() {
+                    document.getElementById('previewLoading').style.display = 'none';
+                    closePreview();
+                    Swal.fire({ icon:'error', title:'Hata', text:'Dosya yüklenemedi' });
+                });
+        }
+                function previewLocalFile(name) {
+            var file = selectedFiles.find(function(f){ return f.name === name; });
+            if (!file) return;
+            var ext = file.name.split('.').pop().toLowerCase();
+            var url = URL.createObjectURL(file);
+
+            document.getElementById('previewTitle').textContent = file.name;
+            document.getElementById('previewModal').style.display = 'block';
+            document.getElementById('previewImg').style.display     = 'none';
+            document.getElementById('previewPdf').style.display     = 'none';
+            document.getElementById('previewLoading').style.display = 'none';
+
+            if (['jpg','jpeg','png'].indexOf(ext) !== -1) {
+                var img = document.getElementById('previewImg');
+                img.src = url;
+                img.style.display = 'block';
+            } else if (ext === 'pdf') {
+                var pdf = document.getElementById('previewPdf');
+                pdf.src = url;
+                pdf.style.display = 'block';
+            }
+        }
+        function closePreview() {
+            document.getElementById('previewModal').style.display = 'none';
+            document.getElementById('previewImg').src = '';
+            document.getElementById('previewPdf').src = '';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closePreview();
+        });
+    </script>
+}

@@ -1,0 +1,262 @@
+﻿@{
+    ViewData["Title"] = "Sayfa Bulunamadı";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 - Sayfa Bulunamadı</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', system-ui, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .yt-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+            .yt-bg iframe {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 200vw;
+                height: 200vh;
+                min-width: 200vw;
+                min-height: 200vh;
+                pointer-events: none;
+            }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.65);
+            z-index: 1;
+            cursor: pointer;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 24px;
+        }
+
+        .error-number {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(8rem, 20vw, 14rem);
+            font-weight: 800;
+            line-height: 1;
+            background: linear-gradient(135deg, #ff6b00 0%, #ff9500 50%, #ffb347 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 40px rgba(255,107,0,.4));
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% {
+                filter: drop-shadow(0 0 40px rgba(255,107,0,.3));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 70px rgba(255,107,0,.6));
+            }
+        }
+
+        h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(1.4rem, 4vw, 2rem);
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 14px;
+            letter-spacing: -.5px;
+            text-shadow: 0 2px 20px rgba(0,0,0,.8);
+        }
+
+        p {
+            font-size: .95rem;
+            color: rgba(255,255,255,.7);
+            line-height: 1.7;
+            max-width: 380px;
+            margin: 0 auto 36px;
+            text-shadow: 0 2px 10px rgba(0,0,0,.8);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 28px;
+            border-radius: 14px;
+            font-size: .9rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all .25s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b00, #ff9500);
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(255,107,0,.4);
+        }
+
+            .btn-primary:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 14px 32px rgba(255,107,0,.6);
+                color: #fff;
+            }
+
+        .btn-secondary {
+            background: rgba(255,255,255,.1);
+            color: rgba(255,255,255,.9);
+            border: 1px solid rgba(255,255,255,.2);
+            backdrop-filter: blur(10px);
+        }
+
+            .btn-secondary:hover {
+                background: rgba(255,255,255,.18);
+                color: #fff;
+                transform: translateY(-3px);
+            }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 320px;
+            margin: 0 auto 28px;
+            color: rgba(255,255,255,.3);
+            font-size: .75rem;
+        }
+
+            .divider::before, .divider::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: rgba(255,255,255,.15);
+            }
+
+        .mute-hint {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 3;
+            background: rgba(0,0,0,.6);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: .8rem;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,.15);
+            transition: all .2s;
+            animation: fadeInUp .5s ease 1s both;
+        }
+
+            .mute-hint:hover {
+                background: rgba(255,107,0,.4);
+                border-color: rgba(255,107,0,.5);
+            }
+
+        @@keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- YouTube Arka Plan -->
+    <div class="yt-bg">
+        <iframe id="ytFrame"
+                src="https://www.youtube.com/embed/7ur8nobEW_E?autoplay=1&mute=1&loop=1&playlist=7ur8nobEW_E&controls=0&showinfo=0&rel=0&iv_load_policy=3&modestbranding=1&playsinline=1"
+                frameborder="0"
+                allow="autoplay; encrypted-media"
+                allowfullscreen>
+        </iframe>
+    </div>
+
+    <!-- Karartma -->
+    <div class="overlay" onclick="unmute()"></div>
+
+    <!-- Ses hint -->
+    <div class="mute-hint" id="muteHint" onclick="unmute()">
+        <i class="fas fa-volume-mute mr-1"></i> Ses için tıklayın
+    </div>
+
+    <!-- İçerik -->
+    <div class="container">
+        <div class="error-number">404</div>
+
+        <h1>Kaybolup Gittiniz!</h1>
+
+        <p>
+            Aradığınız sayfa bu evrende mevcut değil.<br />
+            Belki silinmiş, taşınmış ya da hiç var olmamış olabilir.
+        </p>
+
+        <div class="divider">ne yapmak istersiniz?</div>
+
+        <div class="btn-group">
+            <a href="/" class="btn btn-primary">
+                <i class="fas fa-home"></i> Ana Sayfaya Dön
+            </a>
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Geri Git
+            </a>
+        </div>
+    </div>
+
+    <script>
+        var muted = true;
+
+        function unmute() {
+            if (!muted) return;
+            muted = false;
+            var iframe = document.getElementById('ytFrame');
+            iframe.src = iframe.src.replace('mute=1', 'mute=0');
+            var hint = document.getElementById('muteHint');
+            hint.innerHTML = '<i class="fas fa-volume-up mr-1"></i> Ses açık';
+            setTimeout(function() { hint.style.display = 'none'; }, 2000);
+        }
+    </script>
+</body>
+</html>

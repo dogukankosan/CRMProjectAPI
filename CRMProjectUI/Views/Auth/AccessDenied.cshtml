@@ -1,0 +1,108 @@
+﻿@{
+    ViewData["Title"] = "Erişim Engellendi";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Erişim Engellendi</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/adminThema/assets/img/favicon.ico"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0d0d14, #1a1a2a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .card {
+            background: #13131f;
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 24px;
+            padding: 50px 40px;
+            text-align: center;
+            max-width: 440px;
+            width: 90%;
+            box-shadow: 0 40px 100px rgba(0,0,0,.5);
+        }
+
+        .icon-wrap {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(239,68,68,.15);
+            border: 2px solid rgba(239,68,68,.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+
+            .icon-wrap i {
+                font-size: 2rem;
+                color: #ef4444;
+            }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        p {
+            font-size: .9rem;
+            color: rgba(255,255,255,.6);
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #ff6b00, #ff9500);
+            color: #fff;
+            font-weight: 600;
+            font-size: .9rem;
+            text-decoration: none;
+            box-shadow: 0 8px 20px rgba(255,107,0,.3);
+            transition: all .2s;
+        }
+
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 28px rgba(255,107,0,.45);
+                color: #fff;
+            }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon-wrap">
+            <i class="fas fa-ban"></i>
+        </div>
+        <h1>Erişim Engellendi</h1>
+        <p>
+           Bu sayfayı görme yetkiniz yok veya Hesabınız veya firmanız şu anda aktif değil.<br />
+            Daha fazla bilgi için sistem yöneticinizle iletişime geçin.
+        </p>
+        <a href="/Auth/Login" class="btn">
+            <i class="fas fa-arrow-left"></i> Giriş Sayfasına Dön
+        </a>
+    </div>
+</body>
+</html>

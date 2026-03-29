@@ -1,0 +1,932 @@
+﻿@model CRMProjectUI.Models.CompanyDto
+@{
+    ViewData["Title"] = "Şirket Bilgileri Güncelleme";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+}
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
+}
+<style>
+    .img-hover-zoom {
+        transition: transform 0.3s ease;
+        cursor: pointer;
+    }
+
+        .img-hover-zoom:hover {
+            transform: scale(2.5);
+            z-index: 1000;
+            position: relative;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+    .char-counter {
+        font-size: 0.8rem;
+    }
+
+        .char-counter.warning {
+            color: #ffc107;
+        }
+
+        .char-counter.danger {
+            color: #dc3545;
+        }
+
+    .required-star {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .phone-input-group {
+        display: flex;
+        gap: 10px;
+    }
+
+        .phone-input-group select {
+            width: 180px;
+            flex-shrink: 0;
+        }
+
+        .phone-input-group input {
+            flex: 1;
+        }
+</style>
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="text-center text-white">
+        <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+            <span class="sr-only">Yükleniyor...</span>
+        </div>
+        <p class="mt-2">Kaydediliyor...</p>
+    </div>
+</div>
+<div class="section-body">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3><u>Şirket Bilgileri Güncelle</u></h3>
+                    <a asp-action="Liste" asp-controller="AdminSirket" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Listeye Dön
+                    </a>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Guncelle" asp-controller="AdminSirket" method="post" enctype="multipart/form-data" id="companyForm">
+                       @Html.AntiForgeryToken()
+                        <!-- Hidden Fields -->
+                        <input type="hidden" name="LogoPath" id="hiddenLogoPath" value="@Model?.LogoPath" />
+                        <input type="hidden" name="FaviconPath" id="hiddenFaviconPath" value="@Model?.FaviconPath" />
+                        <!-- Validation Summary -->
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="alert alert-danger">
+                                <strong><i class="fas fa-exclamation-triangle"></i> Lütfen hataları düzeltin:</strong>
+                                <ul class="mb-0 mt-2">
+                                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                    {
+                                        <li>@error.ErrorMessage</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+@if (TempData["Warning"] != null)
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                @Html.Raw(TempData["Warning"])
+                            </div>
+                        }
+                        @if (ViewBag.MsgType != null)
+                        {
+                            <div class="alert alert-@(ViewBag.MsgType == "error" ? "danger" : ViewBag.MsgType)">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                @Html.Raw(ViewBag.MsgText)
+                            </div>
+                        }
+                        <!-- GENEL BİLGİLER -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-building"></i> Genel Bilgiler</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Şirket Tam Adı <span class="required-star">*</span></label>
+                                            <input asp-for="CompanyName" class="form-control" maxlength="100" required />
+                                            <small class="text-muted float-right char-counter"><span id="cntCompanyName">0</span>/100</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Kısa Adı <span class="required-star">*</span></label>
+                                            <input asp-for="ShortCompanyName" class="form-control" maxlength="50" required />
+                                            <small class="text-muted float-right char-counter"><span id="cntShortName">0</span>/50</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="form-group">
+                                            <label>Slogan</label>
+                                            <input asp-for="Slogan" class="form-control" maxlength="200" />
+                                            <small class="text-muted float-right char-counter"><span id="cntSlogan">0</span>/200</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>Kuruluş Yılı</label>
+                                            <select asp-for="FoundedYear" class="form-control">
+                                                <option value="">Seçiniz...</option>
+                                                @for (int y = DateTime.Now.Year; y >= 1900; y--)
+                                                {
+                                                    <option value="@y">@y</option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Sektör Açıklaması</label>
+                                    <textarea asp-for="SectorDescription" class="form-control" rows="2" maxlength="500"></textarea>
+                                    <small class="text-muted float-right char-counter"><span id="cntSector">0</span>/500</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Çalışma Saatleri</label>
+                                    <input asp-for="WorkingHours" class="form-control" maxlength="200" placeholder="Örn: Pazartesi-Cuma 09:00-18:00" />
+                                </div>
+                            </div>
+                        </div>
+                        <!-- İLETİŞİM -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0"><i class="fas fa-address-book"></i> İletişim Bilgileri</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>E-posta <span class="required-star">*</span></label>
+                                            <input asp-for="Email" class="form-control" type="email" maxlength="100" required />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Web Sitesi <span class="required-star">*</span></label>
+                                            <input asp-for="WebSiteLink" class="form-control" type="url" maxlength="150" required placeholder="https://" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Telefon 1 -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Telefon <span class="required-star">*</span></label>
+                                            <div class="phone-input-group">
+                                                <select class="form-control" id="countryCodeSelect1">
+                                                    <option value="+90" selected>🇹🇷 Türkiye (+90)</option>
+                                                    <option value="+93">🇦🇫 Afganistan (+93)</option>
+                                                    <option value="+355">🇦🇱 Arnavutluk (+355)</option>
+                                                    <option value="+213">🇩🇿 Cezayir (+213)</option>
+                                                    <option value="+376">🇦🇩 Andorra (+376)</option>
+                                                    <option value="+244">🇦🇴 Angola (+244)</option>
+                                                    <option value="+54">🇦🇷 Arjantin (+54)</option>
+                                                    <option value="+374">🇦🇲 Ermenistan (+374)</option>
+                                                    <option value="+61">🇦🇺 Avustralya (+61)</option>
+                                                    <option value="+43">🇦🇹 Avusturya (+43)</option>
+                                                    <option value="+994">🇦🇿 Azerbaycan (+994)</option>
+                                                    <option value="+973">🇧🇭 Bahreyn (+973)</option>
+                                                    <option value="+32">🇧🇪 Belçika (+32)</option>
+                                                    <option value="+55">🇧🇷 Brezilya (+55)</option>
+                                                    <option value="+359">🇧🇬 Bulgaristan (+359)</option>
+                                                    <option value="+86">🇨🇳 Çin (+86)</option>
+                                                    <option value="+45">🇩🇰 Danimarka (+45)</option>
+                                                    <option value="+20">🇪🇬 Mısır (+20)</option>
+                                                    <option value="+358">🇫🇮 Finlandiya (+358)</option>
+                                                    <option value="+33">🇫🇷 Fransa (+33)</option>
+                                                    <option value="+49">🇩🇪 Almanya (+49)</option>
+                                                    <option value="+30">🇬🇷 Yunanistan (+30)</option>
+                                                    <option value="+852">🇭🇰 Hong Kong (+852)</option>
+                                                    <option value="+36">🇭🇺 Macaristan (+36)</option>
+                                                    <option value="+91">🇮🇳 Hindistan (+91)</option>
+                                                    <option value="+62">🇮🇩 Endonezya (+62)</option>
+                                                    <option value="+98">🇮🇷 İran (+98)</option>
+                                                    <option value="+964">🇮🇶 Irak (+964)</option>
+                                                    <option value="+353">🇮🇪 İrlanda (+353)</option>
+                                                    <option value="+972">🇮🇱 İsrail (+972)</option>
+                                                    <option value="+39">🇮🇹 İtalya (+39)</option>
+                                                    <option value="+81">🇯🇵 Japonya (+81)</option>
+                                                    <option value="+962">🇯🇴 Ürdün (+962)</option>
+                                                    <option value="+7">🇰🇿 Kazakistan (+7)</option>
+                                                    <option value="+965">🇰🇼 Kuveyt (+965)</option>
+                                                    <option value="+961">🇱🇧 Lübnan (+961)</option>
+                                                    <option value="+60">🇲🇾 Malezya (+60)</option>
+                                                    <option value="+52">🇲🇽 Meksika (+52)</option>
+                                                    <option value="+31">🇳🇱 Hollanda (+31)</option>
+                                                    <option value="+64">🇳🇿 Yeni Zelanda (+64)</option>
+                                                    <option value="+47">🇳🇴 Norveç (+47)</option>
+                                                    <option value="+92">🇵🇰 Pakistan (+92)</option>
+                                                    <option value="+48">🇵🇱 Polonya (+48)</option>
+                                                    <option value="+351">🇵🇹 Portekiz (+351)</option>
+                                                    <option value="+974">🇶🇦 Katar (+974)</option>
+                                                    <option value="+40">🇷🇴 Romanya (+40)</option>
+                                                    <option value="+7">🇷🇺 Rusya (+7)</option>
+                                                    <option value="+966">🇸🇦 Suudi Arabistan (+966)</option>
+                                                    <option value="+65">🇸🇬 Singapur (+65)</option>
+                                                    <option value="+27">🇿🇦 Güney Afrika (+27)</option>
+                                                    <option value="+82">🇰🇷 Güney Kore (+82)</option>
+                                                    <option value="+34">🇪🇸 İspanya (+34)</option>
+                                                    <option value="+46">🇸🇪 İsveç (+46)</option>
+                                                    <option value="+41">🇨🇭 İsviçre (+41)</option>
+                                                    <option value="+886">🇹🇼 Tayvan (+886)</option>
+                                                    <option value="+66">🇹🇭 Tayland (+66)</option>
+                                                    <option value="+380">🇺🇦 Ukrayna (+380)</option>
+                                                    <option value="+971">🇦🇪 BAE (+971)</option>
+                                                    <option value="+44">🇬🇧 İngiltere (+44)</option>
+                                                    <option value="+1">🇺🇸 ABD (+1)</option>
+                                                </select>
+                                                <input asp-for="Phone" id="Phone1" class="form-control" maxlength="25" required />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Telefon 2 -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>İkinci Telefon</label>
+                                            <div class="phone-input-group">
+                                                <select class="form-control" id="countryCodeSelect2">
+                                                    <option value="+90" selected>🇹🇷 Türkiye (+90)</option>
+                                                    <option value="+93">🇦🇫 Afganistan (+93)</option>
+                                                    <option value="+355">🇦🇱 Arnavutluk (+355)</option>
+                                                    <option value="+213">🇩🇿 Cezayir (+213)</option>
+                                                    <option value="+376">🇦🇩 Andorra (+376)</option>
+                                                    <option value="+244">🇦🇴 Angola (+244)</option>
+                                                    <option value="+54">🇦🇷 Arjantin (+54)</option>
+                                                    <option value="+374">🇦🇲 Ermenistan (+374)</option>
+                                                    <option value="+61">🇦🇺 Avustralya (+61)</option>
+                                                    <option value="+43">🇦🇹 Avusturya (+43)</option>
+                                                    <option value="+994">🇦🇿 Azerbaycan (+994)</option>
+                                                    <option value="+973">🇧🇭 Bahreyn (+973)</option>
+                                                    <option value="+32">🇧🇪 Belçika (+32)</option>
+                                                    <option value="+55">🇧🇷 Brezilya (+55)</option>
+                                                    <option value="+359">🇧🇬 Bulgaristan (+359)</option>
+                                                    <option value="+86">🇨🇳 Çin (+86)</option>
+                                                    <option value="+45">🇩🇰 Danimarka (+45)</option>
+                                                    <option value="+20">🇪🇬 Mısır (+20)</option>
+                                                    <option value="+358">🇫🇮 Finlandiya (+358)</option>
+                                                    <option value="+33">🇫🇷 Fransa (+33)</option>
+                                                    <option value="+49">🇩🇪 Almanya (+49)</option>
+                                                    <option value="+30">🇬🇷 Yunanistan (+30)</option>
+                                                    <option value="+852">🇭🇰 Hong Kong (+852)</option>
+                                                    <option value="+36">🇭🇺 Macaristan (+36)</option>
+                                                    <option value="+91">🇮🇳 Hindistan (+91)</option>
+                                                    <option value="+62">🇮🇩 Endonezya (+62)</option>
+                                                    <option value="+98">🇮🇷 İran (+98)</option>
+                                                    <option value="+964">🇮🇶 Irak (+964)</option>
+                                                    <option value="+353">🇮🇪 İrlanda (+353)</option>
+                                                    <option value="+972">🇮🇱 İsrail (+972)</option>
+                                                    <option value="+39">🇮🇹 İtalya (+39)</option>
+                                                    <option value="+81">🇯🇵 Japonya (+81)</option>
+                                                    <option value="+962">🇯🇴 Ürdün (+962)</option>
+                                                    <option value="+7">🇰🇿 Kazakistan (+7)</option>
+                                                    <option value="+965">🇰🇼 Kuveyt (+965)</option>
+                                                    <option value="+961">🇱🇧 Lübnan (+961)</option>
+                                                    <option value="+60">🇲🇾 Malezya (+60)</option>
+                                                    <option value="+52">🇲🇽 Meksika (+52)</option>
+                                                    <option value="+31">🇳🇱 Hollanda (+31)</option>
+                                                    <option value="+64">🇳🇿 Yeni Zelanda (+64)</option>
+                                                    <option value="+47">🇳🇴 Norveç (+47)</option>
+                                                    <option value="+92">🇵🇰 Pakistan (+92)</option>
+                                                    <option value="+48">🇵🇱 Polonya (+48)</option>
+                                                    <option value="+351">🇵🇹 Portekiz (+351)</option>
+                                                    <option value="+974">🇶🇦 Katar (+974)</option>
+                                                    <option value="+40">🇷🇴 Romanya (+40)</option>
+                                                    <option value="+7">🇷🇺 Rusya (+7)</option>
+                                                    <option value="+966">🇸🇦 Suudi Arabistan (+966)</option>
+                                                    <option value="+65">🇸🇬 Singapur (+65)</option>
+                                                    <option value="+27">🇿🇦 Güney Afrika (+27)</option>
+                                                    <option value="+82">🇰🇷 Güney Kore (+82)</option>
+                                                    <option value="+34">🇪🇸 İspanya (+34)</option>
+                                                    <option value="+46">🇸🇪 İsveç (+46)</option>
+                                                    <option value="+41">🇨🇭 İsviçre (+41)</option>
+                                                    <option value="+886">🇹🇼 Tayvan (+886)</option>
+                                                    <option value="+66">🇹🇭 Tayland (+66)</option>
+                                                    <option value="+380">🇺🇦 Ukrayna (+380)</option>
+                                                    <option value="+971">🇦🇪 BAE (+971)</option>
+                                                    <option value="+44">🇬🇧 İngiltere (+44)</option>
+                                                    <option value="+1">🇺🇸 ABD (+1)</option>
+                                                </select>
+                                                <input asp-for="Phone2" id="Phone2" class="form-control" maxlength="20" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Adres <span class="required-star">*</span></label>
+                                    <textarea asp-for="Address" class="form-control" rows="2" maxlength="300" required></textarea>
+                                    <small class="text-muted float-right char-counter"><span id="cntAddress">0</span>/300</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Google Maps Embed</label>
+                                    <textarea asp-for="GoogleMapsEmbed" id="GoogleMapsEmbed" class="form-control" rows="2" maxlength="1000" 
+                                              placeholder='<iframe src="https://www.google.com/maps/embed?..." ...></iframe>'></textarea>
+                                    <small class="text-muted">Google Maps'ten iframe kodunu yapıştırın.</small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="previewMap()">
+                                    <i class="fas fa-eye"></i> Haritayı Önizle
+                                </button>
+                                <div id="mapPreview" class="mt-2 border rounded p-2" style="display:none;"></div>
+                            </div>
+                        </div>
+                        <!-- SEO -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-search"></i> SEO Ayarları</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Web Sitesi Başlığı <span class="required-star">*</span></label>
+                                            <input asp-for="WebSiteTitle" class="form-control" maxlength="100" required />
+                                            <small class="text-muted float-right char-counter"><span id="cntWebTitle">0</span>/100</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Meta Başlık <span class="badge badge-info">SEO</span></label>
+                                            <input asp-for="MetaTitle" class="form-control" maxlength="70" />
+                                            <small class="text-muted float-right char-counter"><span id="cntMetaTitle">0</span>/70</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Meta Açıklama <span class="badge badge-info">SEO</span></label>
+                                    <textarea asp-for="MetaDescription" class="form-control" rows="2" maxlength="160"></textarea>
+                                    <small class="text-muted float-right char-counter"><span id="cntMetaDesc">0</span>/160</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Meta Anahtar Kelimeler</label>
+                                    <input asp-for="MetaKeywords" class="form-control" maxlength="300" placeholder="kelime1, kelime2, kelime3" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Canonical URL</label>
+                                    <input asp-for="CanonicalUrl" class="form-control" type="url" maxlength="200" />
+                                </div>
+                            </div>
+                        </div>
+                        <!-- SOSYAL MEDYA -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-warning">
+                                <h6 class="mb-0"><i class="fas fa-share-alt"></i> Sosyal Medya</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label><i class="fab fa-instagram text-danger"></i> Instagram</label>
+                                            <input asp-for="InstagramLink" class="form-control" type="url" maxlength="200" placeholder="https://instagram.com/..." />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>
+                                                <i class="fab fa-linkedin"></i>  LinkedIn
+                                            </label>
+                                            <input asp-for="LinkedinLink" class="form-control" type="url" maxlength="200" placeholder="https://linkedin.com/..." />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label><i class="fab fa-youtube text-danger"></i> YouTube</label>
+                                            <input asp-for="YoutubeLink" class="form-control" type="url" maxlength="200" placeholder="https://youtube.com/..." />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label><i class="fas fa-external-link-alt"></i> Harici Link</label>
+                                            <input asp-for="ExternalWebLink" class="form-control" type="url" maxlength="200" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- HAKKIMIZDA -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-secondary text-white">
+                                <h6 class="mb-0"><i class="fas fa-file-alt"></i> Hakkımızda</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label>Kısa Hakkımızda</label>
+                                    <textarea asp-for="AboutUsShort" class="form-control" rows="2" maxlength="500"></textarea>
+                                    <small class="text-muted float-right char-counter"><span id="cntAboutShort">0</span>/500</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Hakkımızda (Detaylı)</label>
+                                    <textarea asp-for="AboutUs" class="form-control" rows="5"></textarea>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label><i class="fas fa-eye text-primary"></i> Vizyon</label>
+                                            <textarea asp-for="Vision" class="form-control" rows="3" maxlength="1000"></textarea>
+                                            <small class="text-muted float-right char-counter"><span id="cntVision">0</span>/1000</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label><i class="fas fa-bullseye text-success"></i> Misyon</label>
+                                            <textarea asp-for="Mission" class="form-control" rows="3" maxlength="1000"></textarea>
+                                            <small class="text-muted float-right char-counter"><span id="cntMission">0</span>/1000</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- LOGO & FAVICON -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-dark text-white">
+                                <h6 class="mb-0"><i class="fas fa-image"></i> Logo & Favicon <span class="required-star">*</span></h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Logo ve Favicon yüklemek <strong>zorunludur</strong>.
+                                </div>
+                                <div class="row">
+                                    <!-- Logo -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label><strong>Logo</strong> <span class="required-star">*</span></label>
+                                            @if (!string.IsNullOrEmpty(Model?.LogoPath))
+                                            {
+                                                <div class="mb-2" id="existingLogoBox">
+                                                    <img src="@($"{apiBase}{Model.LogoPath}")" class="img-thumbnail img-hover-zoom"
+                                                         style="max-height:80px;" alt="Logo" loading="lazy" />
+                                             
+                                                    <input type="hidden" id="originalLogoPath" value="@Model.LogoPath" />
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="alert alert-danger py-2" id="noLogoAlert">
+                                                    <small><i class="fas fa-exclamation-circle"></i> Logo yüklenmemiş!</small>
+                                                </div>
+                                            }
+                                            <input type="file" name="LogoFile" id="LogoFile" class="form-control-file"
+                                                   accept=".png,.jpg,.jpeg,.gif,.webp,.svg" />
+                                            <small class="text-muted">PNG, JPG, GIF, WEBP, SVG - Max 5MB</small>
+                                            <div id="newLogoPreview" class="mt-2" style="display:none;">
+                                                <img id="logoPreviewImg" class="img-thumbnail img-hover-zoom" style="max-height:80px;" alt="Yeni Logo" />
+                                             
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Favicon -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label><strong>Favicon</strong> <span class="required-star">*</span></label>
+                                            @if (!string.IsNullOrEmpty(Model?.FaviconPath))
+                                            {
+                                                <div class="mb-2" id="existingFaviconBox">
+                                                    <img src="@($"{apiBase}{Model.FaviconPath}")" class="img-thumbnail img-hover-zoom"
+                                                         style="max-height:50px;" alt="Favicon" loading="lazy" />
+                                                
+                                                    <input type="hidden" id="originalFaviconPath" value="@Model.FaviconPath" />
+
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="alert alert-danger py-2" id="noFaviconAlert">
+                                                    <small><i class="fas fa-exclamation-circle"></i> Favicon yüklenmemiş!</small>
+                                                </div>
+                                            }
+                                            <input type="file" name="FaviconFile" id="FaviconFile" class="form-control-file"
+                                                   accept=".png,.ico" />
+                                            <small class="text-muted">ICO, PNG - 32x32 veya 64x64 önerilir - Max 2MB</small>
+                                            <div id="newFaviconPreview" class="mt-2" style="display:none;">
+                                                <img id="faviconPreviewImg" class="img-thumbnail img-hover-zoom" style="max-height:50px;" alt="Yeni Favicon" />
+                                              
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- BUTONLAR -->
+                        <div class="text-right">
+                            <a asp-action="Liste" asp-controller="AdminSirket" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> İptal
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-save"></i> Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // TempData Mesajları
+     
+        // Init
+        initCharCounters();
+        initPhoneInputs();
+    });
+    // ==================== TELEFON FORMATLAMA ====================
+    var phoneFormats = {
+        "+90": { max: 10, pattern: [3, 3, 2, 2] },
+        "+1": { max: 10, pattern: [3, 3, 4] },
+        "+44": { max: 10, pattern: [4, 3, 3] },
+        "+49": { max: 11, pattern: [3, 3, 2, 3] },
+        "+33": { max: 9, pattern: [1, 2, 2, 2, 2] },
+        "+39": { max: 10, pattern: [3, 3, 4] },
+        "+7": { max: 10, pattern: [3, 2, 2, 3] },
+        "+86": { max: 11, pattern: [3, 4, 4] },
+        "+91": { max: 10, pattern: [4, 3, 3] },
+        "+81": { max: 10, pattern: [3, 4, 3] },
+        "+82": { max: 10, pattern: [3, 3, 4] },
+        "+966": { max: 9, pattern: [2, 3, 4] },
+        "+971": { max: 9, pattern: [2, 3, 4] },
+        "+20": { max: 10, pattern: [2, 3, 3, 2] },
+        "+27": { max: 9, pattern: [2, 3, 4] },
+        "+55": { max: 11, pattern: [2, 5, 4] },
+        "+52": { max: 10, pattern: [2, 4, 4] },
+        "+93": { max: 9, pattern: [2, 3, 4] },
+        "+355": { max: 9, pattern: [2, 3, 4] },
+        "+213": { max: 9, pattern: [2, 3, 4] },
+        "+376": { max: 6, pattern: [3, 3] },
+        "+244": { max: 9, pattern: [3, 3, 3] },
+        "+54": { max: 10, pattern: [2, 4, 4] },
+        "+374": { max: 8, pattern: [2, 3, 3] },
+        "+61": { max: 9, pattern: [3, 3, 3] },
+        "+43": { max: 10, pattern: [3, 3, 4] },
+        "+994": { max: 9, pattern: [2, 3, 4] },
+        "+973": { max: 8, pattern: [4, 4] },
+        "+32": { max: 9, pattern: [3, 3, 3] },
+        "+359": { max: 9, pattern: [3, 3, 3] },
+        "+45": { max: 8, pattern: [2, 2, 2, 2] },
+        "+358": { max: 10, pattern: [3, 3, 4] },
+        "+30": { max: 10, pattern: [3, 3, 4] },
+        "+852": { max: 8, pattern: [4, 4] },
+        "+36": { max: 9, pattern: [2, 3, 4] },
+        "+62": { max: 11, pattern: [3, 4, 4] },
+        "+98": { max: 10, pattern: [3, 3, 4] },
+        "+964": { max: 10, pattern: [3, 3, 4] },
+        "+353": { max: 9, pattern: [3, 3, 3] },
+        "+972": { max: 9, pattern: [2, 3, 4] },
+        "+962": { max: 9, pattern: [2, 3, 4] },
+        "+965": { max: 8, pattern: [4, 4] },
+        "+961": { max: 8, pattern: [3, 3, 2] },
+        "+60": { max: 10, pattern: [3, 3, 4] },
+        "+31": { max: 9, pattern: [3, 3, 3] },
+        "+64": { max: 9, pattern: [3, 3, 3] },
+        "+47": { max: 8, pattern: [2, 2, 2, 2] },
+        "+92": { max: 10, pattern: [3, 3, 4] },
+        "+48": { max: 9, pattern: [3, 3, 3] },
+        "+351": { max: 9, pattern: [3, 3, 3] },
+        "+974": { max: 8, pattern: [4, 4] },
+        "+40": { max: 10, pattern: [3, 3, 4] },
+        "+65": { max: 8, pattern: [4, 4] },
+        "+34": { max: 9, pattern: [3, 3, 3] },
+        "+46": { max: 10, pattern: [3, 3, 4] },
+        "+41": { max: 9, pattern: [2, 3, 4] },
+        "+886": { max: 9, pattern: [3, 3, 3] },
+        "+66": { max: 9, pattern: [3, 3, 3] },
+        "+380": { max: 9, pattern: [2, 3, 4] },
+        "_default": { max: 15, pattern: [3, 3, 3, 3, 3] }
+    };
+    function formatPhoneNumber(number, code) {
+        var config = phoneFormats[code] || phoneFormats._default;
+        var digitsOnly = number.replace(/\D/g, '').substring(0, config.max);
+        var formattedNumber = code + ' ';
+       var position = 0;
+        for (var i = 0; i < config.pattern.length; i++) {
+            var partLength = config.pattern[i];
+            if (position >= digitsOnly.length) break;
+            var part = digitsOnly.substr(position, partLength);
+            if (part.length > 0) {
+                formattedNumber += part + ' ';
+                position += partLength;
+            }
+        }
+        return formattedNumber.trim();
+    }
+    function initPhoneInputs() {
+        // Telefon 1
+        initSinglePhoneInput('Phone1', 'countryCodeSelect1');
+        // Telefon 2
+        initSinglePhoneInput('Phone2', 'countryCodeSelect2');
+    }
+    function initSinglePhoneInput(inputId, selectId) {
+        var phoneInput = document.getElementById(inputId);
+        var countrySelect = document.getElementById(selectId);
+        if (!phoneInput || !countrySelect) return;
+        // Mevcut değerden ülke kodunu tespit et
+        var currentValue = phoneInput.value.trim();
+        if (currentValue) {
+            // Ülke kodunu bul
+            for (var code in phoneFormats) {
+                if (code !== '_default' && currentValue.startsWith(code)) {
+                    countrySelect.value = code;
+                    break;
+                }
+            }
+        }
+        function updateFormattedPhone() {
+            var code = countrySelect.value;
+            var codeDigits = code.replace(/\D/g, '');
+            var currentDigits = phoneInput.value.replace(/\D/g, '');
+            // Ülke kodunu çıkar
+            if (currentDigits.startsWith(codeDigits)) {
+                currentDigits = currentDigits.substring(codeDigits.length);
+            }
+
+            phoneInput.value = formatPhoneNumber(currentDigits, code);
+        }
+        countrySelect.addEventListener('change', function () {
+            phoneInput.value = this.value + ' ';
+            phoneInput.focus();
+        });
+        phoneInput.addEventListener('input', function (e) {
+            var code = countrySelect.value;
+            var codeDigits = code.replace(/\D/g, '');
+
+            if ((e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward') &&
+                phoneInput.value.replace(/\D/g, '') === codeDigits) {
+                phoneInput.value = code + ' ';
+                return;
+            }
+            updateFormattedPhone();
+        });
+        phoneInput.addEventListener('focus', function () {
+            setTimeout(function () {
+                phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
+            }, 0);
+        });
+        // Başlangıç değeri
+        if (!currentValue || !currentValue.startsWith('+')) {
+            phoneInput.value = countrySelect.value + ' ';
+        } else {
+            updateFormattedPhone();
+        }
+    }
+    // ==================== KARAKTER SAYAÇLARI ====================
+    function initCharCounters() {
+        var counters = [
+            { input: 'CompanyName', counter: 'cntCompanyName', max: 100 },
+            { input: 'ShortCompanyName', counter: 'cntShortName', max: 50 },
+            { input: 'Slogan', counter: 'cntSlogan', max: 200 },
+            { input: 'SectorDescription', counter: 'cntSector', max: 500 },
+            { input: 'Address', counter: 'cntAddress', max: 300 },
+            { input: 'WebSiteTitle', counter: 'cntWebTitle', max: 100 },
+            { input: 'MetaTitle', counter: 'cntMetaTitle', max: 70 },
+            { input: 'MetaDescription', counter: 'cntMetaDesc', max: 160 },
+            { input: 'AboutUsShort', counter: 'cntAboutShort', max: 500 },
+            { input: 'Vision', counter: 'cntVision', max: 1000 },
+            { input: 'Mission', counter: 'cntMission', max: 1000 }
+        ];
+        counters.forEach(function (item) {
+            var el = document.querySelector('[name="' + item.input + '"]');
+            var cnt = document.getElementById(item.counter);
+            if (!el || !cnt) return;
+            function update() {
+                var len = el.value.length;
+                cnt.textContent = len;
+                var parent = cnt.closest('.char-counter');
+                if (parent) {
+                    parent.classList.remove('warning', 'danger');
+                    if (len >= item.max * 0.9) parent.classList.add('danger');
+                    else if (len >= item.max * 0.75) parent.classList.add('warning');
+                }
+            }
+            el.addEventListener('input', update);
+            update();
+        });
+    }
+    // ==================== DOSYA İŞLEMLERİ ====================
+    document.getElementById('LogoFile').addEventListener('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+        var validResult = validateFile(file, 'logo');
+        if (!validResult.valid) {
+            Swal.fire({ icon: 'error', title: 'Hata!', text: validResult.error });
+            this.value = '';
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            document.getElementById('logoPreviewImg').src = e.target.result;
+            document.getElementById('newLogoPreview').style.display = 'block';
+            var box = document.getElementById('existingLogoBox');
+            if (box) box.style.display = 'none';
+            var alert = document.getElementById('noLogoAlert');
+            if (alert) alert.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    });
+    document.getElementById('FaviconFile').addEventListener('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+        var validResult = validateFile(file, 'favicon');
+        if (!validResult.valid) {
+            Swal.fire({ icon: 'error', title: 'Hata!', text: validResult.error });
+            this.value = '';
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            document.getElementById('faviconPreviewImg').src = e.target.result;
+            document.getElementById('newFaviconPreview').style.display = 'block';
+            var box = document.getElementById('existingFaviconBox');
+            if (box) box.style.display = 'none';
+            var alert = document.getElementById('noFaviconAlert');
+            if (alert) alert.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    });
+    function validateFile(file, type) {
+        var config = {
+            logo: {
+                maxSize: 5 * 1024 * 1024,
+                allowedTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'],
+                allowedExts: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'],
+                errorMsg: 'PNG, JPG, GIF, WEBP, SVG'
+            },
+            favicon: {
+                maxSize: 2 * 1024 * 1024,
+                allowedTypes: ['image/png', 'image/x-icon', 'image/vnd.microsoft.icon'],
+                allowedExts: ['.png', '.ico'],
+                errorMsg: 'PNG, ICO'
+            }
+        };
+        var cfg = config[type];
+        var ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+        if (cfg.allowedTypes.indexOf(file.type) === -1 && cfg.allowedExts.indexOf(ext) === -1) {
+            return { valid: false, error: 'Geçersiz dosya formatı. İzin verilen: ' + cfg.errorMsg };
+        }
+        if (file.size > cfg.maxSize) {
+            return { valid: false, error: 'Dosya boyutu en fazla ' + (cfg.maxSize / 1024 / 1024) + 'MB olabilir' };
+        }
+        return { valid: true };
+    }
+    function removeLogo() {
+        Swal.fire({
+            title: 'Emin misiniz?',
+            text: 'Logo silmek istediğinize emin misiniz? Bu alan zorunludur!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Evet, Sil',
+            cancelButtonText: 'İptal'
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                var box = document.getElementById('existingLogoBox');
+                if (box) box.style.display = 'none';
+                document.getElementById('hiddenLogoPath').value = '';
+                var alertEl = document.getElementById('noLogoAlert');
+                if (alertEl) {
+                    alertEl.style.display = 'block';
+                } else {
+                    var fileInput = document.getElementById('LogoFile');
+                    if (fileInput && fileInput.parentElement) {
+                        alertEl = document.createElement('div');
+                        alertEl.id = 'noLogoAlert';
+                        alertEl.className = 'alert alert-danger py-2 mb-2';
+                        alertEl.innerHTML = '<small><i class="fas fa-exclamation-circle"></i> Logo yüklenmemiş!</small>';
+                        fileInput.parentElement.insertBefore(alertEl, fileInput);
+                    }
+                }
+            }
+        });
+    }
+    function removeFavicon() {
+        Swal.fire({
+            title: 'Emin misiniz?',
+            text: 'Favicon silmek istediğinize emin misiniz? Bu alan zorunludur!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Evet, Sil',
+            cancelButtonText: 'İptal'
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                var box = document.getElementById('existingFaviconBox');
+                if (box) box.style.display = 'none';
+                document.getElementById('hiddenFaviconPath').value = '';
+                var alertEl = document.getElementById('noFaviconAlert');
+                if (alertEl) {
+                    alertEl.style.display = 'block';
+                } else {
+                    var fileInput = document.getElementById('FaviconFile');
+                    if (fileInput && fileInput.parentElement) {
+                        alertEl = document.createElement('div');
+                        alertEl.id = 'noFaviconAlert';
+                        alertEl.className = 'alert alert-danger py-2 mb-2';
+                        alertEl.innerHTML = '<small><i class="fas fa-exclamation-circle"></i> Favicon yüklenmemiş!</small>';
+                        fileInput.parentElement.insertBefore(alertEl, fileInput);
+                    }
+                }
+            }
+        });
+    }
+    function removeNewLogo() {
+        document.getElementById('LogoFile').value = '';
+        document.getElementById('newLogoPreview').style.display = 'none';
+        var box = document.getElementById('existingLogoBox');
+        var orig = document.getElementById('originalLogoPath');
+        if (box && orig && orig.value) {
+            box.style.display = 'block';
+            document.getElementById('hiddenLogoPath').value = orig.value;
+            var alertEl = document.getElementById('noLogoAlert');
+            if (alertEl) alertEl.style.display = 'none';
+        } else {
+            var alertEl = document.getElementById('noLogoAlert');
+            if (alertEl) alertEl.style.display = 'block';
+        }
+    }
+    function removeNewFavicon() {
+        document.getElementById('FaviconFile').value = '';
+        document.getElementById('newFaviconPreview').style.display = 'none';
+        var box = document.getElementById('existingFaviconBox');
+        var orig = document.getElementById('originalFaviconPath');
+        if (box && orig && orig.value) {
+            box.style.display = 'block';
+            document.getElementById('hiddenFaviconPath').value = orig.value;
+            var alertEl = document.getElementById('noFaviconAlert');
+            if (alertEl) alertEl.style.display = 'none';
+        } else {
+            var alertEl = document.getElementById('noFaviconAlert');
+            if (alertEl) alertEl.style.display = 'block';
+        }
+    }
+    // ==================== FORM SUBMIT ====================
+    document.getElementById('companyForm').addEventListener('submit', function (e) {
+        var logoPath = document.getElementById('hiddenLogoPath').value.trim();
+        var faviconPath = document.getElementById('hiddenFaviconPath').value.trim();
+        var logoFile = document.getElementById('LogoFile').files[0];
+        var faviconFile = document.getElementById('FaviconFile').files[0];
+           var phone2Input = document.getElementById('Phone2');
+    if (phone2Input) {
+        var phone2Value = phone2Input.value.trim();
+        if (phone2Value.length < 10) {
+            phone2Input.value = '';
+        }
+    }
+        if (!logoPath && !logoFile) {
+            e.preventDefault();
+            Swal.fire({ icon: 'error', title: 'Logo Zorunlu!', text: 'Lütfen bir logo yükleyin.' });
+            var noLogoAlert = document.getElementById('noLogoAlert');
+            if (noLogoAlert) noLogoAlert.style.display = 'block';
+            return false;
+        }
+        if (!faviconPath && !faviconFile) {
+            e.preventDefault();
+            Swal.fire({ icon: 'error', title: 'Favicon Zorunlu!', text: 'Lütfen bir favicon yükleyin.' });
+            var noFaviconAlert = document.getElementById('noFaviconAlert');
+            if (noFaviconAlert) noFaviconAlert.style.display = 'block';
+            return false;
+        }
+
+            sessionStorage.setItem('updated', '1');  // ← SADECE BU EKLENDI
+        document.getElementById('loadingOverlay').classList.add('show');
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+    });
+    // ==================== HARİTA ÖNİZLEME ====================
+    function previewMap() {
+        var code = document.getElementById('GoogleMapsEmbed').value;
+        var preview = document.getElementById('mapPreview');
+
+        if (code && code.indexOf('<iframe') !== -1 && code.indexOf('google.com/maps') !== -1) {
+            preview.innerHTML = code;
+            preview.style.display = 'block';
+        } else {
+            Swal.fire({ icon: 'warning', title: 'Geçersiz Kod', text: 'Lütfen geçerli bir Google Maps iframe kodu girin.' });
+        }
+    }
+</script>

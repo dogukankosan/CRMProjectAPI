@@ -1,0 +1,634 @@
+﻿@model CRMProjectUI.Models.MailSettingsDto
+@{
+    ViewData["Title"] = "Mail Ayarları";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+    bool isNew = Model == null || Model.ID == 0;
+    string? successMsg = TempData["Success"] as string;
+    string? errorMsg = TempData["Error"] as string;
+}
+
+<input type="hidden" id="isNewFlag" value="@(isNew ? "true" : "false")" />
+
+<style>
+    .mail-card {
+        margin-bottom: 1.5rem;
+    }
+
+        .mail-card .card-header h6 {
+            margin-bottom: 0;
+        }
+
+    .required-star {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .pass-toggle {
+        cursor: pointer;
+        background: none;
+        border: none;
+        color: #6c757d;
+        padding: 0 10px;
+        transition: color .2s;
+    }
+
+        .pass-toggle:hover {
+            color: #2563eb;
+        }
+
+    .port-quick {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+    }
+
+    .port-badge {
+        font-size: .73rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+        border: 1.5px solid #e2e8f0;
+        background: #f7f8fc;
+        color: #4a4f5e;
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+        .port-badge:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .port-badge.active {
+            border-color: #2563eb;
+            color: #fff;
+            background: #2563eb;
+        }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: .8rem;
+        font-weight: 600;
+    }
+
+        .status-badge.configured {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-badge.not-configured {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .status-badge::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
+        .status-badge.configured::before {
+            background: #10b981;
+        }
+
+        .status-badge.not-configured::before {
+            background: #ef4444;
+        }
+
+    .test-section {
+        background: #f7f8fc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 18px 20px;
+    }
+
+    .test-required-notice {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: .82rem;
+        color: #92400e;
+        margin-bottom: 16px;
+    }
+
+        .test-required-notice i {
+            color: #f59e0b;
+            flex-shrink: 0;
+        }
+
+    .test-success-notice {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: .82rem;
+        color: #166534;
+        margin-bottom: 16px;
+    }
+
+        .test-success-notice i {
+            color: #10b981;
+            flex-shrink: 0;
+        }
+
+        .test-success-notice.show {
+            display: flex;
+        }
+
+    .signature-preview {
+        display: none;
+        margin-top: 12px;
+        padding: 16px;
+        border: 1px dashed #e2e8f0;
+        border-radius: 10px;
+        background: #fff;
+        min-height: 60px;
+    }
+</style>
+
+<div class="section-body">
+    <div class="row">
+        <div class="col-12 col-lg-9 mx-auto">
+
+            <!-- HEADER -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="fas fa-envelope-open-text mr-2 text-primary"></i>
+                        Mail Ayarları
+                    </h4>
+                    <p class="text-muted mb-0" style="font-size:.85rem;">
+                        SMTP sunucu bilgilerini girin.
+                        @if (!isNew)
+                        {
+                            <span>Güncelleme için önce test maili göndermeniz gerekiyor.</span>
+                        }
+                    </p>
+                </div>
+                @if (!isNew)
+                {
+                    <span class="status-badge configured">Yapılandırıldı</span>
+                }
+                else
+                {
+                    <span class="status-badge not-configured">Henüz Yapılandırılmadı</span>
+                }
+            </div>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger">
+                    <strong><i class="fas fa-exclamation-triangle mr-1"></i> Lütfen hataları düzeltin:</strong>
+                    <ul class="mb-0 mt-2">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@error.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <form asp-action="Kaydet" asp-controller="AdminMail" method="post" id="mailForm">
+                @Html.AntiForgeryToken()
+
+                <!-- GÖNDERİCİ BİLGİLERİ -->
+                <div class="card mail-card">
+                    <div class="card-header bg-primary text-white">
+                        <h6><i class="fas fa-user-circle mr-2"></i>Gönderici Bilgileri</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Gönderici Mail <span class="required-star">*</span></label>
+                                    <input type="email" name="MailFrom" class="form-control"
+                                           value="@Model?.MailFrom"
+                                           placeholder="info@firmaniz.com" required maxlength="150" />
+                                    <small class="text-muted">Mailin "Kimden" alanında görünür</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Görünen Ad <span class="required-star">*</span></label>
+                                    <input type="text" name="DisplayName" class="form-control"
+                                           value="@Model?.DisplayName"
+                                           placeholder="Firma Adı" required maxlength="100" />
+                                    <small class="text-muted">Alıcının gördüğü isim</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SMTP SUNUCU -->
+                <div class="card mail-card">
+                    <div class="card-header bg-info text-white">
+                        <h6><i class="fas fa-server mr-2"></i>SMTP Sunucu</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-7">
+                                <div class="form-group">
+                                    <label>SMTP Sunucu <span class="required-star">*</span></label>
+                                    <input type="text" name="SmtpHost" class="form-control" id="smtpHost"
+                                           value="@Model?.SmtpHost"
+                                           placeholder="smtp.gmail.com" required maxlength="200" />
+                                    <div class="port-quick mt-2">
+                                        <span class="text-muted mr-1" style="font-size:.72rem;">Hızlı:</span>
+                                        <span class="port-badge" onclick="setSmtp('smtp.gmail.com', 587, true)">Gmail</span>
+                                        <span class="port-badge" onclick="setSmtp('smtp.office365.com', 587, true)">Office 365</span>
+                                        <span class="port-badge" onclick="setSmtp('smtp.yandex.com', 587, true)">Yandex</span>
+                                        <span class="port-badge" onclick="setSmtp('mail.domain.com', 587, true)">cPanel</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Port <span class="required-star">*</span></label>
+                                    <input type="number" name="SmtpPort" class="form-control" id="smtpPort"
+                                           value="@(Model?.SmtpPort > 0 ? Model.SmtpPort : 587)"
+                                           min="1" max="65535" required />
+                                    <div class="port-quick">
+                                        <span class="port-badge @(Model?.SmtpPort == 587 || Model == null ? "active" : "")"
+                                              onclick="setPort(587)">587</span>
+                                        <span class="port-badge @(Model?.SmtpPort == 465 ? "active" : "")"
+                                              onclick="setPort(465)">465</span>
+                                        <span class="port-badge @(Model?.SmtpPort == 25 ? "active" : "")"
+                                              onclick="setPort(25)">25</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>SSL/TLS</label>
+                                    <div class="custom-control custom-switch mt-2">
+                                        <input type="checkbox" class="custom-control-input" id="enableSslSwitch"
+                                               @(Model?.EnableSsl != false ? "checked" : "") />
+                                        <label class="custom-control-label" for="enableSslSwitch">
+                                            <span id="sslText">@(Model?.EnableSsl != false ? "Açık" : "Kapalı")</span>
+                                        </label>
+                                    </div>
+                                    <input type="hidden" name="EnableSsl" id="enableSslHidden"
+                                           value="@(Model?.EnableSsl != false ? "true" : "false")" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KİMLİK DOĞRULAMA -->
+                <div class="card mail-card">
+                    <div class="card-header bg-warning">
+                        <h6><i class="fas fa-key mr-2"></i>Kimlik Doğrulama</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label>SMTP Kullanıcı Adı <span class="required-star">*</span></label>
+                                    <input type="text" name="Username" class="form-control"
+                                           value="@Model?.Username"
+                                           placeholder="info@firmaniz.com" required maxlength="150"
+                                           autocomplete="username" readonly style="background:#f7f8fc;" />
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label>
+                                        Şifre
+                                        @if (!isNew)
+                                        {
+                                            <small class="text-muted font-weight-normal">(boş bırakılırsa değişmez)</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="required-star">*</span>
+                                        }
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="password" name="Password" class="form-control" id="mailPassword"
+                                               placeholder="@(isNew ? "Şifre giriniz" : "••••••••")"
+                                               @(isNew ? "required" : "") maxlength="200"
+                                               autocomplete="new-password" />
+                                        <div class="input-group-append">
+                                            <button type="button" class="btn btn-outline-secondary pass-toggle"
+                                                    onclick="togglePass()">
+                                                <i class="fas fa-eye" id="passIcon"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Timeout (sn)</label>
+                                    <input type="number" name="TimeoutSeconds" class="form-control"
+                                           value="@(Model?.TimeoutSeconds > 0 ? Model.TimeoutSeconds : 30)"
+                                           min="5" max="120" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- İMZA -->
+                <div class="card mail-card">
+                    <div class="card-header bg-secondary text-white">
+                        <h6>
+                            <i class="fas fa-signature mr-2"></i>Mail İmzası
+                            <small class="font-weight-normal">(Opsiyonel)</small>
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group mb-2">
+                            <label>HTML İmza</label>
+                            <textarea name="Signature" id="signatureEditor" class="form-control" rows="7"
+                                      placeholder="&lt;p&gt;Saygılarımla,&lt;br&gt;&lt;strong&gt;Ad Soyad&lt;/strong&gt;&lt;br&gt;Firma Adı&lt;/p&gt;"
+                                      maxlength="5000">@Model?.Signature</textarea>
+                            <small class="text-muted">
+                                HTML kullanabilirsiniz. Her mailin altına otomatik eklenir.
+                            </small>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="togglePreview()">
+                            <i class="fas fa-eye mr-1"></i> Önizle
+                        </button>
+                        <div id="signaturePreview" class="signature-preview"></div>
+                    </div>
+                </div>
+
+                <!-- TEST MAİL -->
+                @if (!isNew)
+                {
+                    <div class="card mail-card">
+                        <div class="card-header bg-success text-white">
+                            <h6><i class="fas fa-paper-plane mr-2"></i>Test Maili Gönder</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="test-required-notice" id="testNotice">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Kaydetmek için önce test maili gönderip başarılı olduğunu doğrulamanız gerekiyor.
+                            </div>
+                            <div class="test-success-notice" id="testSuccessNotice">
+                                <i class="fas fa-check-circle"></i>
+                                Test maili başarıyla gönderildi. Artık güncelleyebilirsiniz.
+                            </div>
+                            <div class="test-section">
+                                <div class="row align-items-end">
+                                    <div class="col-md-5">
+                                        <div class="form-group mb-0">
+                                            <label>Alıcı Mail Adresi</label>
+                                            <input type="email" id="testMailTo" class="form-control"
+                                                   placeholder="test@ornek.com" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-0">
+                                            <label>Konu <small class="text-muted">(opsiyonel)</small></label>
+                                            <input type="text" id="testSubject" class="form-control"
+                                                   value="Test Maili" placeholder="Test Maili" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mt-2 mt-md-0">
+                                        <button type="button" class="btn btn-success btn-block" id="testBtn"
+                                                onclick="sendTestMail()">
+                                            <i class="fas fa-paper-plane mr-1"></i> Test Gönder
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- BUTONLAR -->
+                <div class="text-right mb-4">
+                    <a asp-action="Index" asp-controller="AdminHome" class="btn btn-secondary btn-lg mr-2">
+                        <i class="fas fa-times mr-1"></i> İptal
+                    </a>
+                    <button type="submit"
+                            class="btn @(isNew ? "btn-primary" : "btn-secondary") btn-lg"
+                            id="saveBtn"
+                            @(!isNew ? "disabled" : "")
+                            title="@(!isNew ? "Önce test maili gönderin" : "")">
+                        <i class="fas fa-save mr-1"></i>
+                        @(isNew ? "Kaydet" : "Güncelle")
+                    </button>
+                </div>
+            </form>
+
+            <!-- BİLGİ KARTI -->
+            @if (!isNew)
+            {
+                <div class="card">
+                    <div class="card-body py-3">
+                        <div class="d-flex flex-wrap" style="gap:16px;">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar-plus mr-1"></i>
+                                Oluşturulma: <strong>@Model?.CreatedDate.ToString("dd.MM.yyyy HH:mm")</strong>
+                            </small>
+                            @if (Model?.UpdatedDate.HasValue == true)
+                            {
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar-check mr-1"></i>
+                                    Son güncelleme: <strong>@Model.UpdatedDate.Value.ToString("dd.MM.yyyy HH:mm")</strong>
+                                </small>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div id="tempDataMessages"
+     data-success="@TempData["Success"]"
+     data-error="@TempData["Error"]">
+</div>
+
+<script>
+    var isNew = document.getElementById('isNewFlag').value === 'true';
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // SSL switch
+        document.getElementById('enableSslSwitch').addEventListener('change', function () {
+            document.getElementById('enableSslHidden').value = this.checked ? 'true' : 'false';
+            document.getElementById('sslText').textContent   = this.checked ? 'Açık' : 'Kapalı';
+        });
+
+        // TempData mesajları
+        var el      = document.getElementById('tempDataMessages');
+        var success = el.getAttribute('data-success');
+        var error   = el.getAttribute('data-error');
+        if (success) Swal.fire({ icon: 'success', title: 'Başarılı!', text: success, timer: 3000, showConfirmButton: false });
+        if (error)   Swal.fire({ icon: 'error',   title: 'Hata!',     text: error,   timer: 4000, showConfirmButton: true });
+
+        // Port badge
+        updatePortBadges(parseInt(document.getElementById('smtpPort').value));
+        document.getElementById('smtpPort').addEventListener('input', function () {
+            updatePortBadges(parseInt(this.value));
+        });
+
+        // MailFrom → Username senkronizasyonu
+        var mailFromInput = document.querySelector('[name="MailFrom"]');
+        var usernameInput = document.querySelector('[name="Username"]');
+
+        mailFromInput.addEventListener('input', function () {
+            if (!usernameInput.dataset.manuallyChanged) {
+                usernameInput.value = this.value;
+            }
+        });
+
+        usernameInput.addEventListener('input', function () {
+            // Kullanıcı manuel değiştirdiyse senkronu kes
+            if (this.value !== mailFromInput.value) {
+                this.dataset.manuallyChanged = 'true';
+            } else {
+                delete this.dataset.manuallyChanged;
+            }
+        });
+
+        // Form değişince test durumunu sıfırla (sadece mevcut kayıtta)
+        if (!isNew) {
+            document.getElementById('mailForm').querySelectorAll('input, textarea, select').forEach(function(el) {
+                if (el.id === 'testMailTo' || el.id === 'testSubject' || el.id === 'isNewFlag') return;
+                el.addEventListener('change', resetTestState);
+                el.addEventListener('input',  resetTestState);
+            });
+        }
+    });
+
+    function resetTestState() {
+        var saveBtn = document.getElementById('saveBtn');
+        if (!saveBtn.disabled) {
+            saveBtn.disabled  = true;
+            saveBtn.className = 'btn btn-secondary btn-lg';
+            saveBtn.innerHTML = '<i class="fas fa-save mr-1"></i> Güncelle';
+            saveBtn.title     = 'Önce test maili gönderin';
+            document.getElementById('testNotice').style.display = 'flex';
+            document.getElementById('testSuccessNotice').classList.remove('show');
+        }
+    }
+
+    function togglePass() {
+        var input = document.getElementById('mailPassword');
+        var icon  = document.getElementById('passIcon');
+        input.type = input.type === 'password' ? 'text' : 'password';
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
+    }
+
+    function setPort(port) {
+        document.getElementById('smtpPort').value = port;
+        updatePortBadges(port);
+    }
+
+    function setSmtp(host, port, ssl) {
+        document.getElementById('smtpHost').value          = host;
+        document.getElementById('smtpPort').value          = port;
+        document.getElementById('enableSslSwitch').checked = ssl;
+        document.getElementById('enableSslHidden').value   = ssl ? 'true' : 'false';
+        document.getElementById('sslText').textContent     = ssl ? 'Açık' : 'Kapalı';
+        updatePortBadges(port);
+    }
+
+    function updatePortBadges(port) {
+        document.querySelectorAll('.port-badge[onclick^="setPort"]').forEach(function(b) {
+            b.classList.remove('active');
+            if (parseInt(b.textContent.trim()) === port) b.classList.add('active');
+        });
+    }
+
+    function togglePreview() {
+        var preview   = document.getElementById('signaturePreview');
+        var signature = document.getElementById('signatureEditor').value;
+        if (preview.style.display === 'none' || preview.style.display === '') {
+            preview.innerHTML     = signature || '<em style="color:#9ca3af;">İmza boş</em>';
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
+        }
+    }
+
+    function sendTestMail() {
+        var mailTo  = document.getElementById('testMailTo').value.trim();
+        var subject = document.getElementById('testSubject').value.trim() || 'Test Maili';
+
+        if (!mailTo) {
+            Swal.fire({ icon: 'warning', title: 'Uyarı', text: 'Alıcı mail adresi giriniz.' });
+            return;
+        }
+
+        var payload = {
+            mailTo:         mailTo,
+            subject:        subject,
+            mailFrom:       document.querySelector('[name="MailFrom"]').value.trim(),
+            displayName:    document.querySelector('[name="DisplayName"]').value.trim(),
+            smtpHost:       document.getElementById('smtpHost').value.trim(),
+            smtpPort:       parseInt(document.getElementById('smtpPort').value),
+            enableSsl:      document.getElementById('enableSslHidden').value === 'true',
+            username:       document.querySelector('[name="Username"]').value.trim(),
+            password:       document.getElementById('mailPassword').value || null,
+            timeoutSeconds: parseInt(document.querySelector('[name="TimeoutSeconds"]').value),
+            signature:      document.getElementById('signatureEditor').value || null
+        };
+
+        var btn       = document.getElementById('testBtn');
+        btn.disabled  = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Gönderiliyor...';
+
+        var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        fetch('/AdminMail/TestGonder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+            body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (r.success) {
+                Swal.fire({ icon: 'success', title: 'Test Başarılı!', text: r.message, timer: 3000, showConfirmButton: false });
+                var saveBtn       = document.getElementById('saveBtn');
+                saveBtn.disabled  = false;
+                saveBtn.className = 'btn btn-primary btn-lg';
+                saveBtn.innerHTML = '<i class="fas fa-save mr-1"></i> Güncelle';
+                saveBtn.title     = '';
+                document.getElementById('testNotice').style.display = 'none';
+                document.getElementById('testSuccessNotice').classList.add('show');
+            } else {
+                Swal.fire({ icon: 'error', title: 'Test Başarısız!', text: r.message });
+                var saveBtn       = document.getElementById('saveBtn');
+                saveBtn.disabled  = true;
+                saveBtn.className = 'btn btn-secondary btn-lg';
+            }
+        })
+        .catch(function() {
+            Swal.fire({ icon: 'error', title: 'Hata!', text: 'İstek gönderilemedi.' });
+        })
+        .finally(function() {
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane mr-1"></i> Test Gönder';
+        });
+    }
+
+    document.getElementById('mailForm').addEventListener('submit', function () {
+        var saveBtn       = document.getElementById('saveBtn');
+        saveBtn.disabled  = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Kaydediliyor...';
+    });
+</script>

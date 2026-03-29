@@ -1,0 +1,1171 @@
+﻿@model CRMProjectUI.Models.TicketCreateDto
+@{
+    ViewData["Title"] = "Yeni Destek Talebi";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+
+    bool isSuperAdmin = User.IsInRole("SuperAdmin");
+    bool isAdmin      = User.IsInRole("Admin");
+    bool isUser       = User.IsInRole("User");
+
+    var logoProducts = ViewBag.LogoProducts as List<CRMProjectUI.Models.LogoProductDto>
+                       ?? new List<CRMProjectUI.Models.LogoProductDto>();
+    var customers    = ViewBag.Customers    as List<CRMProjectUI.Models.CustomerListDto>
+                       ?? new List<CRMProjectUI.Models.CustomerListDto>();
+
+    string? warningMsg = TempData["Warning"] as string;
+    string? successMsg = TempData["Success"] as string;
+    string? errorMsg   = TempData["Error"]   as string;
+
+    // Kontrol bilgilerini ViewBag'den al
+    int remainingTickets = ViewBag.RemainingTickets as int? ?? -1;
+    DateTime? contractEnd = ViewBag.ContractEndDate as DateTime?;
+    bool contractExpired  = contractEnd.HasValue && contractEnd.Value < DateTime.Today;
+    int daysLeft          = contractEnd.HasValue
+                            ? (contractEnd.Value - DateTime.Today).Days : 999;
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --ink: #0f1117;
+        --ink-soft: #4a4f5e;
+        --surface: #f7f8fc;
+        --white: #ffffff;
+        --accent: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --border: #e2e8f0;
+        --radius: 12px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.10);
+    }
+
+    .tf-page {
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .tf-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .tf-card-header {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .tf-card-header h6 {
+            margin: 0;
+            font-weight: 700;
+            font-size: .9rem;
+            color: var(--ink);
+        }
+
+        .tf-card-header i {
+            color: var(--accent);
+        }
+
+    .tf-card-body {
+        padding: 20px;
+    }
+
+    .tf-label {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        display: block;
+        margin-bottom: 6px;
+    }
+
+        .tf-label .req {
+            color: var(--danger);
+            margin-left: 2px;
+        }
+
+    .tf-input, .tf-select, .tf-textarea {
+        width: 100%;
+        padding: 9px 13px;
+        border: 1.5px solid var(--border);
+        border-radius: 9px;
+        font-size: .88rem;
+        color: var(--ink);
+        background: var(--white);
+        outline: none;
+        transition: border-color .2s, box-shadow .2s;
+        font-family: 'DM Sans', sans-serif;
+    }
+
+        .tf-input:focus, .tf-select:focus, .tf-textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+        }
+
+    .tf-textarea {
+        resize: vertical;
+        min-height: 110px;
+    }
+
+    .tf-priority-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .tf-priority-radio {
+        display: none;
+    }
+
+    .tf-priority-label {
+        padding: 7px 16px;
+        border-radius: 20px;
+        border: 1.5px solid var(--border);
+        background: var(--surface);
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: all .18s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .tf-priority-label:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: #eff6ff;
+        }
+
+    .tf-priority-radio:checked + .tf-priority-label {
+        color: #fff;
+    }
+
+    #prio1:checked + .tf-priority-label {
+        background: #94a3b8;
+        border-color: #94a3b8;
+    }
+
+    #prio2:checked + .tf-priority-label {
+        background: #3b82f6;
+        border-color: #3b82f6;
+    }
+
+    #prio3:checked + .tf-priority-label {
+        background: var(--warning);
+        border-color: var(--warning);
+    }
+
+    #prio4:checked + .tf-priority-label {
+        background: var(--danger);
+        border-color: var(--danger);
+    }
+
+    .tf-product-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .tf-product-radio {
+        display: none;
+    }
+
+    .tf-product-label {
+        padding: 8px 16px;
+        border-radius: 9px;
+        border: 1.5px solid var(--border);
+        background: var(--surface);
+        font-size: .82rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: all .18s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .tf-product-label:hover {
+            border-color: var(--accent);
+            background: #eff6ff;
+            color: var(--accent);
+        }
+
+    .tf-product-radio:checked + .tf-product-label {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+    }
+
+    .tf-dropzone {
+        border: 2px dashed var(--border);
+        border-radius: var(--radius);
+        padding: 28px 20px;
+        text-align: center;
+        transition: border-color .2s, background .2s;
+        cursor: pointer;
+        background: var(--surface);
+    }
+
+        .tf-dropzone:hover, .tf-dropzone.drag-over {
+            border-color: var(--accent);
+            background: #eff6ff;
+        }
+
+        .tf-dropzone i {
+            font-size: 2rem;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .tf-dropzone p {
+            margin: 0;
+            font-size: .85rem;
+            color: var(--ink-soft);
+        }
+
+        .tf-dropzone small {
+            font-size: .75rem;
+            color: #94a3b8;
+        }
+
+    .tf-file-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 12px;
+    }
+
+    .tf-file-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+    }
+
+        .tf-file-item i {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .tf-file-item .tf-file-name {
+            flex: 1;
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tf-file-item .tf-file-size {
+            font-size: .75rem;
+            color: var(--ink-soft);
+            white-space: nowrap;
+        }
+
+        .tf-file-item .tf-file-remove {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: none;
+            background: #fef2f2;
+            color: var(--danger);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .75rem;
+            flex-shrink: 0;
+            transition: background .15s;
+        }
+
+            .tf-file-item .tf-file-remove:hover {
+                background: #fee2e2;
+            }
+
+    /* ── YENİ: Önizleme butonu ── */
+    .tf-file-preview {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        border: none;
+        background: #eff6ff;
+        color: var(--accent);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .75rem;
+        flex-shrink: 0;
+        transition: background .15s;
+    }
+
+        .tf-file-preview:hover {
+            background: #dbeafe;
+        }
+
+    /* ── YENİ: Önizleme modal ── */
+    #previewModal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.6);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+        #previewModal.open {
+            display: flex;
+        }
+
+    #previewModalInner {
+        background: #fff;
+        border-radius: 14px;
+        max-width: 800px;
+        width: 90%;
+        max-height: 85vh;
+        overflow: auto;
+        padding: 24px;
+        position: relative;
+    }
+
+    #previewModalClose {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        border: none;
+        background: #fef2f2;
+        color: #ef4444;
+        border-radius: 8px;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: .82rem;
+        font-weight: 700;
+    }
+
+    #previewFileName {
+        font-weight: 700;
+        font-size: .9rem;
+        margin-bottom: 12px;
+        color: var(--ink);
+        padding-right: 60px;
+    }
+
+    #previewContent {
+        text-align: center;
+    }
+
+        #previewContent img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        #previewContent iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+            border-radius: 8px;
+        }
+
+        #previewContent pre {
+            text-align: left;
+            background: #f7f8fc;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: .82rem;
+            overflow: auto;
+            max-height: 400px;
+            white-space: pre-wrap;
+            margin: 0;
+        }
+
+    .tf-btn-primary {
+        padding: 10px 24px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        font-size: .88rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        box-shadow: 0 3px 10px rgba(37,99,235,.35);
+        transition: background .2s, transform .15s;
+    }
+
+        .tf-btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .tf-btn-primary:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+    .tf-btn-secondary {
+        padding: 10px 20px;
+        border-radius: 10px;
+        background: var(--white);
+        color: var(--ink-soft);
+        border: 1.5px solid var(--border);
+        font-size: .88rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        text-decoration: none;
+        transition: all .15s;
+    }
+
+        .tf-btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+    .tf-char-counter {
+        font-size: .75rem;
+        color: var(--ink-soft);
+        float: right;
+    }
+
+        .tf-char-counter.warn {
+            color: var(--warning);
+        }
+
+        .tf-char-counter.danger {
+            color: var(--danger);
+        }
+
+    .tf-info-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 9px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        font-size: .83rem;
+        color: #1e40af;
+        margin-bottom: 16px;
+    }
+
+        .tf-info-box i {
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+</style>
+
+
+<div class="tf-page">
+
+    <!-- BREADCRUMB -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h5 style="font-family:'Syne',sans-serif; font-weight:700; margin:0;">
+                <i class="fas fa-plus-circle mr-2 text-primary"></i>Yeni Destek Talebi
+            </h5>
+            <small style="color:var(--ink-soft);">
+                <a asp-action="Liste" asp-controller="AdminTicket" style="color:var(--accent);">Talepler</a>
+                <i class="fas fa-chevron-right mx-1" style="font-size:.6rem;"></i> Yeni Talep
+            </small>
+        </div>
+        <a asp-action="Liste" asp-controller="AdminTicket" class="tf-btn-secondary">
+            <i class="fas fa-arrow-left"></i> Listeye Dön
+        </a>
+    </div>
+
+    <!-- YETKİ BİLGİSİ -->
+    @if (isSuperAdmin)
+    {
+        <div class="tf-info-box">
+            <i class="fas fa-shield-alt"></i>
+            <span>SuperAdmin olarak herhangi bir müşteri adına talep oluşturabilirsiniz.</span>
+        </div>
+    }
+    else if (isAdmin)
+    {
+        <div class="tf-info-box">
+            <i class="fas fa-shield-alt"></i>
+            <span>Admin olarak herhangi bir müşteri adına talep oluşturabilirsiniz.</span>
+        </div>
+    }
+
+    <!-- UYARI MESAJLARI -->
+    @if (warningMsg != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle mr-2"></i>@warningMsg
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+    }
+
+    @if (contractExpired)
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Sözleşme süreniz <strong>@contractEnd!.Value.ToString("dd.MM.yyyy")</strong> tarihinde dolmuştur.
+            Yeni ticket oluşturamazsınız.
+        </div>
+    }
+    else if (daysLeft is > 0 and <= 10)
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Sözleşmeniz <strong>@daysLeft gün</strong> içinde sona erecek.
+        </div>
+    }
+
+    @if (remainingTickets == 0)
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-ticket-alt mr-2"></i>
+            Ticket hakkınız kalmamıştır.
+        </div>
+    }
+    else if (remainingTickets is > 0 and <= 5)
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-ticket-alt mr-2"></i>
+            Yalnızca <strong>@remainingTickets</strong> ticket hakkınız kalmıştır.
+        </div>
+    }
+
+    <form asp-action="Ekle" asp-controller="AdminTicket" method="post"
+          enctype="multipart/form-data" id="ticketForm" novalidate>
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="CreatedByUserID" id="createdByUserId" />
+        <input type="hidden" asp-for="CustomerID"      id="customerIdHidden" />
+        <input type="hidden" id="logoProductIdHidden" value="" />
+
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger" style="border-radius:var(--radius);">
+                <strong><i class="fas fa-exclamation-triangle mr-2"></i>Lütfen hataları düzeltin:</strong>
+                <ul class="mb-0 mt-2">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@error.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <div class="row">
+            <div class="col-md-8">
+
+                <!-- MÜŞTERİ SEÇİMİ — SuperAdmin ve Admin görebilir -->
+                @if (isSuperAdmin || isAdmin)
+                {
+                    <div class="tf-card">
+                        <div class="tf-card-header">
+                            <i class="fas fa-building"></i>
+                            <h6>Müşteri Seçimi <span style="color:var(--danger);">*</span></h6>
+                        </div>
+                        <div class="tf-card-body">
+                            <label class="tf-label">Müşteri <span class="req">*</span></label>
+                            <select class="tf-select" id="customerSelect" onchange="onCustomerChange(this.value)">
+                                <option value="">Müşteri seçiniz...</option>
+                                @foreach (var c in customers)
+                                {
+                                    if (Model.CustomerID == c.ID)
+                                    {
+                                        <option value="@c.ID" data-name="@c.CustomerName" selected>
+                                            @c.CustomerName (@c.CustomerCode)
+                                        </option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@c.ID" data-name="@c.CustomerName">
+                                            @c.CustomerName (@c.CustomerCode)
+                                        </option>
+                                    }
+                                }
+                            </select>
+                            <small style="font-size:.75rem; color:var(--ink-soft); margin-top:4px; display:block;">
+                                Müşteri seçildiğinde ilgili Logo ürünleri listelenecektir.
+                            </small>
+                            <div id="eligibilityAlert"></div>  <!-- ← BURAYA EKLE -->
+                        </div>
+                    </div>
+                }
+                @if (isAdmin || isSuperAdmin)
+                {
+                    <div class="tf-card">
+                        <div class="tf-card-header">
+                            <i class="fas fa-calendar-alt"></i>
+                            <h6>Açılış Tarihi</h6>
+                        </div>
+                        <div class="tf-card-body">
+                            <label class="tf-label">
+                                Tarih
+                                <small style="font-weight:400; color:var(--ink-soft);">
+                                    (geçmişe yönelik giriş yapılabilir)
+                                </small>
+                            </label>
+                            <input type="date" name="OpenedDate" class="tf-input"
+                                   max="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                }
+                <!-- LOGO ÜRÜN SEÇİMİ -->
+                <div class="tf-card">
+                    <div class="tf-card-header">
+                        <i class="fas fa-cube"></i>
+                        <h6>Müşteri Ürünü <span style="color:var(--danger);">*</span></h6>
+                    </div>
+                    <div class="tf-card-body">
+                        <div class="tf-product-grid" id="productGrid">
+                            @if (logoProducts.Any())
+                            {
+                                @foreach (var p in logoProducts)
+                                {
+                                    <input type="radio" name="LogoProductID" value="@p.ID"
+                                           id="prod_@p.ID" class="tf-product-radio"
+                                           @(Model.LogoProductID == p.ID ? "checked" : "") required />
+                                    <label for="prod_@p.ID" class="tf-product-label">
+                                        <i class="fas fa-cube"></i> @p.LogoProductName
+                                    </label>
+                                }
+                            }
+                            else
+                            {
+                                <p style="font-size:.83rem; color:var(--ink-soft); margin:0;">
+                                    @if (isSuperAdmin || isAdmin)
+                                    {
+                                        <i class="fas fa-arrow-up mr-1"></i>
+                                        <span>Önce müşteri seçiniz.</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-exclamation-circle mr-1 text-warning"></i>
+                                        <span>Firmanıza ait Müşteri ürünü bulunamadı.</span>
+                                    }
+                                </p>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TALEP BİLGİLERİ -->
+                <div class="tf-card">
+                    <div class="tf-card-header">
+                        <i class="fas fa-file-alt"></i>
+                        <h6>Talep Bilgileri</h6>
+                    </div>
+                    <div class="tf-card-body">
+                        <div class="form-group mb-3">
+                            <label class="tf-label">
+                                Başlık <span class="req">*</span>
+                                <span class="tf-char-counter" id="titleCounter">0/200</span>
+                            </label>
+                            <input asp-for="Title" class="tf-input" maxlength="200"
+                                   placeholder="Sorunuzu kısaca özetleyin..."
+                                   oninput="updateCounter('Title','titleCounter',200)" required />
+                        </div>
+                        <div class="form-group mb-0">
+                            <label class="tf-label">
+                                Sorun Açıklaması <span class="req">*</span>
+                                <span class="tf-char-counter" id="descCounter">0/4000</span>
+                            </label>
+                            <textarea asp-for="Description" class="tf-textarea" maxlength="4000"
+                                      placeholder="Sorunu detaylı açıklayınız..."
+                                      oninput="updateCounter('Description','descCounter',4000)"
+                                      required></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DOSYA EKLEME -->
+                <div class="tf-card">
+                    <div class="tf-card-header">
+                        <i class="fas fa-paperclip"></i>
+                        <h6>Dosya Ekleme <small style="font-weight:400; color:var(--ink-soft);">(opsiyonel)</small></h6>
+                    </div>
+                    <div class="tf-card-body">
+                        <div class="tf-dropzone" id="dropzone"
+                             onclick="document.getElementById('fileInput').click()"
+                             ondragover="onDragOver(event)"
+                             ondragleave="onDragLeave(event)"
+                             ondrop="onDrop(event)">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Dosyaları buraya sürükleyin veya <strong style="color:var(--accent);">tıklayın</strong></p>
+                            <small>PDF, Excel, Word, Görsel (JPG, PNG) · Maks. 20MB / dosya · Çoklu seçim yapılabilir</small>
+                        </div>
+                        <input type="file" id="fileInput" name="Files" multiple style="display:none;"
+                               accept=".pdf,.xls,.xlsx,.doc,.docx,.jpg,.jpeg,.png,.gif,.bmp,.txt"
+                               onchange="onFilesSelected(this.files)" />
+                        <div class="tf-file-list" id="fileList"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- SAĞ KOLON -->
+            <div class="col-md-4">
+
+                <!-- ÖNCELİK -->
+                <div class="tf-card">
+                    <div class="tf-card-header">
+                        <i class="fas fa-flag"></i>
+                        <h6>Öncelik <span style="color:var(--danger);">*</span></h6>
+                    </div>
+                    <div class="tf-card-body">
+                        <div class="tf-priority-group">
+                            <input type="radio" name="Priority" value="1" id="prio1" class="tf-priority-radio" @(Model.Priority == 1 ? "checked" : "") />
+                            <label for="prio1" class="tf-priority-label"><i class="fas fa-arrow-down"></i> Düşük</label>
+
+                            <input type="radio" name="Priority" value="2" id="prio2" class="tf-priority-radio" @(Model.Priority == 2 ? "checked" : "checked") />
+                            <label for="prio2" class="tf-priority-label"><i class="fas fa-minus"></i> Normal</label>
+
+                            <input type="radio" name="Priority" value="3" id="prio3" class="tf-priority-radio" @(Model.Priority == 3 ? "checked" : "") />
+                            <label for="prio3" class="tf-priority-label"><i class="fas fa-arrow-up"></i> Yüksek</label>
+
+                            <input type="radio" name="Priority" value="4" id="prio4" class="tf-priority-radio" @(Model.Priority == 4 ? "checked" : "") />
+                            <label for="prio4" class="tf-priority-label"><i class="fas fa-fire"></i> Kritik</label>
+                        </div>
+                        <small style="font-size:.75rem; color:var(--ink-soft); margin-top:8px; display:block;">
+                            Kritik öncelikli talepler ekibimiz tarafından öncelikli olarak ele alınır.
+                        </small>
+                    </div>
+                </div>
+
+                <!-- ÖZET BİLGİ -->
+                <div class="tf-card">
+                    <div class="tf-card-header">
+                        <i class="fas fa-info-circle"></i>
+                        <h6>Talep Özeti</h6>
+                    </div>
+                    <div class="tf-card-body" style="font-size:.83rem;">
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:var(--ink-soft);">Oluşturan</span>
+                                <strong>@(User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "-")</strong>
+                            </div>
+                            @if (isUser)
+                            {
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="color:var(--ink-soft);">Firma</span>
+                                    <strong>@(ViewBag.CallerCompanyName ?? "-")</strong>
+                                </div>
+                            }
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:var(--ink-soft);">Tarih</span>
+                                <strong>@DateTime.Now.ToString("dd.MM.yyyy HH:mm")</strong>
+                            </div>
+                            <hr style="margin:4px 0; border-color:var(--border);" />
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:var(--ink-soft);">Seçili Ürün</span>
+                                <strong id="summaryProduct" style="color:var(--accent);">-</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="color:var(--ink-soft);">Eklenen Dosya</span>
+                                <strong id="summaryFileCount">0</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KURALLAR -->
+                <div class="tf-card">
+                    <div class="tf-card-header">
+                        <i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i>
+                        <h6>Dikkat</h6>
+                    </div>
+                    <div class="tf-card-body" style="font-size:.8rem; color:var(--ink-soft);">
+                        <ul style="margin:0; padding-left:16px; display:flex; flex-direction:column; gap:6px;">
+                            <li>Talep oluşturulduktan sonra <strong>düzenlenemez</strong>.</li>
+                            <li>Talep <strong>silinemez</strong> veya pasife alınamaz.</li>
+                            <li>Başlık ve açıklama alanları <strong>zorunludur</strong>.</li>
+                            <li>Müşteri ürünü seçimi <strong>zorunludur</strong>.</li>
+                            <li>Dosya eklemek <strong>opsiyoneldir</strong>.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- SUBMIT -->
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <button type="submit" class="tf-btn-primary w-100 justify-content-center" id="submitBtn">
+                        <i class="fas fa-paper-plane"></i> Talebi Gönder
+                    </button>
+                    <a asp-action="Liste" asp-controller="AdminTicket"
+                       class="tf-btn-secondary w-100 justify-content-center">
+                        <i class="fas fa-times"></i> İptal
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </form>
+</div>
+<!-- ÖNİZLEME MODAL -->
+<div id="previewModal">
+    <div id="previewModalInner">
+        <button id="previewModalClose" onclick="closePreview()">
+            <i class="fas fa-times mr-1"></i> Kapat
+        </button>
+        <div id="previewFileName" style="font-weight:700; font-size:.9rem; margin-bottom:8px;"></div>
+        <div id="previewContent"></div>
+    </div>
+</div>
+<div id="tempData"
+     data-success='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(successMsg ?? ""))'
+     data-error='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(errorMsg ?? ""))'>
+</div>
+
+<script>
+    if (typeof Swal === 'undefined') {
+        window.Swal = {
+            fire: function(opts) { alert(opts.title + '\n' + (opts.text || '')); }
+        };
+    }
+// ── DOSYA YÖNETİMİ ──────────────────────────────────────────────────────────
+var selectedFiles = [];
+
+var iconMap = {
+    'pdf':  { icon: 'fa-file-pdf',   color: '#ef4444' },
+    'xls':  { icon: 'fa-file-excel', color: '#10b981' },
+    'xlsx': { icon: 'fa-file-excel', color: '#10b981' },
+    'doc':  { icon: 'fa-file-word',  color: '#3b82f6' },
+    'docx': { icon: 'fa-file-word',  color: '#3b82f6' },
+    'jpg':  { icon: 'fa-file-image', color: '#f59e0b' },
+    'jpeg': { icon: 'fa-file-image', color: '#f59e0b' },
+    'png':  { icon: 'fa-file-image', color: '#f59e0b' },
+    'gif':  { icon: 'fa-file-image', color: '#f59e0b' },
+    'bmp':  { icon: 'fa-file-image', color: '#f59e0b' },
+    'txt':  { icon: 'fa-file-alt',   color: '#6b7280' }
+};
+
+function getExt(name)  { return name.split('.').pop().toLowerCase(); }
+function formatSize(b) {
+    if (b < 1024)         return b + ' B';
+    if (b < 1024 * 1024)  return (b / 1024).toFixed(1) + ' KB';
+    return (b / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function onFilesSelected(files) {
+    Array.from(files).forEach(function(f) {
+        if (f.size > 20 * 1024 * 1024) {
+            Swal.fire({ icon:'warning', title:'Dosya Çok Büyük', text: f.name + ' 20MB limitini aşıyor.' });
+            return;
+        }
+        var exists = selectedFiles.some(function(sf) { return sf.name === f.name && sf.size === f.size; });
+        if (!exists) selectedFiles.push(f);
+    });
+    renderFileList();
+    updateSummary();
+}
+
+    function renderFileList() {
+        var list = document.getElementById('fileList');
+        list.innerHTML = '';
+        var dt = new DataTransfer();
+        selectedFiles.forEach(function(f) { dt.items.add(f); });
+        document.getElementById('fileInput').files = dt.files;
+
+        selectedFiles.forEach(function(f, idx) {
+            var ext = getExt(f.name);
+            var ic  = iconMap[ext] || { icon: 'fa-file', color: '#9ca3af' };
+            var canPreview = ['jpg','jpeg','png','gif','bmp','pdf','txt'].indexOf(ext) !== -1;
+
+            var div = document.createElement('div');
+            div.className = 'tf-file-item';
+            div.innerHTML =
+                '<i class="fas ' + ic.icon + '" style="color:' + ic.color + ';"></i>' +
+                '<span class="tf-file-name" title="' + f.name + '">' + f.name + '</span>' +
+                '<span class="tf-file-size">' + formatSize(f.size) + '</span>' +
+                (canPreview
+                    ? '<button type="button" class="tf-file-preview" onclick="previewFile(' + idx + ')" title="Önizle">' +
+                      '<i class="fas fa-eye"></i></button>'
+                    : '') +
+                '<button type="button" class="tf-file-remove" onclick="removeFile(' + idx + ')" title="Kaldır">' +
+                '<i class="fas fa-times"></i></button>';
+            list.appendChild(div);
+        });
+    }
+        function previewFile(idx) {
+        var f   = selectedFiles[idx];
+        var ext = getExt(f.name);
+        var url = URL.createObjectURL(f);
+
+        document.getElementById('previewFileName').textContent = f.name;
+        var content = document.getElementById('previewContent');
+        content.innerHTML = '';
+
+        if (['jpg','jpeg','png','gif','bmp'].indexOf(ext) !== -1) {
+            content.innerHTML = '<img src="' + url + '" alt="' + f.name + '" />';
+        } else if (ext === 'pdf') {
+            content.innerHTML = '<iframe src="' + url + '"></iframe>';
+        } else if (ext === 'txt') {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                content.innerHTML = '<pre>' + e.target.result.replace(/</g,'&lt;') + '</pre>';
+            };
+            reader.readAsText(f);
+        }
+
+        document.getElementById('previewModal').classList.add('open');
+    }
+
+    function closePreview() {
+        document.getElementById('previewModal').classList.remove('open');
+        document.getElementById('previewContent').innerHTML = '';
+    }
+
+    // ESC ile kapat
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closePreview();
+    });
+
+    // Modal dışına tıklayınca kapat
+    document.getElementById('previewModal').addEventListener('click', function(e) {
+        if (e.target === this) closePreview();
+    });
+function removeFile(idx) {
+    selectedFiles.splice(idx, 1);
+    renderFileList();
+    updateSummary();
+}
+
+function onDragOver(e)  { e.preventDefault(); document.getElementById('dropzone').classList.add('drag-over'); }
+function onDragLeave(e) { document.getElementById('dropzone').classList.remove('drag-over'); }
+function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('dropzone').classList.remove('drag-over');
+    onFilesSelected(e.dataTransfer.files);
+}
+
+// ── KARAKTER SAYACI ──────────────────────────────────────────────────────────
+function updateCounter(fieldId, counterId, max) {
+    var val     = document.getElementById(fieldId)?.value || '';
+    var counter = document.getElementById(counterId);
+    if (!counter) return;
+    counter.textContent = val.length + '/' + max;
+    counter.className   = 'tf-char-counter';
+    if      (val.length >= max * .9)  counter.classList.add('danger');
+    else if (val.length >= max * .75) counter.classList.add('warn');
+}
+
+// ── ÖZET ────────────────────────────────────────────────────────────────────
+    function updateSummary() {
+        var checked = document.querySelector('.tf-product-radio:checked');
+        var label   = checked ? document.querySelector('label[for="' + checked.id + '"]') : null;
+        document.getElementById('summaryProduct').textContent   = label ? label.textContent.trim() : '-';
+        document.getElementById('summaryFileCount').textContent = selectedFiles.length;
+        // Hidden input'u da güncelle — server-side binding için
+        var hidden = document.getElementById('logoProductIdHidden');
+        if (hidden) hidden.value = checked ? checked.value : '';
+        // Ürün seçili değilse product grid'e görsel uyarı ekle
+        var grid = document.getElementById('productGrid');
+        if (grid) {
+            if (checked) {
+                grid.style.border = '';
+                grid.style.borderRadius = '';
+                grid.style.padding = '';
+            }
+        }
+    }
+
+// ── MÜŞTERİ DEĞİŞİNDE LOGO ÜRÜNLER ─────────────────────────────────────────
+    function onCustomerChange(customerId) {
+        document.getElementById('customerIdHidden').value = customerId;
+
+        if (!customerId) {
+            document.getElementById('productGrid').innerHTML =
+                '<p style="font-size:.83rem;color:var(--ink-soft);margin:0;"><i class="fas fa-arrow-up mr-1"></i>Önce müşteri seçiniz.</p>';
+            // Uyarıları temizle
+            document.getElementById('eligibilityAlert').innerHTML = '';
+            return;
+        }
+
+        document.getElementById('productGrid').innerHTML =
+            '<p style="font-size:.83rem;color:var(--ink-soft);margin:0;"><i class="fas fa-spinner fa-spin mr-1"></i>Yükleniyor...</p>';
+
+        // ── Ticket hakkı ve sözleşme kontrolü ──
+        fetch('/AdminTicket/CheckEligibility?customerId=' + customerId)
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var alertBox = document.getElementById('eligibilityAlert');
+                alertBox.innerHTML = '';
+
+                if (d.isContractExpired) {
+                    alertBox.innerHTML =
+                        '<div class="alert alert-danger mt-2">' +
+                        '<i class="fas fa-exclamation-triangle mr-2"></i>' +
+                        'Bu müşterinin sözleşme süresi dolmuştur. Ticket oluşturamazsınız.' +
+                        '</div>';
+                    document.getElementById('submitBtn').disabled = true;
+                } else if (d.daysLeft > 0 && d.daysLeft <= 10) {
+                    alertBox.innerHTML =
+                        '<div class="alert alert-warning mt-2">' +
+                        '<i class="fas fa-exclamation-triangle mr-2"></i>' +
+                        'Sözleşme <strong>' + d.daysLeft + ' gün</strong> içinde sona erecek.' +
+                        '</div>';
+                    document.getElementById('submitBtn').disabled = false;
+                }
+
+                if (d.isTicketExhausted) {
+                    alertBox.innerHTML +=
+                        '<div class="alert alert-danger mt-2">' +
+                        '<i class="fas fa-ticket-alt mr-2"></i>' +
+                        'Bu müşterinin ticket hakkı kalmamıştır.' +
+                        '</div>';
+                    document.getElementById('submitBtn').disabled = true;
+                } else if (d.ticketCount > 0 && d.ticketCount <= 5) {
+                    alertBox.innerHTML +=
+                        '<div class="alert alert-warning mt-2">' +
+                        '<i class="fas fa-ticket-alt mr-2"></i>' +
+                        'Yalnızca <strong>' + d.ticketCount + '</strong> ticket hakkı kalmıştır.' +
+                        '</div>';
+                }
+
+                if (!d.isContractExpired && !d.isTicketExhausted) {
+                    document.getElementById('submitBtn').disabled = false;
+                }
+            })
+            .catch(function() {});
+
+    fetch('/AdminTicket/GetLogoProducts?customerId=' + customerId)
+        .then(function(r) { return r.json(); })
+        .then(function(products) {
+            var grid = document.getElementById('productGrid');
+            grid.innerHTML = '';
+            if (!products || products.length === 0) {
+                grid.innerHTML = '<p style="font-size:.83rem;color:var(--ink-soft);margin:0;">Bu müşteriye ait Müşteri ürünü bulunamadı.</p>';
+                return;
+            }
+            products.forEach(function(p) {
+                var radio       = document.createElement('input');
+                radio.type      = 'radio';
+                radio.name      = 'LogoProductID';
+                radio.value     = p.id;
+                radio.id        = 'prod_' + p.id;
+                radio.className = 'tf-product-radio';
+                radio.required  = true;
+                radio.addEventListener('change', updateSummary);
+
+                var label       = document.createElement('label');
+                label.htmlFor   = 'prod_' + p.id;
+                label.className = 'tf-product-label';
+                label.innerHTML = '<i class="fas fa-cube"></i> ' + p.logoProductName;
+
+                grid.appendChild(radio);
+                grid.appendChild(label);
+            });
+        })
+        .catch(function() {
+            document.getElementById('productGrid').innerHTML =
+                '<p style="font-size:.83rem;color:var(--danger);margin:0;">Ürünler yüklenemedi.</p>';
+        });
+}
+
+document.getElementById('ticketForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    var title = document.getElementById('Title')?.value.trim();
+    if (!title) {
+        Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Başlık zorunludur.' });
+        return;
+    }
+
+    var desc = document.getElementById('Description')?.value.trim();
+    if (!desc) {
+        Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Açıklama zorunludur.' });
+        return;
+    }
+
+    var isAdminOrSuper = @((isAdmin || isSuperAdmin) ? "true" : "false");
+    if (isAdminOrSuper) {
+        var custSelect = document.getElementById('customerSelect');
+        if (!custSelect || !custSelect.value) {
+            Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Lütfen bir müşteri seçiniz.' });
+            return;
+        }
+        document.getElementById('customerIdHidden').value = custSelect.value;
+
+        // Tarih kontrolü
+        var dateInput = document.querySelector('input[name="OpenedDate"]');
+        if (dateInput && dateInput.value) {
+            var selectedDate = new Date(dateInput.value);
+            var today = new Date();
+            today.setHours(23, 59, 59, 999);
+            if (selectedDate > today) {
+                Swal.fire({ icon:'warning', title:'Geçersiz Tarih', text:'Gelecek tarih seçilemez.' });
+                return;
+            }
+        }
+    }
+
+    var productChecked = document.querySelector('.tf-product-radio:checked');
+    if (!productChecked) {
+        var grid = document.getElementById('productGrid');
+        grid.style.border = '2px solid #ef4444';
+        grid.style.borderRadius = '9px';
+        grid.style.padding = '10px';
+        setTimeout(function() {
+            grid.style.border = '';
+            grid.style.borderRadius = '';
+            grid.style.padding = '';
+        }, 3000);
+        Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Lütfen bir Müşteri ürünü seçiniz.' });
+        return;
+    }
+
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
+    this.submit();
+});
+// ── INIT ─────────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+        updateCounter('Title',       'titleCounter', 200);
+        updateCounter('Description', 'descCounter',  4000);
+
+        document.querySelectorAll('.tf-product-radio').forEach(function(r) {
+            r.addEventListener('change', updateSummary);
+        });
+
+        updateSummary();
+
+        // ── Sayfa açılırken default müşteri varsa kontrol et ──
+        var customerSelect = document.getElementById('customerSelect');
+        if (customerSelect && customerSelect.value) {
+            onCustomerChange(customerSelect.value);
+        }
+
+        // TempData mesajları
+    setTimeout(function() {
+        var td = document.getElementById('tempData');
+        if (!td) return;
+        var s = '', er = '';
+        try { s  = JSON.parse(td.getAttribute('data-success') || '""'); } catch(ex) { s  = ''; }
+        try { er = JSON.parse(td.getAttribute('data-error')   || '""'); } catch(ex) { er = ''; }
+        if (s  && s.trim())  Swal.fire({ icon:'success', title:'Başarılı!', text:s,  timer:2500, showConfirmButton:false });
+        if (er && er.trim()) Swal.fire({ icon:'error',   title:'Hata!',     text:er });
+    }, 300);
+    });
+</script>

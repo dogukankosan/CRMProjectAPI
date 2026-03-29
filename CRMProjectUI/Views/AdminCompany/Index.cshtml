@@ -1,116 +1,539 @@
-﻿@model List<CRMProjectUI.Models.CompanyDto>
-
+﻿@model CRMProjectUI.Models.CompanyDto
 @{
     ViewData["Title"] = "Şirket Bilgisi";
     Layout = "~/Views/Shared/_adminLayout.cshtml";
 }
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">
-        @TempData["Error"]
-    </div>
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
 }
-@if (Model == null || !Model.Any())
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --ink:       #0f1117;
+        --ink-soft:  #4a4f5e;
+        --surface:   #f7f8fc;
+        --white:     #ffffff;
+        --accent:    #2563eb;
+        --success:   #10b981;
+        --border:    #e2e8f0;
+        --radius:    14px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.10);
+        --shadow-lg: 0 20px 60px rgba(15,17,23,.14);
+    }
+
+    .cp-page { font-family: 'DM Sans', sans-serif; color: var(--ink); }
+
+    /* ── HERO ── */
+    .cp-hero {
+        position: relative;
+        background: linear-gradient(135deg, #0f1117 0%, #1e2235 60%, #0c1a3a 100%);
+        border-radius: var(--radius);
+        padding: 36px 32px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    .cp-hero::before {
+        content: ''; position: absolute; inset: 0;
+        background: radial-gradient(ellipse 60% 80% at 80% 50%, rgba(37,99,235,.18) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .cp-hero::after {
+        content: ''; position: absolute; right: -60px; bottom: -60px;
+        width: 280px; height: 280px; border-radius: 50%;
+        border: 1px solid rgba(255,255,255,.05); pointer-events: none;
+    }
+    .cp-hero-inner {
+        position: relative; z-index: 1;
+        display: flex; align-items: center; gap: 24px;
+    }
+    .cp-logo-wrap {
+        width: 84px; height: 84px; flex-shrink: 0;
+        background: rgba(255,255,255,.08);
+        border: 1px solid rgba(255,255,255,.14);
+        border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden; backdrop-filter: blur(8px);
+        cursor: pointer; transition: transform .25s, box-shadow .25s;
+    }
+    .cp-logo-wrap:hover { transform: scale(1.06); box-shadow: 0 0 0 4px rgba(37,99,235,.4); }
+    .cp-logo-wrap img { max-width: 68px; max-height: 68px; object-fit: contain; }
+    .cp-logo-wrap i   { font-size: 34px; color: rgba(255,255,255,.35); }
+    .cp-hero-info { flex: 1; min-width: 0; }
+    .cp-company-name {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.65rem; font-weight: 800;
+        color: #fff; line-height: 1.2; margin-bottom: 2px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .cp-short-name { font-size: .82rem; color: rgba(255,255,255,.42); margin-bottom: 8px; }
+    .cp-slogan {
+        display: inline-block; font-size: .8rem; font-style: italic;
+        color: rgba(255,255,255,.62);
+        border-left: 3px solid var(--accent);
+        padding-left: 9px; margin-bottom: 12px;
+    }
+    .cp-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .cp-badge {
+        font-size: .7rem; font-weight: 500;
+        padding: 3px 10px; border-radius: 20px;
+        background: rgba(255,255,255,.1);
+        color: rgba(255,255,255,.7);
+        border: 1px solid rgba(255,255,255,.1); white-space: nowrap;
+    }
+    .cp-badge.accent { background: rgba(37,99,235,.3); border-color: rgba(37,99,235,.5); color: #93c5fd; }
+    .cp-hero-actions {
+        flex-shrink: 0; margin-left: auto;
+        display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    }
+    .cp-edit-btn {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 9px 18px; border-radius: 10px;
+        background: var(--accent); color: #fff;
+        font-size: .83rem; font-weight: 500;
+        text-decoration: none; white-space: nowrap;
+        box-shadow: 0 4px 14px rgba(37,99,235,.4);
+        transition: background .2s, transform .15s, box-shadow .2s;
+    }
+    .cp-edit-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,.5); color: #fff; text-decoration: none; }
+    .cp-favicon-wrap { display: flex; align-items: center; gap: 5px; color: rgba(255,255,255,.42); font-size: .72rem; }
+    .cp-favicon-wrap img { width: 15px; height: 15px; }
+
+    /* ── ROWS ── */
+    .cp-row { display: flex; gap: 18px; margin-bottom: 18px; align-items: stretch; }
+    .cp-row .cp-card { min-width: 0; }
+    .cp-row .cp-card.flex-grow { flex: 1; }
+    .cp-row .cp-card.flex-fixed { flex: 0 0 280px; }
+
+    @@media (max-width: 900px) {
+        .cp-row { flex-direction: column; }
+        .cp-row .cp-card.flex-fixed { flex: none; width: 100%; }
+        .cp-hero-inner { flex-wrap: wrap; }
+        .cp-company-name { white-space: normal; }
+    }
+
+    /* ── CARD ── */
+    .cp-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow .2s, transform .2s;
+    }
+    .cp-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .cp-card-head {
+        padding: 12px 18px;
+        display: flex; align-items: center; gap: 9px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+    }
+    .cp-card-head i { font-size: .88rem; color: var(--accent); }
+    .cp-card-head span {
+        font-family: 'Syne', sans-serif;
+        font-size: .76rem; font-weight: 700;
+        letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft);
+    }
+    .cp-card-body { padding: 18px; }
+
+    /* ── INFO LIST ── */
+    .cp-info-list { list-style: none; padding: 0; margin: 0; }
+    .cp-info-list li {
+        display: flex; align-items: flex-start; gap: 11px;
+        padding: 9px 0; border-bottom: 1px solid var(--border);
+    }
+    .cp-info-list li:last-child { border-bottom: none; padding-bottom: 0; }
+    .cp-info-icon {
+        width: 30px; height: 30px; border-radius: 8px;
+        background: #eff6ff;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .cp-info-icon i { font-size: .74rem; color: var(--accent); }
+    .cp-info-label { font-size: .68rem; color: var(--ink-soft); margin-bottom: 1px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+    .cp-info-value { font-size: .875rem; color: var(--ink); }
+    .cp-info-value a { color: var(--accent); text-decoration: none; }
+    .cp-info-value a:hover { text-decoration: underline; }
+    .cp-info-value.green a { color: var(--success); }
+
+    /* ── SOCIAL ── */
+    .cp-social-list { display: flex; flex-direction: column; gap: 8px; }
+    .cp-social-btn {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 14px; border-radius: 10px;
+        border: 1px solid var(--border);
+        text-decoration: none; color: var(--ink);
+        font-size: .85rem; font-weight: 500;
+        background: var(--surface);
+        transition: border-color .18s, background .18s, transform .15s, color .15s;
+    }
+    .cp-social-btn:hover { background: var(--white); transform: translateX(4px); text-decoration: none; }
+    .cp-social-btn i { font-size: 1rem; width: 18px; text-align: center; flex-shrink: 0; }
+    .cp-social-btn.instagram:hover { color: #e1306c; border-color: #e1306c; }
+    .cp-social-btn.linkedin:hover  { color: #0a66c2; border-color: #0a66c2; }
+    .cp-social-btn.youtube:hover   { color: #ff0000; border-color: #ff0000; }
+    .cp-social-btn.external:hover  { color: #0f766e; border-color: #0f766e; }
+    .cp-empty { text-align: center; padding: 32px 16px; color: var(--ink-soft); font-size: .83rem; }
+    .cp-empty i { font-size: 1.4rem; opacity: .22; display: block; margin-bottom: 8px; }
+
+    /* ── SEO ── */
+    .cp-seo-item { margin-bottom: 14px; }
+    .cp-seo-item:last-child { margin-bottom: 0; }
+    .cp-seo-label { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); margin-bottom: 4px; }
+    .cp-seo-value { font-size: .875rem; color: var(--ink); line-height: 1.5; }
+    .cp-seo-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+    .cp-seo-fill { height: 100%; border-radius: 2px; transition: width .6s ease; }
+
+    /* ── TAGS ── */
+    .cp-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+    .cp-tag { font-size: .71rem; padding: 2px 9px; border-radius: 20px; background: #eff6ff; color: var(--accent); border: 1px solid #bfdbfe; }
+
+    /* ── ABOUT ── */
+    .cp-about-text { font-size: .875rem; line-height: 1.7; color: var(--ink-soft); }
+
+    /* ── MODAL ── */
+    .cp-modal {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.78); z-index: 9999;
+        justify-content: center; align-items: center;
+        backdrop-filter: blur(4px);
+    }
+    .cp-modal.show { display: flex; }
+    .cp-modal img { max-width: 90%; max-height: 85vh; border-radius: 12px; box-shadow: var(--shadow-lg); }
+    .cp-modal-close {
+        position: absolute; top: 18px; right: 24px;
+        font-size: 34px; color: #fff; cursor: pointer;
+        opacity: .7; line-height: 1; transition: opacity .2s;
+    }
+    .cp-modal-close:hover { opacity: 1; }
+
+    /* ── ANIMATE ── */
+    .cp-fade { opacity: 0; transform: translateY(12px); animation: cpIn .38s ease forwards; }
+    @@keyframes cpIn { to { opacity: 1; transform: none; } }
+    .cp-fade:nth-child(1) { animation-delay: .04s; }
+    .cp-fade:nth-child(2) { animation-delay: .10s; }
+    .cp-fade:nth-child(3) { animation-delay: .16s; }
+    .cp-fade:nth-child(4) { animation-delay: .22s; }
+    .cp-fade:nth-child(5) { animation-delay: .28s; }
+</style>
+
+<div class="cp-page">
+
+@if (Model == null)
 {
-    <div class="alert alert-warning">
-        Firma bilgisi bulunamadı
+    <div class="alert alert-warning mt-3">
+        <i class="fas fa-exclamation-triangle mr-2"></i> Firma bilgisi bulunamadı.
     </div>
 }
 else
 {
-    <div class="section-body">
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3><u>Şirket Bilgisi</u></h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover table-striped" id="tableExport" style="width:100%;">
-                                <thead class="custom-table-header">
-                                    <tr>
-                                        <th>Logo</th>
-                                        <th>Şirket Adı</th>
-                                        <th>Kısa Ad</th>
-                                        <th>İletişim</th>
-                                        <th>Web Sitesi</th>
-                                        <th>İşlemler</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (CompanyDto item in Model)
-                                    {
-                                        <tr>
-                                            <td>
-                                                @if (!string.IsNullOrEmpty(item.LogoPath))
-                                                {
-                                                    <img src="@item.LogoPath"
-                                                         alt="@item.CompanyName"
-                                                         class="rounded-circle shadow-sm"
-                                                         style="width:50px;height:50px;object-fit:cover;"
-                                                         loading="lazy" />
-                                                }
-                                                else
-                                                {
-                                                    <i class="fas fa-building text-muted" style="font-size:30px;"></i>
-                                                }
-                                            </td>
+  
+        string rawPhone   = Model.Phone?.Replace(" ","").Replace("(","").Replace(")","").Replace("+","") ?? "";
+        string waLink     = rawPhone.StartsWith("90") ? $"https://wa.me/{rawPhone}" : $"https://wa.me/90{rawPhone}";
+        int    titleLen   = Model.MetaTitle?.Length ?? 0;
+        int    descLen    = Model.MetaDescription?.Length ?? 0;
+        string titleColor = titleLen > 60 ? "#ef4444" : titleLen > 50 ? "#f59e0b" : "#10b981";
+        string descColor  = descLen  > 155 ? "#ef4444" : descLen  > 130 ? "#f59e0b" : "#10b981";
+        bool   hasSocial  = !string.IsNullOrEmpty(Model.InstagramLink) ||
+                            !string.IsNullOrEmpty(Model.LinkedinLink)  ||
+                            !string.IsNullOrEmpty(Model.YoutubeLink)   ||
+                            !string.IsNullOrEmpty(Model.ExternalWebLink);
+  
 
-                                            <td>@item.CompanyName</td>
-                                            <td>@item.ShortCompanyName</td>
-                                            <td>
-                                                <div class="text-sm">
-                                                    <a href="mailto:@item.Email" class="text-info">
-                                                        <i class="fas fa-envelope mr-1"></i> @item.Email
-                                                    </a>
-                                                </div>
-
-                                                <div class="text-sm">
-                                                    @{
-                                                        string rawPhone = item.Phone
-                                                        .Replace(" ", "")
-                                                        .Replace("(", "")
-                                                        .Replace(")", "")
-                                                        .Replace("+", "");
-
-                                                        string whatsappLink = rawPhone.StartsWith("90")
-                                                        ? $"https://wa.me/{rawPhone}"
-                                                        : $"https://wa.me/90{rawPhone}";
-                                                    }
-
-                                                    <a href="@whatsappLink" target="_blank" class="text-success">
-                                                        <i class="fab fa-whatsapp mr-1"></i> @item.Phone
-                                                    </a>
-                                                </div>
-                                            </td>
-
-                                            <td>
-                                                <strong>@item.WebSiteTitle</strong><br />
-                                                <a href="@item.WebSiteLink"
-                                                   target="_blank"
-                                                   class="text-primary text-sm">
-                                                    @item.WebSiteLink
-                                                    <i class="fas fa-external-link-alt ml-1"></i>
-                                                </a>
-                                            </td>
-
-                                            <td>
-                                                <a href="/AdminSirket/Guncelle"
-                                                   class="btn btn-sm btn-info text-white"
-                                                   title="Düzenle">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
+    <!-- HERO -->
+    <div class="cp-hero cp-fade">
+        <div class="cp-hero-inner">
+                <div class="cp-logo-wrap" onclick="openModal('@($"{apiBase}{Model.LogoPath}")')" title="Logoyu büyüt">
+                @if (!string.IsNullOrEmpty(Model.LogoPath))
+                {
+                        <img src="@($"{apiBase}{Model.LogoPath}")" alt="@Model.CompanyName" />
+                }
+                else
+                {
+                    <i class="fas fa-building"></i>
+                }
+            </div>
+            <div class="cp-hero-info">
+                <div class="cp-company-name">@Model.CompanyName</div>
+                <div class="cp-short-name">@Model.ShortCompanyName</div>
+                @if (!string.IsNullOrEmpty(Model.Slogan))
+                {
+                    <div class="cp-slogan">@Model.Slogan</div>
+                }
+                <div class="cp-badges">
+                    @if (Model.FoundedYear.HasValue)
+                    {
+                        <span class="cp-badge"><i class="fas fa-calendar-alt mr-1"></i>@Model.FoundedYear</span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.WorkingHours))
+                    {
+                        <span class="cp-badge"><i class="fas fa-clock mr-1"></i>@Model.WorkingHours</span>
+                    }
+                    <span class="cp-badge accent"><i class="fas fa-globe mr-1"></i>@Model.WebSiteTitle</span>
                 </div>
+            </div>
+            <div class="cp-hero-actions">
+                <a asp-action="Guncelle" asp-controller="AdminSirket" class="cp-edit-btn">
+                    <i class="fas fa-edit"></i> Düzenle
+                </a>
+                @if (!string.IsNullOrEmpty(Model.FaviconPath))
+                {
+                    <div class="cp-favicon-wrap">
+                            <img src="@($"{apiBase}{Model.FaviconPath}")" alt="favicon" />
+                        <span>Favicon aktif</span>
+                    </div>
+                }
             </div>
         </div>
     </div>
+
+    <!-- ROW 1: İletişim (esnek) + Sosyal Medya (sabit 280px) -->
+    <div class="cp-row cp-fade">
+        <div class="cp-card flex-grow">
+            <div class="cp-card-head">
+                <i class="fas fa-address-book"></i>
+                <span>İletişim Bilgileri</span>
+            </div>
+            <div class="cp-card-body">
+                <ul class="cp-info-list">
+                    <li>
+                        <div class="cp-info-icon"><i class="fas fa-envelope"></i></div>
+                        <div>
+                            <div class="cp-info-label">E-posta</div>
+                            <div class="cp-info-value"><a href="mailto:@Model.Email">@Model.Email</a></div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="cp-info-icon" style="background:#f0fdf4;">
+                            <i class="fab fa-whatsapp" style="color:var(--success);"></i>
+                        </div>
+                        <div>
+                            <div class="cp-info-label">Telefon</div>
+                            <div class="cp-info-value green"><a href="@waLink" target="_blank">@Model.Phone</a></div>
+                        </div>
+                    </li>
+                        @if (!string.IsNullOrEmpty(Model.Phone2))
+                        {
+                            <li>
+                                <div class="cp-info-icon">
+                                    <i class="fas fa-phone"></i>   @* ← ÇALIŞAN İKON *@
+                                </div>
+                                <div>
+                                    <div class="cp-info-label">Telefon 2</div>
+                                    <div class="cp-info-value">@Model.Phone2</div>
+                                </div>
+                            </li>
+                        }
+                    <li>
+                        <div class="cp-info-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div>
+                            <div class="cp-info-label">Adres</div>
+                            <div class="cp-info-value">@Model.Address</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="cp-info-icon"><i class="fas fa-globe"></i></div>
+                        <div>
+                            <div class="cp-info-label">Web Sitesi</div>
+                            <div class="cp-info-value">
+                                <a href="@Model.WebSiteLink" target="_blank">
+                                    @Model.WebSiteLink <i class="fas fa-external-link-alt" style="font-size:.62rem;"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="cp-card flex-fixed">
+            <div class="cp-card-head">
+                <i class="fas fa-share-alt"></i>
+                <span>Sosyal Medya</span>
+            </div>
+            <div class="cp-card-body">
+                @if (hasSocial)
+                {
+                    <div class="cp-social-list">
+                        @if (!string.IsNullOrEmpty(Model.InstagramLink))
+                        {
+                            <a href="@Model.InstagramLink" target="_blank" class="cp-social-btn instagram">
+                                <i class="fab fa-instagram"></i> Instagram
+                            </a>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.LinkedinLink))
+                        {
+                            <a href="@Model.LinkedinLink" target="_blank" class="cp-social-btn linkedin">
+                                <i class="fab fa-linkedin"></i> LinkedIn
+                            </a>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.YoutubeLink))
+                        {
+                            <a href="@Model.YoutubeLink" target="_blank" class="cp-social-btn youtube">
+                                <i class="fab fa-youtube"></i> YouTube
+                            </a>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ExternalWebLink))
+                        {
+                            <a href="@Model.ExternalWebLink" target="_blank" class="cp-social-btn external">
+                                <i class="fas fa-link"></i> Harici Link
+                            </a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="cp-empty">
+                        <i class="fas fa-unlink"></i>
+                        Sosyal medya linki eklenmemiş
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 2: SEO + Hakkımızda (eşit) -->
+    <div class="cp-row cp-fade">
+        <div class="cp-card flex-grow">
+            <div class="cp-card-head">
+                <i class="fas fa-search"></i>
+                <span>SEO Ayarları</span>
+            </div>
+            <div class="cp-card-body">
+                @if (!string.IsNullOrEmpty(Model.MetaTitle))
+                {
+                    <div class="cp-seo-item">
+                        <div class="cp-seo-label">Meta Başlık <span style="font-weight:400;">(@titleLen/70)</span></div>
+                        <div class="cp-seo-value">@Model.MetaTitle</div>
+                        <div class="cp-seo-bar"><div class="cp-seo-fill" style="width:@(Math.Min(titleLen * 100 / 70, 100))%; background:@titleColor;"></div></div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.MetaDescription))
+                {
+                    <div class="cp-seo-item">
+                        <div class="cp-seo-label">Meta Açıklama <span style="font-weight:400;">(@descLen/160)</span></div>
+                        <div class="cp-seo-value">@Model.MetaDescription</div>
+                        <div class="cp-seo-bar"><div class="cp-seo-fill" style="width:@(Math.Min(descLen * 100 / 160, 100))%; background:@descColor;"></div></div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.MetaKeywords))
+                {
+                    <div class="cp-seo-item">
+                        <div class="cp-seo-label">Anahtar Kelimeler</div>
+                        <div class="cp-tags">
+                            @foreach (var kw in Model.MetaKeywords.Split(','))
+                            {
+                                <span class="cp-tag">@kw.Trim()</span>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.CanonicalUrl))
+                {
+                    <div class="cp-seo-item">
+                        <div class="cp-seo-label">Canonical URL</div>
+                        <div class="cp-seo-value">
+                            <a href="@Model.CanonicalUrl" target="_blank" style="color:var(--accent); font-size:.8rem;">@Model.CanonicalUrl</a>
+                        </div>
+                    </div>
+                }
+                @if (string.IsNullOrEmpty(Model.MetaTitle) && string.IsNullOrEmpty(Model.MetaDescription))
+                {
+                    <div class="cp-empty"><i class="fas fa-search"></i>SEO bilgisi eklenmemiş</div>
+                }
+            </div>
+        </div>
+
+        <div class="cp-card flex-grow">
+            <div class="cp-card-head">
+                <i class="fas fa-file-alt"></i>
+                <span>Hakkımızda</span>
+            </div>
+            <div class="cp-card-body">
+                @if (!string.IsNullOrEmpty(Model.AboutUsShort))
+                {
+                    <div class="cp-seo-item">
+                        <div class="cp-seo-label">Kısa Açıklama</div>
+                        <div class="cp-about-text">@Model.AboutUsShort</div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Vision))
+                {
+                    <div class="cp-seo-item">
+                        <div class="cp-seo-label"><i class="fas fa-eye mr-1" style="color:var(--accent);"></i>Vizyon</div>
+                        <div class="cp-about-text">@Model.Vision</div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Mission))
+                {
+                    <div class="cp-seo-item">
+                        <div class="cp-seo-label"><i class="fas fa-bullseye mr-1" style="color:var(--success);"></i>Misyon</div>
+                        <div class="cp-about-text">@Model.Mission</div>
+                    </div>
+                }
+                @if (string.IsNullOrEmpty(Model.AboutUsShort) && string.IsNullOrEmpty(Model.Vision) && string.IsNullOrEmpty(Model.Mission))
+                {
+                    <div class="cp-empty"><i class="fas fa-file-alt"></i>Hakkımızda bilgisi eklenmemiş</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Maps -->
+    @if (!string.IsNullOrEmpty(Model.GoogleMapsEmbed))
+    {
+        <div class="cp-card cp-fade" style="margin-bottom:18px;">
+            <div class="cp-card-head">
+                <i class="fas fa-map"></i>
+                <span>Konum</span>
+            </div>
+            <div style="height:260px; overflow:hidden; border-radius:0 0 var(--radius) var(--radius);">
+                @Html.Raw(Model.GoogleMapsEmbed
+                    ?.Replace("style=\"\"","")
+                    .Replace("<iframe","<iframe style=\"width:100%;height:260px;border:0;\""))
+            </div>
+        </div>
+    }
 }
+
+</div>
+
+<!-- Logo Modal -->
+<div class="cp-modal" id="cpModal" onclick="closeModal()">
+    <span class="cp-modal-close" onclick="closeModal()">&times;</span>
+    <img id="cpModalImg" src="" alt="Logo" onclick="event.stopPropagation()" />
+</div>
+
+<div id="tempDataMessages"
+     data-type="@TempData["Type"]"
+     data-message="@TempData["Message"]">
+</div>
+
+<script>
+    function openModal(src) {
+        if (!src) return;
+        document.getElementById('cpModalImg').src = src;
+        document.getElementById('cpModal').classList.add('show');
+    }
+    function closeModal() {
+        document.getElementById('cpModal').classList.remove('show');
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeModal();
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+        var el      = document.getElementById('tempDataMessages');
+        if (!el) return;
+        var type    = el.getAttribute('data-type');
+        var message = el.getAttribute('data-message');
+        var fromUpd = sessionStorage.getItem('updated');
+        if (type && message && type === 'success' && fromUpd === '1') {
+            Swal.fire({ icon: 'success', title: 'Başarılı!', text: message, timer: 3000, showConfirmButton: false });
+            sessionStorage.removeItem('updated');
+        }
+        if (type && message && type === 'error') {
+            Swal.fire({ icon: 'error', title: 'Hata!', text: message, timer: 4000, showConfirmButton: true });
+        }
+    });
+</script>

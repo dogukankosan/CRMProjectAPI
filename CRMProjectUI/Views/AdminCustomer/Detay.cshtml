@@ -1,0 +1,876 @@
+﻿@model CRMProjectUI.Models.CustomerDetailDto
+@{
+    ViewData["Title"] = "Müşteri Detay";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+
+    string apiBase = ViewBag.ApiBase as string ?? "";
+    bool isSuperAdmin = User.IsInRole("SuperAdmin");
+    bool isAdmin = User.IsInRole("Admin");
+
+    var customer = Model?.Customer;
+    var users = Model?.Users ?? new List<CRMProjectUI.Models.UserListDto>();
+    var ticketStats = Model?.TicketStats;
+    var recentTickets = Model?.RecentTickets ?? new List<CRMProjectUI.Models.TicketListDto>();
+
+    string? successMsg = TempData["Success"] as string;
+    string? errorMsg = TempData["Error"] as string;
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --ink: #0f1117;
+        --ink-soft: #4a4f5e;
+        --surface: #f7f8fc;
+        --white: #fff;
+        --accent: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --purple: #7c3aed;
+        --border: #e2e8f0;
+        --radius: 12px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.10);
+    }
+
+    body {
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .cd-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 18px;
+        overflow: hidden;
+    }
+
+    .cd-card-header {
+        padding: 13px 18px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+        .cd-card-header h6 {
+            margin: 0;
+            font-weight: 700;
+            font-size: .88rem;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+    .cd-card-body {
+        padding: 18px;
+    }
+
+    .cd-info-row {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .cd-info-item {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        font-size: .85rem;
+    }
+
+    .cd-info-label {
+        min-width: 140px;
+        color: var(--ink-soft);
+        font-weight: 600;
+        font-size: .78rem;
+        flex-shrink: 0;
+    }
+
+    .cd-info-value {
+        color: var(--ink);
+        flex: 1;
+    }
+
+    .cd-stat {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        box-shadow: var(--shadow-sm);
+        text-align: center;
+    }
+
+    .cd-stat-val {
+        font-family: 'Syne',sans-serif;
+        font-size: 1.6rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 3px;
+    }
+
+    .cd-stat-lbl {
+        font-size: .68rem;
+        color: var(--ink-soft);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .cd-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .cd-table thead th {
+            font-size: .67rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--ink-soft);
+            padding: 9px 12px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .cd-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .15s;
+        }
+
+            .cd-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .cd-table tbody tr:hover {
+                background: #f8fafd;
+            }
+
+        .cd-table tbody td {
+            padding: 9px 12px;
+            vertical-align: middle;
+            font-size: .82rem;
+        }
+
+    .b-status {
+        font-size: .68rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        white-space: nowrap;
+    }
+
+        .b-status::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+    .bs-0 {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+        .bs-0::before {
+            background: #94a3b8;
+        }
+
+    .bs-1 {
+        background: #eef2ff;
+        color: #3730a3;
+    }
+
+        .bs-1::before {
+            background: #4f46e5;
+        }
+
+    .bs-2 {
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+        .bs-2::before {
+            background: var(--success);
+        }
+
+    .bs-3 {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+        .bs-3::before {
+            background: var(--danger);
+        }
+
+    .bs-4 {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+        .bs-4::before {
+            background: var(--warning);
+        }
+
+    .bs-5 {
+        background: #f5f3ff;
+        color: #5b21b6;
+    }
+
+        .bs-5::before {
+            background: var(--purple);
+        }
+
+    .b-priority {
+        font-size: .67rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 6px;
+        white-space: nowrap;
+    }
+
+    .bp-1 {
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+    .bp-2 {
+        background: #eff6ff;
+        color: #1e40af;
+    }
+
+    .bp-3 {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .bp-4 {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+    .b-vip {
+        font-size: .62rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 10px;
+        white-space: nowrap;
+        display: inline-block;
+    }
+
+        .b-vip.vip {
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            color: #fff;
+        }
+
+        .b-vip.onemli {
+            background: linear-gradient(135deg,#f093fb,#f5576c);
+            color: #fff;
+        }
+
+        .b-vip.dusuk {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .b-vip.normal {
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+    .cd-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .72rem;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+        .cd-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+    .cd-user-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .cd-user-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+    .cd-badge {
+        font-size: .65rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 8px;
+    }
+
+        .cd-badge.superadmin {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .cd-badge.admin {
+            background: #eef2ff;
+            color: #3730a3;
+        }
+
+        .cd-badge.user {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .cd-badge.active {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .cd-badge.passive {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+    .cd-tag {
+        font-size: .72rem;
+        font-weight: 600;
+        padding: 2px 9px;
+        border-radius: 20px;
+        background: #f5f3ff;
+        color: var(--purple);
+        display: inline-block;
+        margin: 2px;
+    }
+
+    .cd-empty {
+        text-align: center;
+        padding: 28px;
+        color: var(--ink-soft);
+    }
+
+        .cd-empty i {
+            font-size: 2rem;
+            opacity: .2;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+    .cd-back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 15px;
+        border-radius: 9px;
+        border: 1.5px solid var(--border);
+        background: var(--white);
+        color: var(--ink-soft);
+        font-size: .82rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .15s;
+    }
+
+        .cd-back-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+    .cd-edit-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 15px;
+        border-radius: 9px;
+        background: var(--accent);
+        color: #fff;
+        font-size: .82rem;
+        font-weight: 600;
+        text-decoration: none;
+        box-shadow: 0 2px 8px rgba(37,99,235,.3);
+        transition: all .15s;
+    }
+
+        .cd-edit-btn:hover {
+            background: #1d4ed8;
+            color: #fff;
+            text-decoration: none;
+        }
+</style>
+
+<!-- BREADCRUMB + BAŞLIK -->
+<div class="d-flex align-items-center justify-content-between mb-3" style="flex-wrap:wrap; gap:10px;">
+    <div>
+        <h5 style="font-family:'Syne',sans-serif; font-weight:700; margin:0;">
+            <i class="fas fa-building mr-2 text-primary"></i>
+            @(customer?.CustomerName ?? "Müşteri Detay")
+        </h5>
+        <small style="color:var(--ink-soft);">
+            <a asp-action="Liste" asp-controller="AdminMusteri" style="color:var(--accent);">Müşteriler</a>
+            <i class="fas fa-chevron-right mx-1" style="font-size:.6rem;"></i>
+            @(customer?.CustomerName ?? "Detay")
+        </small>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        @if (isSuperAdmin || isAdmin)
+        {
+            <a asp-action="Duzenle" asp-controller="AdminMusteri" asp-route-id="@customer?.ID"
+               class="cd-edit-btn">
+                <i class="fas fa-edit"></i> Düzenle
+            </a>
+        }
+        <a asp-action="Liste" asp-controller="AdminMusteri" class="cd-back-btn">
+            <i class="fas fa-arrow-left"></i> Listeye Dön
+        </a>
+    </div>
+</div>
+
+@if (customer == null)
+{
+    <div class="alert alert-warning" style="border-radius:var(--radius);">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        Müşteri bilgileri yüklenemedi.
+    </div>
+}
+else
+{
+    <!-- TİCKET İSTATİSTİKLERİ -->
+    <div class="row mb-3">
+        <div class="col-6 col-md-2 mb-2">
+            <div class="cd-stat">
+                <div class="cd-stat-val">@(ticketStats?.Total ?? 0)</div>
+                <div class="cd-stat-lbl">Toplam</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2 mb-2">
+            <div class="cd-stat">
+                <div class="cd-stat-val" style="color:#4f46e5;">@(ticketStats?.OpenCount ?? 0)</div>
+                <div class="cd-stat-lbl">Açık</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2 mb-2">
+            <div class="cd-stat">
+                <div class="cd-stat-val" style="color:var(--success);">@(ticketStats?.Resolved ?? 0)</div>
+                <div class="cd-stat-lbl">Çözülen</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2 mb-2">
+            <div class="cd-stat">
+                <div class="cd-stat-val" style="color:var(--danger);">@(ticketStats?.Failed ?? 0)</div>
+                <div class="cd-stat-lbl">Çözülemedi</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2 mb-2">
+            <div class="cd-stat">
+                <div class="cd-stat-val" style="color:#374151;">@(ticketStats?.Cancelled ?? 0)</div>
+                <div class="cd-stat-lbl">İptal</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2 mb-2">
+            <div class="cd-stat">
+                <div class="cd-stat-val" style="color:var(--warning); font-size:1.1rem;">@(ticketStats?.AvgWorkingDisplay ?? "-")</div>
+                <div class="cd-stat-lbl">Ort. Süre</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- SOL KOLON -->
+        <div class="col-md-5">
+
+            <!-- FİRMA BİLGİLERİ -->
+            <div class="cd-card">
+                <div class="cd-card-header">
+                    <h6><i class="fas fa-building" style="color:var(--accent);"></i> Firma Bilgileri</h6>
+                    @{
+                        string impClass = customer.Importance switch
+                        {
+                            "VIP" => "vip",
+                            "Önemli" => "onemli",
+                            "Düşük" => "dusuk",
+                            _ => "normal"
+                        };
+                    }
+                    <span class="b-vip @impClass">@(customer.Importance ?? "Normal")</span>
+                </div>
+                <div class="cd-card-body">
+                    <div class="cd-info-row">
+                        <div class="cd-info-item">
+                            <span class="cd-info-label">Müşteri Kodu</span>
+                            <span class="cd-info-value" style="font-family:monospace; font-weight:600;">@(customer.CustomerCode ?? "-")</span>
+                        </div>
+                        <div class="cd-info-item">
+                            <span class="cd-info-label">Firma Adı</span>
+                            <span class="cd-info-value" style="font-weight:600;">@customer.CustomerName</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(customer.ShortName))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">Kısa Ad</span>
+                                <span class="cd-info-value">@customer.ShortName</span>
+                            </div>
+                        }
+                        <div class="cd-info-item">
+                            <span class="cd-info-label">Firma Tipi</span>
+                            <span class="cd-info-value">@(customer.CustomerType ?? "-")</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(customer.VKN))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">VKN</span>
+                                <span class="cd-info-value" style="font-family:monospace;">@customer.VKN</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(customer.TC))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">TC</span>
+                                <span class="cd-info-value" style="font-family:monospace;">@customer.TC</span>
+                            </div>
+                        }
+                        <div class="cd-info-item">
+                            <span class="cd-info-label">Durum</span>
+                            <span class="cd-info-value">
+                                @if (customer.Status == 1)
+                                {
+                                    <span style="color:var(--success); font-weight:600;"><i class="fas fa-circle mr-1" style="font-size:.5rem;"></i>Aktif</span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--danger); font-weight:600;"><i class="fas fa-circle mr-1" style="font-size:.5rem;"></i>Pasif</span>
+                                }
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- İLETİŞİM BİLGİLERİ -->
+            <div class="cd-card">
+                <div class="cd-card-header">
+                    <h6><i class="fas fa-phone" style="color:var(--success);"></i> İletişim</h6>
+                </div>
+                <div class="cd-card-body">
+                    <div class="cd-info-row">
+                        @if (!string.IsNullOrEmpty(customer.OfficialName))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">Yetkili</span>
+                                <span class="cd-info-value" style="font-weight:600;">@customer.OfficialName</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(customer.OfficialTitle))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">Ünvan</span>
+                                <span class="cd-info-value">@customer.OfficialTitle</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(customer.OfficialPhone))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">Yetkili Tel</span>
+                                <span class="cd-info-value">
+                                    <a href="tel:@customer.OfficialPhone" style="color:var(--accent); text-decoration:none;">
+                                        <i class="fas fa-phone mr-1" style="font-size:.75rem;"></i>@customer.OfficialPhone
+                                    </a>
+                                </span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(customer.Phone1))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">Telefon 1</span>
+                                <span class="cd-info-value">
+                                    <a href="tel:@customer.Phone1" style="color:var(--accent); text-decoration:none;">
+                                        <i class="fas fa-phone mr-1" style="font-size:.75rem;"></i>@customer.Phone1
+                                    </a>
+                                </span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(customer.Phone2))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">Telefon 2</span>
+                                <span class="cd-info-value">
+                                    <a href="tel:@customer.Phone2" style="color:var(--accent); text-decoration:none;">
+                                        <i class="fas fa-phone mr-1" style="font-size:.75rem;"></i>@customer.Phone2
+                                    </a>
+                                </span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(customer.CompanyEmail))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">E-Posta</span>
+                                <span class="cd-info-value">
+                                    <a href="mailto:@customer.CompanyEmail" style="color:var(--accent); text-decoration:none;">
+                                        <i class="fas fa-envelope mr-1" style="font-size:.75rem;"></i>@customer.CompanyEmail
+                                    </a>
+                                </span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(customer.Address))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">Adres</span>
+                                <span class="cd-info-value" style="font-size:.82rem;">@customer.Address</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(customer.Il))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">Şehir / İlçe</span>
+                                <span class="cd-info-value">
+                                    <i class="fas fa-map-marker-alt mr-1" style="color:var(--danger); font-size:.75rem;"></i>
+                                    @customer.Il @(!string.IsNullOrEmpty(customer.Ilce) ? $"/ {customer.Ilce}" : "")
+                                </span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- SÖZLEŞME & LOGO ÜRÜNLERİ -->
+            <div class="cd-card">
+                <div class="cd-card-header">
+                    <h6><i class="fas fa-file-contract" style="color:var(--warning);"></i> Sözleşme & Ürünler</h6>
+                </div>
+                <div class="cd-card-body">
+                    <div class="cd-info-row">
+                        <div class="cd-info-item">
+                            <span class="cd-info-label">Ticket Hakkı</span>
+                            <span class="cd-info-value">
+                                <span style="font-weight:700; color:@(customer.TicketCount < 10 ? "var(--danger)" : "var(--success)");">
+                                    @customer.TicketCount
+                                </span>
+                                @if (customer.TicketCount < 10)
+                                {
+                                    <span style="font-size:.72rem; color:var(--danger); margin-left:4px;">
+                                        <i class="fas fa-exclamation-triangle"></i> Az kaldı
+                                    </span>
+                                }
+                            </span>
+                        </div>
+                        @if (isSuperAdmin && customer.ContractEndDate.HasValue)
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">Sözleşme Bitiş</span>
+                                <span class="cd-info-value">
+                                    @{
+                                        int daysLeft = (int)(customer.ContractEndDate.Value - DateTime.Today).TotalDays;
+                                        string dateColor = daysLeft <= 7 ? "var(--danger)" : daysLeft <= 30 ? "var(--warning)" : "var(--ink)";
+                                    }
+                                    <span style="color:@dateColor; font-weight:600;">
+                                        @customer.ContractEndDate.Value.ToString("dd.MM.yyyy")
+                                        @if (daysLeft <= 30 && daysLeft > 0)
+                                        {
+                                            <span style="font-size:.72rem; margin-left:4px;">(@daysLeft gün kaldı)</span>
+                                        }
+                                        else if (daysLeft <= 0)
+                                        {
+                                            <span style="font-size:.72rem; margin-left:4px;">(Süresi doldu)</span>
+                                        }
+                                    </span>
+                                </span>
+                            </div>
+                        }
+                        @if (customer.LogoProducts?.Any() == true)
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">Logo Ürünleri</span>
+                                <span class="cd-info-value">
+                                    @foreach (var p in customer.LogoProducts)
+                                    {
+                                        <span class="cd-tag"><i class="fas fa-cube mr-1" style="font-size:.6rem;"></i>@p.LogoProductName</span>
+                                    }
+                                </span>
+                            </div>
+                        }
+                        @if (isSuperAdmin && !string.IsNullOrEmpty(customer.InternalNotes))
+                        {
+                            <div class="cd-info-item">
+                                <span class="cd-info-label">Dahili Not</span>
+                                <span class="cd-info-value" style="font-size:.82rem; color:var(--ink-soft);">@customer.InternalNotes</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SAĞ KOLON -->
+        <div class="col-md-7">
+
+            <!-- KULLANICILAR -->
+            <div class="cd-card">
+                <div class="cd-card-header">
+                    <h6>
+                        <i class="fas fa-users" style="color:var(--purple);"></i> Kullanıcılar
+                        <span style="font-size:.72rem; font-weight:400; color:var(--ink-soft);">(@users.Count)</span>
+                    </h6>
+                    @if (isSuperAdmin)
+                    {
+                        <a href="/AdminKullanici/Liste/@customer.ID"
+                           style="font-size:.76rem; color:var(--accent); text-decoration:none; font-weight:600;">
+                            Yönet <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    }
+                </div>
+                <div class="cd-card-body" style="padding:12px 18px;">
+                    @if (!users.Any())
+                    {
+                        <div class="cd-empty">
+                            <i class="fas fa-user-slash"></i>
+                            Kayıtlı kullanıcı yok
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var u in users)
+                        {
+                            string initials = string.IsNullOrEmpty(u.FullName) ? "?"
+                            : string.Concat(u.FullName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+                            string avatarBg = u.ISAdmin == 2 ? "#fef2f2" : u.ISAdmin == 1 ? "#eef2ff" : "#eff6ff";
+                            string avatarColor = u.ISAdmin == 2 ? "#991b1b" : u.ISAdmin == 1 ? "#3730a3" : "#1e40af";
+                            string roleBadge = u.ISAdmin == 2 ? "superadmin" : u.ISAdmin == 1 ? "admin" : "user";
+                            string roleText = u.ISAdmin == 2 ? "SuperAdmin" : u.ISAdmin == 1 ? "Admin" : "Kullanıcı";
+
+                            <div class="cd-user-item">
+                                <div class="cd-avatar" style="background:@avatarBg; color:@avatarColor;">
+                                    @if (!string.IsNullOrEmpty(u.Picture))
+                                    {
+                                        <img src="@(apiBase + u.Picture)" alt="@initials"
+                                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                                        <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@initials</span>
+                                    }
+                                    else
+                                    {
+                                        @initials
+                                    }
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-weight:600; font-size:.83rem; color:var(--ink);">@(u.FullName ?? u.Username)</div>
+                                    <div style="font-size:.73rem; color:var(--ink-soft);">
+                                        @if (!string.IsNullOrEmpty(u.EMailAddress))
+                                        {
+                                            <a href="mailto:@u.EMailAddress" style="color:var(--ink-soft); text-decoration:none;">
+                                                <i class="fas fa-envelope mr-1" style="font-size:.6rem;"></i>@u.EMailAddress
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:3px;">
+                                    <span class="cd-badge @roleBadge">@roleText</span>
+                                    <span class="cd-badge @(u.Status ? "active" : "passive")">@(u.Status ? "Aktif" : "Pasif")</span>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- SON TİCKETLAR -->
+            <div class="cd-card">
+                <div class="cd-card-header">
+                    <h6>
+                        <i class="fas fa-ticket-alt" style="color:var(--accent);"></i> Son Ticketlar
+                        <span style="font-size:.72rem; font-weight:400; color:var(--ink-soft);">(@recentTickets.Count)</span>
+                    </h6>
+                    <a asp-action="Liste" asp-controller="AdminTicket"
+                       style="font-size:.76rem; color:var(--accent); text-decoration:none; font-weight:600;">
+                        Tüm Ticketlar <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+                @if (!recentTickets.Any())
+                {
+                    <div class="cd-empty">
+                        <i class="fas fa-ticket-alt"></i>
+                        Henüz ticket açılmamış
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="cd-table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Başlık</th>
+                                    <th>Öncelik</th>
+                                    <th>Durum</th>
+                                    <th>Atanan</th>
+                                    <th>Tarih</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in recentTickets)
+                                {
+                                    string pClass = $"bp-{t.Priority}";
+                                    string sClass = $"bs-{t.Status}";
+                                    <tr style="cursor:pointer;" onclick="window.location='/AdminTicket/Detay/@t.ID'">
+                                        <td style="font-family:monospace; font-size:.75rem; color:var(--ink-soft);">@t.TicketNo</td>
+                                        <td>
+                                            <span style="font-weight:600; font-size:.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; max-width:180px;" title="@t.Title">
+                                                @(t.Title.Length > 28 ? t.Title.Substring(0, 28) + "…" : t.Title)
+                                            </span>
+                                            @if (!string.IsNullOrEmpty(t.LogoProductName))
+                                            {
+                                                <span style="font-size:.72rem; color:var(--ink-soft);">
+                                                    <i class="fas fa-cube mr-1" style="font-size:.6rem;"></i>@t.LogoProductName
+                                                </span>
+                                            }
+                                        </td>
+                                        <td><span class="b-priority @pClass">@t.PriorityText</span></td>
+                                        <td><span class="b-status @sClass">@t.StatusText</span></td>
+                                        <td style="font-size:.78rem; color:var(--ink-soft);">@(t.AssignedToName ?? "-")</td>
+                                        <td style="font-size:.75rem; color:var(--ink-soft); white-space:nowrap;">@t.OpenedDate?.ToString("dd.MM.yyyy")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<div id="tempData"
+     data-success="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(successMsg ?? ""))"
+     data-error="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(errorMsg ?? ""))">
+</div>
+
+@section Scripts {
+    <script>
+        window.addEventListener('load', function () {
+            var s = '@Html.Raw(successMsg?.Replace("'", "\\'") ?? "")';
+            var e = '@Html.Raw(errorMsg?.Replace("'", "\\'") ?? "")';
+            if (s) Swal.fire({ icon:'success', title:'Başarılı!', text:s, timer:2500, showConfirmButton:false });
+            if (e) Swal.fire({ icon:'error',   title:'Hata!',     text:e });
+        });
+    </script>
+}

@@ -1,0 +1,893 @@
+﻿@model List<CRMProjectUI.Models.UserListDto>
+@{
+    ViewData["Title"] = "Kullanıcı Listesi";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+
+    int customerId = ViewBag.CustomerId ?? 0;
+    string customerName = ViewBag.CustomerName ?? "Firma";
+    int totalCount = Model?.Count ?? 0;
+    int activeCount = Model?.Count(x => x.Status) ?? 0;
+    int passiveCount = Model?.Count(x => !x.Status) ?? 0;
+    int adminCount = Model?.Count(x => x.ISAdmin >= 1) ?? 0;
+    int currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+    bool isSuperAdmin = User.IsInRole("SuperAdmin");
+    bool isAdminOrSuper = User.IsInRole("Admin") || isSuperAdmin;
+    string? successMsg = TempData["Success"] as string;
+    string? errorMsg = TempData["Error"] as string;
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --ink: #0f1117;
+        --ink-soft: #4a4f5e;
+        --surface: #f7f8fc;
+        --white: #ffffff;
+        --accent: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --purple: #7c3aed;
+        --border: #e2e8f0;
+        --radius: 14px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.12);
+    }
+
+    body {
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    /* HEADER */
+    .ul-header {
+        background: linear-gradient(135deg,#2563eb 0%,#7c3aed 100%);
+        border-radius: var(--radius);
+        padding: 22px 28px;
+        margin-bottom: 22px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        box-shadow: var(--shadow-md);
+    }
+
+    .ul-header-title {
+        font-family: 'Syne',sans-serif;
+        font-size: 1.4rem;
+        font-weight: 800;
+        margin: 0;
+    }
+
+    .ul-header-sub {
+        font-size: .85rem;
+        opacity: .85;
+        margin-top: 3px;
+    }
+
+    .ul-back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 10px;
+        background: rgba(255,255,255,.2);
+        color: #fff;
+        font-size: .83rem;
+        font-weight: 600;
+        text-decoration: none;
+        border: 1px solid rgba(255,255,255,.35);
+        transition: background .2s;
+    }
+
+        .ul-back-btn:hover {
+            background: rgba(255,255,255,.32);
+            color: #fff;
+            text-decoration: none;
+        }
+
+    /* STATS */
+    .ul-stats {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 22px;
+        flex-wrap: wrap;
+    }
+
+    .ul-stat {
+        flex: 1;
+        min-width: 120px;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: box-shadow .2s,transform .2s;
+    }
+
+        .ul-stat:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+    .ul-stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+        .ul-stat-icon.blue {
+            background: #eff6ff;
+            color: var(--accent);
+        }
+
+        .ul-stat-icon.green {
+            background: #f0fdf4;
+            color: var(--success);
+        }
+
+        .ul-stat-icon.red {
+            background: #fef2f2;
+            color: var(--danger);
+        }
+
+        .ul-stat-icon.purple {
+            background: #f5f3ff;
+            color: var(--purple);
+        }
+
+    .ul-stat-label {
+        font-size: .7rem;
+        color: var(--ink-soft);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 2px;
+    }
+
+    .ul-stat-value {
+        font-family: 'Syne',sans-serif;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--ink);
+        line-height: 1;
+    }
+
+    /* TOOLBAR */
+    .ul-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 18px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .ul-toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .ul-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .ul-filter-btn {
+        font-size: .78rem;
+        font-weight: 600;
+        padding: 5px 14px;
+        border-radius: 20px;
+        border: 1.5px solid var(--border);
+        background: var(--surface);
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: all .18s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .ul-filter-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: #eff6ff;
+        }
+
+        .ul-filter-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .ul-filter-btn.success.active {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .ul-filter-btn.danger.active {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+    .ul-filter-count {
+        font-size: .68rem;
+        font-weight: 700;
+        background: rgba(255,255,255,.25);
+        padding: 1px 6px;
+        border-radius: 10px;
+    }
+
+    .ul-filter-btn:not(.active) .ul-filter-count {
+        background: var(--border);
+        color: var(--ink-soft);
+    }
+
+    .ul-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        padding: 5px 14px;
+        transition: border-color .2s;
+    }
+
+        .ul-search:focus-within {
+            border-color: var(--accent);
+        }
+
+        .ul-search i {
+            color: var(--ink-soft);
+            font-size: .85rem;
+        }
+
+        .ul-search input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: .83rem;
+            color: var(--ink);
+            width: 160px;
+        }
+
+    .ul-add-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 18px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        font-size: .83rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        box-shadow: 0 3px 10px rgba(37,99,235,.35);
+        transition: background .2s,transform .15s;
+    }
+
+        .ul-add-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            color: #fff;
+            text-decoration: none;
+        }
+
+    /* CARDS GRID */
+    .ul-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 18px;
+        margin-bottom: 20px;
+    }
+
+    .user-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow .2s, transform .2s;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+        .user-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+        }
+
+        .user-card.passive {
+            opacity: .7;
+        }
+
+    .user-card-top {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .user-avatar {
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--border);
+        flex-shrink: 0;
+    }
+
+    .user-avatar-placeholder {
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        border: 2px solid transparent;
+    }
+
+    .user-card-name {
+        font-weight: 700;
+        font-size: .95rem;
+        color: var(--ink);
+        line-height: 1.2;
+    }
+
+    .user-card-uname {
+        font-size: .78rem;
+        color: var(--ink-soft);
+        margin-top: 2px;
+        font-family: monospace;
+    }
+
+    .user-card-body {
+        padding: 14px 20px;
+        flex: 1;
+    }
+
+    .user-info-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: .8rem;
+        color: var(--ink-soft);
+        margin-bottom: 8px;
+    }
+
+        .user-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .user-info-row i {
+            width: 14px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .user-info-row a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+            .user-info-row a:hover {
+                text-decoration: underline;
+            }
+
+    .user-card-badges {
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        border-top: 1px solid var(--border);
+        background: var(--surface);
+    }
+
+    .b-role {
+        font-size: .68rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .b-role.admin {
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            color: #fff;
+        }
+
+        .b-role.user {
+            background: #f1f5f9;
+            color: var(--ink-soft);
+        }
+
+    .b-status {
+        font-size: .68rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .b-status::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+        }
+
+        .b-status.active {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+            .b-status.active::before {
+                background: var(--success);
+            }
+
+        .b-status.passive {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+            .b-status.passive::before {
+                background: var(--danger);
+            }
+
+    .b-mail {
+        font-size: .68rem;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+        .b-mail.yes {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .b-mail.no {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+    .user-card-actions {
+        padding: 12px 20px;
+        display: flex;
+        gap: 6px;
+        border-top: 1px solid var(--border);
+    }
+
+    .ul-btn {
+        flex: 1;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-size: .78rem;
+        cursor: pointer;
+        text-decoration: none;
+        color: var(--ink-soft);
+        font-weight: 600;
+        transition: background .15s,border-color .15s,color .15s,transform .12s;
+    }
+
+        .ul-btn:hover {
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+
+        .ul-btn.warn:hover {
+            background: #fffbeb;
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        .ul-btn.toggle:hover {
+            background: #f0fdf4;
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .ul-btn.del:hover {
+            background: #fef2f2;
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+    /* EMPTY */
+    .ul-empty {
+        text-align: center;
+        padding: 60px 24px;
+        color: var(--ink-soft);
+    }
+
+        .ul-empty i {
+            font-size: 3rem;
+            opacity: .15;
+            display: block;
+            margin-bottom: 14px;
+        }
+
+    /* NO RESULTS */
+    .ul-no-results {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--ink-soft);
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .b-role.superadmin {
+        background: linear-gradient(135deg, #f59e0b, #ef4444);
+        color: #fff;
+    }
+</style>
+
+@Html.AntiForgeryToken()
+
+<div>
+    <!-- HEADER -->
+    <div class="ul-header">
+        <div>
+            <h4 class="ul-header-title">
+                <i class="fas fa-users mr-2"></i> Kullanıcılar
+            </h4>
+            <div class="ul-header-sub">
+                <i class="fas fa-building mr-1"></i> @customerName
+            </div>
+        </div>
+        <a asp-action="Liste" asp-controller="AdminMusteri" class="ul-back-btn">
+            <i class="fas fa-arrow-left"></i> Müşteri Listesi
+        </a>
+    </div>
+
+    <!-- STATS -->
+    <div class="ul-stats">
+        <div class="ul-stat">
+            <div class="ul-stat-icon blue"><i class="fas fa-users"></i></div>
+            <div><div class="ul-stat-label">Toplam</div><div class="ul-stat-value">@totalCount</div></div>
+        </div>
+        <div class="ul-stat">
+            <div class="ul-stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div><div class="ul-stat-label">Aktif</div><div class="ul-stat-value">@activeCount</div></div>
+        </div>
+        <div class="ul-stat">
+            <div class="ul-stat-icon red"><i class="fas fa-times-circle"></i></div>
+            <div><div class="ul-stat-label">Pasif</div><div class="ul-stat-value">@passiveCount</div></div>
+        </div>
+        <div class="ul-stat">
+            <div class="ul-stat-icon purple"><i class="fas fa-user-shield"></i></div>
+            <div><div class="ul-stat-label">Admin</div><div class="ul-stat-value">@adminCount</div></div>
+        </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="ul-toolbar">
+        <div class="ul-toolbar-left">
+            <button class="ul-filter-btn active" onclick="filterCards('all', this)">
+                Tümü <span class="ul-filter-count">@totalCount</span>
+            </button>
+            <button class="ul-filter-btn success" onclick="filterCards('active', this)">
+                <i class="fas fa-circle" style="font-size:.45rem; color:var(--success);"></i>
+                Aktif <span class="ul-filter-count">@activeCount</span>
+            </button>
+            <button class="ul-filter-btn danger" onclick="filterCards('passive', this)">
+                <i class="fas fa-circle" style="font-size:.45rem; color:var(--danger);"></i>
+                Pasif <span class="ul-filter-count">@passiveCount</span>
+            </button>
+        </div>
+        <div class="ul-toolbar-right">
+            <div class="ul-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Ara..." oninput="filterCards('current')" />
+            </div>
+            @if (isAdminOrSuper)
+            {
+                <a href="/AdminKullanici/Ekle?customerId=@customerId" class="ul-add-btn">
+                    <i class="fas fa-plus"></i> Yeni Kullanıcı
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- CARDS -->
+    @if (Model == null || !Model.Any())
+    {
+        <div class="ul-empty">
+            <i class="fas fa-users"></i>
+            <p>Bu firmaya ait henüz kullanıcı bulunmuyor.</p>
+            <a href="/AdminKullanici/Ekle?customerId=@customerId" class="ul-add-btn" style="display:inline-flex;">
+                <i class="fas fa-plus"></i> İlk Kullanıcıyı Ekle
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="ul-grid" id="cardGrid">
+            @foreach (var item in Model)
+            {
+                string safeUsername = item.Username.Replace("'", "\\'");
+                string initials = string.Concat(
+                item.DisplayName.Split(' ')
+                .Where(w => w.Length > 0)
+                .Take(2)
+                .Select(w => w[0].ToString().ToUpper()));
+                if (string.IsNullOrEmpty(initials))
+                    initials = item.DisplayName.Length >= 1
+                    ? item.DisplayName[0].ToString().ToUpper() : "?";
+                string searchData = $"{item.Username} {item.FullName} {item.EMailAddress} {item.PhoneNumber}".ToLower();
+
+                <div class="user-card @(!item.Status ? "passive" : "")"
+                     data-status="@(item.Status ? "active" : "passive")"
+                     data-search="@searchData">
+
+                    <!-- TOP -->
+                    <div class="user-card-top">
+                        @if (!string.IsNullOrEmpty(item.Picture))
+                        {
+                            <img src="@item.PictureUrl" class="user-avatar" alt="@item.DisplayName" />
+                        }
+                        else
+                        {
+                            <div class="user-avatar-placeholder">@initials</div>
+                        }
+                        <div>
+                            <div class="user-card-name">@item.DisplayName</div>
+                            <div class="user-card-uname">
+                                <i class="fas fa-at" style="font-size:.7rem; opacity:.5;"></i>
+                                @item.Username
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BODY -->
+                    <div class="user-card-body">
+                        <div class="user-info-row">
+                            <i class="fas fa-envelope" style="color:var(--accent);"></i>
+                            <a href="mailto:@item.EMailAddress">@item.EMailAddress</a>
+                        </div>
+                        @if (!string.IsNullOrEmpty(item.PhoneNumber))
+                        {
+                            <div class="user-info-row">
+                                <i class="fas fa-phone" style="color:var(--success);"></i>
+                                <a href="tel:@item.PhoneNumber" style="color:var(--success);">@item.PhoneNumber</a>
+                            </div>
+                        }
+                        <div class="user-info-row">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>@item.CreatedDate.ToString("dd.MM.yyyy")</span>
+                        </div>
+                    </div>
+
+                    <!-- BADGES -->
+                    <div class="user-card-badges">
+                        <span class="b-role @(item.ISAdmin == 2 ? "superadmin" : item.ISAdmin == 1 ? "admin" : "user")">
+                            <i class="fas @(item.ISAdmin == 2 ? "fa-crown" : item.ISAdmin >= 1 ? "fa-user-shield" : "fa-user")"></i>
+                            @item.RoleText
+                        </span>
+                        <span class="b-status @(item.Status ? "active" : "passive")">
+                            @(item.Status ? "Aktif" : "Pasif")
+                        </span>
+                        <span class="b-mail @(item.SendEmail ? "yes" : "no")">
+                            <i class="fas @(item.SendEmail ? "fa-bell" : "fa-bell-slash")"></i>
+                            @(item.SendEmail ? "Mail Açık" : "Mail Kapalı")
+                        </span>
+                    </div>
+
+                    <!-- ACTIONS -->
+                    <div class="user-card-actions">
+                        @{
+                            bool isMe = item.ID == currentUserId;
+                            bool targetIsSuper = item.ISAdmin == 2;
+                            bool targetIsAdmin = item.ISAdmin == 1;
+                            bool targetIsUser = item.ISAdmin == 0;
+
+                            // YENİ DÜZENLEME YETKİSİ:
+                            // 1. SuperAdmin ise: Kendisi hariç herkesi düzenleyebilir (veya senin tercihinse kendisini de).
+                            // 2. Admin ise: SADECE hedef kullanıcı ise (targetIsUser) düzenleyebilir.
+                            //    Kendi kartı (isMe) olsa bile düzenleyemez, salt okunur kalır.
+
+                            bool canEdit = false;
+                            if (isSuperAdmin)
+                            {
+                                canEdit = true; // SuperAdmin her şeye müdahale eder.
+                            }
+                            else if (User.IsInRole("Admin"))
+                            {
+                                // Admin sadece User rolündekileri düzenler.
+                                // Kendisi (isMe) veya diğer Adminler/SuperAdminler için false döner.
+                                canEdit = targetIsUser && !isMe;
+                            }
+                        }
+
+                        @* --- DÜZENLE BUTONU --- *@
+                        @if (canEdit)
+                        {
+                            <a href="/AdminKullanici/Duzenle/@item.ID?customerId=@customerId" class="ul-btn warn">
+                                <i class="fas fa-edit"></i> Düzenle
+                            </a>
+                        }
+
+                        @* --- DURUM VE SİL BUTONLARI --- *@
+                        @* Sadece SuperAdmin görür ve sadece başkaları için işlem yapabilir *@
+                        @if (isSuperAdmin && !isMe)
+                        {
+                            <button type="button" class="ul-btn toggle" onclick="toggleStatus(@item.ID, '@safeUsername')">
+                                <i class="fas @(item.Status ? "fa-toggle-on" : "fa-toggle-off")"></i>
+                                @(item.Status ? "Pasif" : "Aktif")
+                            </button>
+
+                            <button type="button" class="ul-btn del" onclick="deleteUser(@item.ID, '@safeUsername')">
+                                <i class="fas fa-trash"></i> Sil
+                            </button>
+                        }
+
+                        @* --- SALT OKUNUR ETİKETİ --- *@
+                        @* Yetkisi yoksa "Salt Okunur" yazısını göster *@
+                        @if (!canEdit)
+                        {
+                            <div class="ul-btn" style="border:none; cursor:default; background:transparent; opacity:0.6; width:100%; justify-content: flex-start; padding-left:10px;">
+                                <i class="fas fa-lock mr-1"></i>
+                                <span>@(isMe ? "Kendi Profiliniz (Kısıtlı)" : "Salt Okunur")</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- No results -->
+        <div id="noResults" class="ul-no-results" style="display:none;">
+            <i class="fas fa-search" style="font-size:2rem; opacity:.2; display:block; margin-bottom:10px;"></i>
+            Sonuç bulunamadı.
+        </div>
+    }
+</div>
+
+<script>
+    var currentFilter = 'all';
+
+    document.addEventListener('DOMContentLoaded', function () {
+        @if (successMsg != null)
+        {
+                @:Swal.fire({ icon: 'success', title: 'Başarılı!', text: '@Html.Raw(successMsg?.Replace("'", "\\'"))', timer: 3000, showConfirmButton: false });
+        }
+        @if (errorMsg != null)
+        {
+                @:Swal.fire({ icon: 'error', title: 'Hata!', text: '@Html.Raw(errorMsg?.Replace("'", "\\'"))', timer: 4000, showConfirmButton: true });
+        }
+    });
+
+    // ==================== FİLTRELEME ====================
+    function filterCards(status, el) {
+        if (status !== 'current') {
+            currentFilter = status;
+            document.querySelectorAll('.ul-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+            if (el) el.classList.add('active');
+        }
+
+        var search = document.getElementById('searchInput').value.toLowerCase().trim();
+        var cards  = document.querySelectorAll('.user-card');
+        var visible = 0;
+
+        cards.forEach(function(card) {
+            var statusOk = currentFilter === 'all'
+                || (currentFilter === 'active'  && card.getAttribute('data-status') === 'active')
+                || (currentFilter === 'passive' && card.getAttribute('data-status') === 'passive');
+            var searchOk = search === '' || (card.getAttribute('data-search') || '').includes(search);
+
+            if (statusOk && searchOk) {
+                card.style.display = '';
+                visible++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        var noResults = document.getElementById('noResults');
+        if (noResults) noResults.style.display = visible === 0 ? 'block' : 'none';
+    }
+
+    // ==================== DURUM ====================
+    function toggleStatus(id, username) {
+        Swal.fire({
+            title: 'Durum Değiştir',
+            text: '"' + username + '" kullanıcısının durumunu değiştirmek istiyor musunuz?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Evet, değiştir',
+            cancelButtonText: 'İptal'
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            fetch('/AdminKullanici/DurumDegistir/' + id, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.success) {
+                    Swal.fire({ icon: 'success', title: 'Başarılı!', text: r.message, timer: 2000, showConfirmButton: false })
+                        .then(function() { location.reload(); });
+                } else {
+                    Swal.fire('Hata!', r.message, 'error');
+                }
+            })
+            .catch(function() { Swal.fire('Hata!', 'İşlem sırasında bir hata oluştu', 'error'); });
+        });
+    }
+
+    // ==================== SİL ====================
+    function deleteUser(id, username) {
+        Swal.fire({
+            title: 'Silmek istediğinize emin misiniz?',
+            html: '<strong>"' + username + '"</strong> kullanıcısı silinecek.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Evet, sil',
+            cancelButtonText: 'İptal'
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            fetch('/AdminKullanici/Sil/' + id, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.success) {
+                    Swal.fire({ icon: 'success', title: 'Silindi!', text: r.message, timer: 2000, showConfirmButton: false })
+                        .then(function() { location.reload(); });
+                } else {
+                    Swal.fire('Hata!', r.message, 'error');
+                }
+            })
+            .catch(function() { Swal.fire('Hata!', 'Silme işlemi sırasında bir hata oluştu', 'error'); });
+        });
+    }
+</script>

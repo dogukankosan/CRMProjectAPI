@@ -1,0 +1,639 @@
+﻿@model CRMProjectUI.Models.KnowledgeBaseDto
+@{
+    ViewData["Title"] = Model?.Title ?? "Makale Detay";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+
+    string apiBase = ViewBag.ApiBase as string ?? "";
+    bool isSuperAdmin = User.IsInRole("SuperAdmin");
+    bool isAdmin = User.IsInRole("Admin");
+    int callerUserId = int.TryParse(
+    User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+    out int duid) ? duid : 0;
+    bool canEdit = isSuperAdmin || Model?.CreatedBy == callerUserId;
+    string? successMsg = TempData["Success"] as string;
+    string? errorMsg = TempData["Error"] as string;
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --ink: #0f1117;
+        --ink-soft: #4a4f5e;
+        --surface: #f7f8fc;
+        --white: #fff;
+        --accent: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --purple: #7c3aed;
+        --border: #e2e8f0;
+        --radius: 12px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.10);
+    }
+
+    body {
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .kb-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 18px;
+        overflow: hidden;
+    }
+
+    .kb-card-header {
+        padding: 13px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+        .kb-card-header h6 {
+            margin: 0;
+            font-weight: 700;
+            font-size: .9rem;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+    .kb-card-body {
+        padding: 20px;
+    }
+
+    .kb-title {
+        font-family: 'Syne',sans-serif;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--ink);
+        margin-bottom: 10px;
+        line-height: 1.3;
+    }
+
+    .kb-tag {
+        font-size: .7rem;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 20px;
+        white-space: nowrap;
+        display: inline-block;
+        margin: 2px;
+    }
+
+        .kb-tag.product {
+            background: #f5f3ff;
+            color: var(--purple);
+        }
+
+        .kb-tag.category {
+            background: #eff6ff;
+            color: var(--accent);
+        }
+
+        .kb-tag.code {
+            background: #f0fdf4;
+            color: var(--success);
+        }
+
+    .kb-badge {
+        font-size: .68rem;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+
+        .kb-badge.active {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .kb-badge.passive {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .kb-badge.public {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .kb-badge.private {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+    .kb-desc {
+        font-size: .9rem;
+        color: var(--ink);
+        line-height: 1.8;
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+
+    /* Kod bloğu */
+    .kb-code-wrapper {
+        background: #1e1e2e;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #313244;
+    }
+
+    .kb-code-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 16px;
+        background: #181825;
+        border-bottom: 1px solid #313244;
+    }
+
+    .kb-code-lang {
+        font-size: .75rem;
+        font-weight: 700;
+        color: #89b4fa;
+        font-family: monospace;
+    }
+
+    .kb-code-copy {
+        font-size: .72rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 6px;
+        background: #313244;
+        color: #cdd6f4;
+        border: none;
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+        .kb-code-copy:hover {
+            background: #45475a;
+        }
+
+        .kb-code-copy.copied {
+            background: #a6e3a1;
+            color: #1e1e2e;
+        }
+
+    pre.kb-code {
+        margin: 0;
+        padding: 18px;
+        font-family: 'Courier New', monospace;
+        font-size: .83rem;
+        color: #cdd6f4;
+        line-height: 1.6;
+        overflow-x: auto;
+        max-height: 500px;
+    }
+
+    /* Dosyalar */
+    .kb-file-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .kb-file-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        min-width: 220px;
+        flex: 1;
+        max-width: 300px;
+    }
+
+    .kb-file-icon {
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+
+    .kb-file-name {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 2px;
+        word-break: break-all;
+    }
+
+    .kb-file-meta {
+        font-size: .7rem;
+        color: var(--ink-soft);
+    }
+
+    .kb-file-actions {
+        display: flex;
+        gap: 5px;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+
+    .kb-file-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        border: 1px solid var(--border);
+        background: var(--white);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .72rem;
+        cursor: pointer;
+        text-decoration: none;
+        color: var(--ink-soft);
+        transition: all .15s;
+    }
+
+        .kb-file-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .kb-file-btn.download:hover {
+            background: #eff6ff;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .kb-file-btn.delete:hover {
+            background: #fef2f2;
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+    .kb-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        font-size: .78rem;
+        color: var(--ink-soft);
+    }
+
+    .kb-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .kb-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 9px;
+        font-size: .82rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .15s;
+        border: 1.5px solid var(--border);
+        background: var(--white);
+        color: var(--ink-soft);
+        cursor: pointer;
+    }
+
+        .kb-action-btn:hover {
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+
+        .kb-action-btn.edit:hover {
+            background: #f5f3ff;
+            border-color: var(--purple);
+            color: var(--purple);
+        }
+
+        .kb-action-btn.back:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .kb-action-btn.delete:hover {
+            background: #fef2f2;
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .kb-action-btn.toggle-pub {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+            .kb-action-btn.toggle-pub:hover {
+                background: #f0fdf4;
+            }
+
+            .kb-action-btn.toggle-pub.off {
+                border-color: #94a3b8;
+                color: #94a3b8;
+            }
+
+                .kb-action-btn.toggle-pub.off:hover {
+                    background: #f1f5f9;
+                }
+
+    .kb-empty {
+        text-align: center;
+        padding: 28px;
+        color: var(--ink-soft);
+    }
+
+        .kb-empty i {
+            font-size: 2rem;
+            opacity: .2;
+            display: block;
+            margin-bottom: 8px;
+        }
+</style>
+
+@Html.AntiForgeryToken()
+
+<!-- BAŞLIK -->
+<div class="d-flex align-items-center justify-content-between mb-3" style="flex-wrap:wrap; gap:10px;">
+    <div>
+        <h5 style="font-family:'Syne',sans-serif; font-weight:700; margin:0;">
+            <i class="fas fa-book-open mr-2 text-primary"></i> Makale Detay
+        </h5>
+        <small style="color:var(--ink-soft);">
+            <a asp-action="Liste" asp-controller="AdminBilgiBankasi" style="color:var(--accent);">Bilgi Bankası</a>
+            <i class="fas fa-chevron-right mx-1" style="font-size:.6rem;"></i>
+            @(Model?.Title?.Length > 40 ? Model.Title.Substring(0, 40) + "…" : Model?.Title)
+        </small>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <!-- Toggle Public -->
+        @if (canEdit)
+{
+        <form method="post" asp-action="TogglePublic" asp-controller="AdminBilgiBankasi"
+                  asp-route-id="@Model?.ID" style="margin:0;">
+                
+            @Html.AntiForgeryToken()
+  
+            </form>
+        }
+     
+        <a asp-action="Liste" asp-controller="AdminBilgiBankasi" class="kb-action-btn back">
+            <i class="fas fa-arrow-left"></i> Geri
+        </a>
+    </div>
+</div>
+
+@if (Model == null)
+{
+    <div class="alert alert-warning" style="border-radius:var(--radius);">
+        <i class="fas fa-exclamation-triangle mr-2"></i> Makale bulunamadı.
+    </div>
+}
+else
+{
+    <!-- ANA KART -->
+    <div class="kb-card">
+        <div class="kb-card-body">
+
+            <!-- BAŞLIK + BADGES -->
+            <div class="d-flex align-items-start justify-content-between mb-3" style="flex-wrap:wrap; gap:8px;">
+                <div style="flex:1; min-width:0;">
+                    <div class="kb-title">@Model.Title</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:10px;">
+                        @foreach (var p in Model.Products)
+                        {
+                            <span class="kb-tag product">
+                                <i class="fas fa-cube mr-1" style="font-size:.6rem;"></i>@p.LogoProductName
+                            </span>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Category))
+                        {
+                            <span class="kb-tag category">@Model.Category</span>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.CodeLanguage))
+                        {
+                            <span class="kb-tag code">
+                                <i class="fas fa-code mr-1" style="font-size:.6rem;"></i>@Model.CodeLanguage
+                            </span>
+                        }
+                    </div>
+                </div>
+                <div style="display:flex; gap:5px; flex-shrink:0;">
+                    <span class="kb-badge @(Model.IsActive ? "active" : "passive")">
+                        @(Model.IsActive ? "Aktif" : "Pasif")
+                    </span>
+                    <span class="kb-badge @(Model.IsPublic ? "public" : "private")">
+                        @(Model.IsPublic ? "Müşteri Görebilir" : "Gizli")
+                    </span>
+                </div>
+            </div>
+
+            <!-- META -->
+            <div class="kb-meta-row mb-4">
+                <div class="kb-meta-item">
+                    <i class="fas fa-user"></i>
+                    <span>@(Model.CreatedByName ?? "-")</span>
+                </div>
+                <div class="kb-meta-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>@Model.CreatedDate.ToString("dd.MM.yyyy HH:mm")</span>
+                </div>
+                @if (Model.UpdatedDate.HasValue)
+                {
+                    <div class="kb-meta-item">
+                        <i class="fas fa-edit"></i>
+                        <span>Güncellendi: @Model.UpdatedDate.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                    </div>
+                }
+                @if (Model.Files.Any())
+                {
+                    <div class="kb-meta-item">
+                        <i class="fas fa-paperclip"></i>
+                        <span>@Model.Files.Count dosya</span>
+                    </div>
+                }
+            </div>
+
+            <!-- AÇIKLAMA -->
+            <div style="font-size:.78rem; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px;">
+                <i class="fas fa-align-left mr-1"></i> Açıklama
+            </div>
+            <div class="kb-desc">@Model.Description</div>
+        </div>
+    </div>
+
+    <!-- KOD BLOĞU -->
+    @if (!string.IsNullOrEmpty(Model.CodeBlock))
+    {
+        <div class="kb-card">
+            <div class="kb-card-header">
+                <h6><i class="fas fa-code" style="color:var(--success);"></i> Kod Bloğu</h6>
+            </div>
+            <div class="kb-card-body" style="padding:0;">
+                <div class="kb-code-wrapper">
+                    <div class="kb-code-header">
+                        <span class="kb-code-lang">@(Model.CodeLanguage ?? "Kod")</span>
+                        <button class="kb-code-copy" id="copyBtn" onclick="copyCode()">
+                            <i class="fas fa-copy mr-1"></i> Kopyala
+                        </button>
+                    </div>
+                    <pre style="margin:0; padding:0; background:#1e1e2e;">
+                    <code id="codeContent"
+                          class="language-@(Model.CodeLanguage?.ToLower()
+                                        .Replace("#", "sharp")
+                                        .Replace("/", "")
+                                        .Replace(".", "") ?? "plaintext")"
+                  style="max-height:500px; overflow-x:auto; display:block; padding:18px; font-size:.83rem; line-height:1.6;">@Model.CodeBlock</code>
+</pre>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- DOSYALAR -->
+    <div class="kb-card">
+        <div class="kb-card-header">
+            <h6>
+                <i class="fas fa-paperclip" style="color:var(--warning);"></i> Dosyalar
+                <span style="font-size:.72rem; font-weight:400; color:var(--ink-soft);">(@Model.Files.Count)</span>
+            </h6>
+
+        </div>
+        <div class="kb-card-body">
+            @if (!Model.Files.Any())
+            {
+                <div class="kb-empty">
+                    <i class="fas fa-paperclip"></i>
+                    Henüz dosya eklenmemiş
+                </div>
+            }
+            else
+            {
+                <div class="kb-file-grid">
+                    @foreach (var f in Model.Files)
+                    {
+                        string iconClass = f.FileIconClass;
+                        string iconColor = f.FileIconColor;
+                        bool isImage = f.FileType == "Image";
+                        bool isPdf = f.FileType == "PDF";
+                        string fileUrl = $"/AdminBilgiBankasi/DosyaIndir/{f.ID}";
+
+                        <div class="kb-file-item">
+                            <div class="kb-file-icon">
+                                <i class="fas @iconClass.Split(' ')[0]" style="color:@iconColor;"></i>
+                            </div>
+                            <div style="flex:1; min-width:0;">
+                                <div class="kb-file-name" title="@f.OriginalFileName">
+                                    @(f.OriginalFileName.Length > 28 ? f.OriginalFileName.Substring(0, 28) + "…" : f.OriginalFileName)
+                                </div>
+                                <div class="kb-file-meta">
+                                    @f.FileSizeDisplay · @f.UploadedDate.ToString("dd.MM.yyyy")
+                                </div>
+                            </div>
+                            <div class="kb-file-actions">
+                                @if (isImage || isPdf)
+                                {
+                                    <button type="button" class="kb-file-btn download" title="Önizle"
+                                            onclick="previewFile('@fileUrl', '@f.FileType', '@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(f.OriginalFileName)')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                }
+                                <a href="@fileUrl" class="kb-file-btn download" title="İndir" target="_blank">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                             
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+<!-- ÖNİZLEME MODAL -->
+<div id="previewModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.75); align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; width:90vw; max-width:900px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.4);">
+        <div style="padding:12px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface);">
+            <span id="previewTitle" style="font-weight:600; font-size:.88rem; color:var(--ink);"></span>
+            <button onclick="closePreview()" style="border:none; background:none; font-size:1.2rem; color:var(--ink-soft); cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div style="flex:1; overflow:auto; padding:0; display:flex; align-items:center; justify-content:center; background:#1a1a1a; min-height:400px;">
+            <img id="previewImg" src="" style="display:none; max-width:100%; max-height:80vh; object-fit:contain;" />
+            <iframe id="previewPdf" src="" style="display:none; width:100%; height:80vh; border:none;"></iframe>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="tempData"
+     data-success="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(successMsg ?? ""))"
+     data-error="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(errorMsg ?? ""))">
+</div>
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        window.addEventListener('load', function () {
+            // Highlight.js başlat
+            document.querySelectorAll('pre code').forEach(function(el) {
+                hljs.highlightElement(el);
+            });
+
+            var s = '@Html.Raw(successMsg?.Replace("'", "\\'") ?? "")';
+            var e = '@Html.Raw(errorMsg?.Replace("'", "\\'") ?? "")';
+            if (s) Swal.fire({ icon:'success', title:'Başarılı!', text:s, timer:2500, showConfirmButton:false });
+            if (e) Swal.fire({ icon:'error',   title:'Hata!',     text:e });
+        });
+
+        function copyCode() {
+            var code = document.getElementById('codeContent').innerText;
+            navigator.clipboard.writeText(code).then(function() {
+                var btn = document.getElementById('copyBtn');
+                btn.classList.add('copied');
+                btn.innerHTML = '<i class="fas fa-check mr-1"></i> Kopyalandı';
+                setTimeout(function() {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '<i class="fas fa-copy mr-1"></i> Kopyala';
+                }, 2000);
+            });
+        }
+
+    
+
+                function previewFile(url, fileType, fileName) {
+            document.getElementById('previewTitle').textContent = fileName;
+            var img = document.getElementById('previewImg');
+            var pdf = document.getElementById('previewPdf');
+            img.style.display = 'none';
+            pdf.style.display = 'none';
+            if (fileType === 'Image') {
+                img.src = url;
+                img.style.display = 'block';
+            } else if (fileType === 'PDF') {
+                pdf.src = url;
+                pdf.style.display = 'block';
+            }
+            document.getElementById('previewModal').style.display = 'flex';
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').style.display = 'none';
+            document.getElementById('previewImg').src = '';
+            document.getElementById('previewPdf').src = '';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closePreview();
+        });
+    </script>
+}

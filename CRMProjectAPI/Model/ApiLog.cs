@@ -14,7 +14,8 @@
         // YANIT BİLGİLERİ
         public int StatusCode { get; set; }
         public string? ResponseBody { get; set; }
-        public int? ResponseTime { get; set; }
+        public bool ResponseTrimmed { get; set; }   // DB'de 4000 char limit — kırpıldıysa işaretle
+        public int? ResponseTime { get; set; }       // int → int? (ölçülemezse null olabilir)
 
         // HATA DETAYI
         public bool IsError { get; set; }
@@ -25,9 +26,9 @@
         // KULLANICI / İSTEK SAHİBİ
         public string? IpAddress { get; set; }
         public string? UserAgent { get; set; }
-        public string? ApiKey { get; set; }
+        public string? ApiKeyHash { get; set; }     // ApiKey → ApiKeyHash (ham key saklanmaz)
 
         // SİSTEM
-        public DateTime CreatedDate { get; set; }
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     }
 }

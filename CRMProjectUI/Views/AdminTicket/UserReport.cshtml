@@ -1,0 +1,624 @@
+﻿@{
+    ViewData["Title"] = "Analizlerim";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+    string apiBase = ViewBag.ApiBase ?? "";
+}
+<style>
+    .ur-header {
+        background: linear-gradient(135deg, #0f1117 0%, #1e2433 50%, #0f1117 100%);
+        border-radius: 16px;
+        padding: 28px 32px;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+    }
+
+        .ur-header::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(99,102,241,.3) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .ur-header::after {
+            content: '';
+            position: absolute;
+            bottom: -40px;
+            left: 40px;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(16,185,129,.2) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .ur-header h3 {
+            color: #fff;
+            font-weight: 800;
+            font-size: 1.4rem;
+            margin: 0 0 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .ur-header p {
+            color: rgba(255,255,255,.55);
+            margin: 0;
+            font-size: .88rem;
+            position: relative;
+            z-index: 1;
+        }
+
+    .ur-header-left {
+        position: relative;
+        z-index: 1;
+    }
+
+    .ur-stat {
+        border-radius: 14px;
+        padding: 18px 20px;
+        border: none;
+        transition: transform .2s, box-shadow .2s;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .ur-stat:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 28px rgba(0,0,0,.12) !important;
+        }
+
+    .ur-stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+    }
+
+    .ur-stat-val {
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 3px;
+    }
+
+    .ur-stat-label {
+        font-size: .75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        opacity: .65;
+    }
+
+    .ur-stat-sub {
+        font-size: .73rem;
+        opacity: .5;
+        margin-top: 5px;
+    }
+
+    .us-green {
+        background: linear-gradient(135deg,#f0fdf4,#dcfce7);
+        color: #166534;
+    }
+
+    .us-blue {
+        background: linear-gradient(135deg,#eff6ff,#dbeafe);
+        color: #1e40af;
+    }
+
+    .us-red {
+        background: linear-gradient(135deg,#fef2f2,#fee2e2);
+        color: #991b1b;
+    }
+
+    .us-orange {
+        background: linear-gradient(135deg,#fff7ed,#fed7aa);
+        color: #9a3412;
+    }
+
+    .us-purple {
+        background: linear-gradient(135deg,#f5f3ff,#ede9fe);
+        color: #5b21b6;
+    }
+
+    .us-teal {
+        background: linear-gradient(135deg,#f0fdfa,#ccfbf1);
+        color: #134e4a;
+    }
+
+    .us-green .ur-stat-icon {
+        background: rgba(22,163,74,.15);
+        color: #16a34a;
+    }
+
+    .us-blue .ur-stat-icon {
+        background: rgba(37,99,235,.15);
+        color: #2563eb;
+    }
+
+    .us-red .ur-stat-icon {
+        background: rgba(220,38,38,.15);
+        color: #dc2626;
+    }
+
+    .us-orange .ur-stat-icon {
+        background: rgba(234,88,12,.15);
+        color: #ea580c;
+    }
+
+    .us-purple .ur-stat-icon {
+        background: rgba(124,58,237,.15);
+        color: #7c3aed;
+    }
+
+    .us-teal .ur-stat-icon {
+        background: rgba(20,184,166,.15);
+        color: #14b8a6;
+    }
+
+    .ur-card {
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 20px 22px;
+        margin-bottom: 24px;
+    }
+
+    .ur-card-title {
+        font-weight: 700;
+        font-size: .92rem;
+        color: #0f1117;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .ur-card-title i {
+            color: #6366f1;
+        }
+
+    .ur-section-label {
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        color: #94a3b8;
+        margin-bottom: 10px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .ur-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .84rem;
+    }
+
+        .ur-table th {
+            background: #f7f8fc;
+            padding: 9px 12px;
+            text-align: left;
+            font-weight: 700;
+            font-size: .72rem;
+            color: #4a4f5e;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .ur-table td {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #0f1117;
+            vertical-align: middle;
+        }
+
+        .ur-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .ur-table tr:hover td {
+            background: #f8fafd;
+        }
+
+    .ubadge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 9px;
+        border-radius: 20px;
+        font-size: .73rem;
+        font-weight: 700;
+    }
+
+    .ub-success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .ub-danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .ub-warning {
+        background: #fef9c3;
+        color: #854d0e;
+    }
+
+    .ub-info {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .ub-purple {
+        background: #ede9fe;
+        color: #5b21b6;
+    }
+
+    .ub-gray {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .ur-ticket-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        background: #fff;
+        transition: background .15s;
+        text-decoration: none;
+        color: inherit;
+    }
+
+        .ur-ticket-row:hover {
+            background: #f8fafd;
+            text-decoration: none;
+            color: inherit;
+        }
+
+    .ur-priority-bar {
+        width: 4px;
+        border-radius: 2px;
+        align-self: stretch;
+        flex-shrink: 0;
+    }
+
+    .ur-ticket-no {
+        font-family: monospace;
+        font-size: .75rem;
+        color: #6366f1;
+        font-weight: 700;
+    }
+
+    .ur-ticket-title {
+        font-weight: 600;
+        font-size: .85rem;
+        color: #0f1117;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ur-ticket-meta {
+        font-size: .72rem;
+        color: #9ca3af;
+        margin-top: 2px;
+    }
+
+    .ur-mini-progress {
+        height: 6px;
+        background: #f1f5f9;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 6px;
+    }
+
+    .ur-mini-bar {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(90deg,#10b981,#6366f1);
+        transition: width .8s ease;
+    }
+
+    #urLoading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 0;
+        color: #6b7280;
+    }
+
+    #urContent {
+        display: none;
+    }
+</style>
+
+<div class="section-body">
+    <div class="ur-header">
+        <div class="ur-header-left">
+            <h3><i class="fas fa-chart-pie mr-2"></i>Analizlerim</h3>
+            <p id="urTime">Veriler yükleniyor...</p>
+        </div>
+    </div>
+
+    <div id="urLoading">
+        <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
+        <p>Analizler hazırlanıyor...</p>
+    </div>
+
+    <div id="urContent">
+        <!-- ── KİŞİSEL STAT ── -->
+        <div class="ur-section-label"><i class="fas fa-user mr-1"></i> Kişisel İstatistiklerim</div>
+        <div class="row mb-3" id="myStatRow"></div>
+
+        <!-- ── FİRMA STAT ── -->
+        <div class="ur-section-label mt-2"><i class="fas fa-building mr-1"></i> Firma İstatistikleri</div>
+        <div class="row mb-3" id="companyStatRow"></div>
+
+        <!-- ── GRAFİKLER ── -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="ur-card">
+                    <div class="ur-card-title"><i class="fas fa-chart-pie"></i> Kişisel Ticket Dağılımı</div>
+                    <canvas id="myPieChart" height="200"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="ur-card">
+                    <div class="ur-card-title"><i class="fas fa-chart-pie"></i> Firma Ticket Dağılımı</div>
+                    <canvas id="companyPieChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── AKTİF TİCKETLARIM ── -->
+        <div class="ur-card">
+            <div class="ur-card-title">
+                <i class="fas fa-fire"></i> Açık Ticketlarım
+                <span class="ubadge ub-warning ml-2" id="myOpenCount">0</span>
+            </div>
+            <div id="myOpenList"></div>
+        </div>
+
+        <!-- ── FİRMA AKTİF TİCKETLARI ── -->
+        <div class="ur-card">
+            <div class="ur-card-title">
+                <i class="fas fa-building"></i> Firmamın Açık Ticketları
+                <span class="ubadge ub-info ml-2" id="companyOpenCount">0</span>
+            </div>
+            <div class="table-responsive">
+                <table class="ur-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket No</th>
+                            <th>Başlık</th>
+                            <th>Ürün</th>
+                            <th>Öncelik</th>
+                            <th>Durum</th>
+                            <th>Açan</th>
+                            <th>Atanan</th>
+                            <th>Süre</th>
+                        </tr>
+                    </thead>
+                    <tbody id="companyOpenTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        var apiBase = '@apiBase';
+
+        function minDisplay(min) {
+            min = Math.round(min || 0);
+            if (!min) return '—';
+            if (min < 60) return min + ' dk';
+            var h = Math.floor(min / 60), m = min % 60;
+            return m ? h + ' sa ' + m + ' dk' : h + ' sa';
+        }
+        function fmtDate(d) {
+            if (!d) return '—';
+            return new Date(d).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric' });
+        }
+        function priorityColor(p) {
+            return { 1:'#9ca3af', 2:'#3b82f6', 3:'#f59e0b', 4:'#ef4444' }[p] || '#6b7280';
+        }
+        function priorityText(p) {
+            return { 1:'Düşük', 2:'Normal', 3:'Yüksek', 4:'Kritik' }[p] || p;
+        }
+        function priorityCls(p) {
+            return { 1:'ub-gray', 2:'ub-info', 3:'ub-warning', 4:'ub-danger' }[p] || 'ub-gray';
+        }
+        function statusBadge(s) {
+            var map = {
+                0: ['ub-warning', '⏳ Beklemede'],
+                1: ['ub-info',    '🔧 İşlemde'],
+                2: ['ub-success', '✅ Çözüldü'],
+                3: ['ub-danger',  '❌ Çözülemedi'],
+                4: ['ub-gray',    '📞 Müşteri Dönecek'],
+                5: ['ub-purple',  '📤 Biz Döneceğiz'],
+                6: ['ub-gray',    '🚫 İptal']
+            };
+            var v = map[s] || ['ub-gray', s];
+            return '<span class="ubadge ' + v[0] + '">' + v[1] + '</span>';
+        }
+
+        fetch('/AdminTicket/UserReportData')
+            .then(function(r) { return r.json(); })
+            .then(function(json) {
+                var d = json;
+                if (!d) {
+                    document.getElementById('urLoading').innerHTML =
+                        '<i class="fas fa-exclamation-triangle fa-2x text-danger mb-3"></i><p>Veri boş geldi.</p>';
+                    return;
+                }
+                renderMyStats(d.myStats);
+                renderCompanyStats(d.companyStats);
+                renderMyOpenTickets(d.myOpenTickets);
+                renderCompanyOpenTickets(d.companyOpenTickets);
+                renderMyPie(d.myStats);
+                renderCompanyPie(d.companyStats);
+                document.getElementById('urLoading').style.display = 'none';
+                document.getElementById('urContent').style.display = 'block';
+                document.getElementById('urTime').textContent = 'Son güncelleme: ' + new Date().toLocaleString('tr-TR');
+            })
+            .catch(function(err) {
+                console.error(err);
+                document.getElementById('urLoading').innerHTML =
+                    '<i class="fas fa-exclamation-triangle fa-2x text-danger mb-3"></i><p>Yüklenemedi: ' + err.message + '</p>';
+            });
+
+        function renderMyStats(s) {
+            if (!s) return;
+            document.getElementById('myOpenCount').textContent = s.openCount || 0;
+            var successRate = s.total > 0 ? Math.round((s.resolved / s.total) * 100) : 0;
+            var cards = [
+                { label: 'Toplam Ticket', value: s.total,          sub: 'Tüm zamanlar',    cls: 'us-blue',   icon: 'fa-ticket-alt' },
+                { label: 'Açık',          value: s.openCount,      sub: 'Şu an aktif',     cls: 'us-orange', icon: 'fa-clock' },
+                { label: 'Çözüldü',       value: s.resolved,       sub: 'Başarılı kapandı',cls: 'us-green',  icon: 'fa-check-circle' },
+                { label: 'Bu Ay',         value: s.thisMonthOpened,sub: 'Bu ay açtım',     cls: 'us-purple', icon: 'fa-calendar' },
+            ];
+            var html = '';
+            cards.forEach(function(c) {
+                html += '<div class="col-md-3 col-6 mb-3">' +
+                    '<div class="ur-stat ' + c.cls + ' shadow-sm">' +
+                    '<div class="ur-stat-icon"><i class="fas ' + c.icon + '"></i></div>' +
+                    '<div class="ur-stat-val">' + (c.value || 0) + '</div>' +
+                    '<div class="ur-stat-label">' + c.label + '</div>' +
+                    '<div class="ur-stat-sub">' + c.sub + '</div>' +
+                    '</div></div>';
+            });
+            document.getElementById('myStatRow').innerHTML = html;
+        }
+
+        function renderCompanyStats(s) {
+            if (!s) return;
+            document.getElementById('companyOpenCount').textContent = s.openCount || 0;
+            var cards = [
+                { label: 'Toplam Ticket', value: s.total,           sub: 'Tüm zamanlar',      cls: 'us-blue',   icon: 'fa-ticket-alt' },
+                { label: 'Açık',          value: s.openCount,       sub: 'Şu an aktif',       cls: 'us-orange', icon: 'fa-clock' },
+                { label: 'Çözüldü',       value: s.resolved,        sub: 'Başarılı kapandı',  cls: 'us-green',  icon: 'fa-check-circle' },
+                { label: 'Çözülemedi',    value: s.failed,          sub: 'Kapandı',           cls: 'us-red',    icon: 'fa-times-circle' },
+                { label: 'Bu Ay Açılan',  value: s.thisMonthOpened, sub: 'Bu ay açılan',      cls: 'us-purple', icon: 'fa-calendar' },
+                { label: 'Ort. Süre',     value: s.avgWorkingDisplay || minDisplay(s.avgWorkingMinute), sub: 'Çözüm süresi', cls: 'us-teal', icon: 'fa-stopwatch' },
+            ];
+            var html = '';
+            cards.forEach(function(c) {
+                html += '<div class="col-md-2 col-sm-4 col-6 mb-3">' +
+                    '<div class="ur-stat ' + c.cls + ' shadow-sm">' +
+                    '<div class="ur-stat-icon"><i class="fas ' + c.icon + '"></i></div>' +
+                    '<div class="ur-stat-val">' + (c.value !== undefined ? c.value : 0) + '</div>' +
+                    '<div class="ur-stat-label">' + c.label + '</div>' +
+                    '<div class="ur-stat-sub">' + c.sub + '</div>' +
+                    '</div></div>';
+            });
+            document.getElementById('companyStatRow').innerHTML = html;
+        }
+
+        function renderMyOpenTickets(list) {
+            if (!list || !list.length) {
+                document.getElementById('myOpenList').innerHTML =
+                    '<p class="text-muted text-center py-4"><i class="fas fa-check-circle mr-2 text-success"></i>Harika! Açık ticketın yok.</p>';
+                return;
+            }
+            var html = '';
+            list.forEach(function(t) {
+                html += '<a href="/AdminTicket/Detay/' + t.id + '" class="ur-ticket-row d-flex">' +
+                    '<div class="ur-priority-bar" style="background:' + priorityColor(t.priority) + ';"></div>' +
+                    '<div style="flex:1;min-width:0;">' +
+                    '<div class="ur-ticket-no">' + t.ticketNo + '</div>' +
+                    '<div class="ur-ticket-title">' + t.title + '</div>' +
+                    '<div class="ur-ticket-meta">' + (t.logoProductName || '—') + (t.assignedToName ? ' · Atanan: ' + t.assignedToName : '') + '</div>' +
+                    '</div>' +
+                    '<div class="text-right flex-shrink-0">' +
+                    statusBadge(t.status) +
+                    '<div style="font-size:.7rem;color:#9ca3af;margin-top:3px;">' + (t.elapsedText || '') + '</div>' +
+                    '</div></a>';
+            });
+            document.getElementById('myOpenList').innerHTML = html;
+        }
+
+        function renderCompanyOpenTickets(list) {
+            if (!list || !list.length) {
+                document.getElementById('companyOpenTable').innerHTML =
+                    '<tr><td colspan="8" class="text-center text-muted py-4">Açık ticket yok</td></tr>';
+                return;
+            }
+            var html = '';
+            list.forEach(function(t) {
+                html += '<tr>' +
+                    '<td><a href="/AdminTicket/Detay/' + t.id + '" style="font-family:monospace;font-size:.75rem;color:#6366f1;font-weight:700;">' + t.ticketNo + '</a></td>' +
+                    '<td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + t.title + '">' + t.title + '</td>' +
+                    '<td><small>' + (t.logoProductName || '—') + '</small></td>' +
+                    '<td><span class="ubadge ' + priorityCls(t.priority) + '">' + priorityText(t.priority) + '</span></td>' +
+                    '<td>' + statusBadge(t.status) + '</td>' +
+                    '<td><small>' + (t.createdByName || '—') + '</small></td>' +
+                    '<td><small>' + (t.assignedToName || '<span class="text-danger">Atanmadı</span>') + '</small></td>' +
+                    '<td><small style="color:#9ca3af;">' + (t.elapsedText || '—') + '</small></td>' +
+                    '</tr>';
+            });
+            document.getElementById('companyOpenTable').innerHTML = html;
+        }
+
+        function renderMyPie(s) {
+            if (!s) return;
+            var open   = s.openCount || 0;
+            var closed = (s.resolved || 0) + ((s.total - s.openCount - s.resolved) > 0 ? (s.total - s.openCount - s.resolved) : 0);
+            new Chart(document.getElementById('myPieChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Açık', 'Çözüldü', 'Diğer'],
+                    datasets: [{
+                        data: [s.openCount || 0, s.resolved || 0, Math.max(0, (s.total || 0) - (s.openCount || 0) - (s.resolved || 0))],
+                        backgroundColor: ['#f59e0b', '#10b981', '#ef4444'],
+                        borderWidth: 2, borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true, cutout: '65%',
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+                }
+            });
+        }
+
+        function renderCompanyPie(s) {
+            if (!s) return;
+            new Chart(document.getElementById('companyPieChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Açık', 'Çözüldü', 'Çözülemedi'],
+                    datasets: [{
+                        data: [s.openCount || 0, s.resolved || 0, s.failed || 0],
+                        backgroundColor: ['#f59e0b', '#10b981', '#ef4444'],
+                        borderWidth: 2, borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true, cutout: '65%',
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+                }
+            });
+        }
+    </script>
+}

@@ -1,0 +1,451 @@
+﻿@model CRMProjectUI.Controllers.LoginViewModel
+@inject CRMProjectUI.APIService.CompanyApiService CompanyService
+@inject Microsoft.Extensions.Configuration.IConfiguration Config  
+@{
+    ViewData["Title"] = "Giriş Yap";
+    Layout = null;
+    var company = await CompanyService.GetCompanyAsync();
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(company?.WebSiteTitle ?? "CRM") - Giriş</title>
+    <link rel="shortcut icon" type="image/x-icon" href="@(string.IsNullOrEmpty(company?.FaviconPath) ? "/adminThema/assets/img/favicon.ico" : $"{apiBase}{company.FaviconPath}")" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --or1: #ff6b00;
+            --or2: #ff9500;
+            --or3: #ffb347;
+            --dark: #0d0d14;
+            --dark2: #13131f;
+            --dark3: #1a1a2a;
+            --white: #ffffff;
+            --muted: rgba(255,255,255,.7);
+            --muted-light: rgba(255,255,255,.5);
+            --border: rgba(255,255,255,.1);
+            --inp: rgba(255,255,255,.05);
+            --danger: #ff4757;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(rgba(13,13,20,.9), rgba(13,13,20,.98)), url('/images/login-bg.png') center/cover no-repeat;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+            body::before {
+                content: '';
+                position: fixed;
+                inset: 0;
+                background: radial-gradient(ellipse 60% 50% at 50% -10%, rgba(255,107,0,.15) 0%, transparent 70%);
+                pointer-events: none;
+            }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 440px;
+            background: var(--dark2);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 40px 100px rgba(0,0,0,.7), 0 0 0 1px rgba(255,107,0,.05);
+        }
+
+        .card-topbar {
+            height: 4px;
+            background: linear-gradient(90deg, var(--or1), var(--or2), var(--or3));
+        }
+
+        /* --- LOGO SECTION YENİLENMİŞ HALİ --- */
+        .logo-section {
+            padding: 45px 40px 30px;
+            text-align: center;
+            background: radial-gradient(circle at center, rgba(255,107,0,0.05) 0%, transparent 70%);
+            border-bottom: 1px solid var(--border);
+        }
+        /* Logo Yuvarlağı - Logoyu Kurtaran Katı Beyaz Zemin */
+        .logo-wrap {
+            width: 140px; /* Daireyi biraz büyüttük, logoya alan açtık */
+            height: 140px;
+            margin: 0 auto 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Arka planı tamamen KATI BEYAZ yapıyoruz */
+            background: #ffffff;
+            /* Tam yuvarlak form */
+            border-radius: 50%;
+            /* Etrafına çok ince, yumuşak bir gri çizgi */
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            /* Daireyi karanlık kart üzerinde havaya kaldıran gölge */
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(0, 0, 0, 0.03); /* Hafif derinlik */
+
+            position: relative;
+            transition: all 0.4s ease-in-out;
+        }
+        /* Metin seçildiğinde (highlight) oluşacak renkler */
+        ::selection {
+            background-color: var(--or1); /* Senin tanımladığın koyu turuncu */
+            color: #fff; /* Seçilen metnin rengi beyaz kalsın */
+        }
+
+        /* Safari ve bazı eski tarayıcılar için alternatif */
+        ::-moz-selection {
+            background-color: var(--or1);
+            color: #fff;
+        }
+            .logo-wrap:hover {
+                transform: scale(1.05); /* Üstüne gelince hafif büyüme efekti */
+            }
+
+            /* Yuvarlağın içindeki logo */
+            .logo-wrap img {
+                max-width: 95px; /* Logonun daireye çok sıkışmamasını sağladık */
+                max-height: 95px;
+                width: auto;
+                height: auto;
+                object-fit: contain;
+                /* Beyaz zeminde logoyu daha net gösteren profesyonel bir gölge */
+                filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.15));
+            }
+        .company-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--white);
+            margin-top: 12px;
+            letter-spacing: -0.2px;
+            text-transform: uppercase;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .company-slogan {
+            font-size: .85rem;
+            color: var(--or2); /* Sloganı turuncu yaparak hiyerarşi kurduk */
+            font-weight: 500;
+            margin-top: 4px;
+            opacity: 0.9;
+        }
+        /* --- LOGO BİTİŞ --- */
+
+        .form-section {
+            padding: 35px 45px 40px;
+        }
+
+        .form-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--white);
+            margin-bottom: 8px;
+        }
+
+        .form-subtitle {
+            font-size: .9rem;
+            color: var(--muted);
+            margin-bottom: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: .75rem;
+            font-weight: 700;
+            color: var(--white);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            opacity: 0.8;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,.3);
+            font-size: 1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            background: var(--inp);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            font-size: .95rem;
+            color: var(--white);
+            outline: none;
+            transition: all .25s ease;
+        }
+
+            .form-input:focus {
+                border-color: var(--or2);
+                background: rgba(255,149,0,.08);
+                box-shadow: 0 0 0 4px rgba(255,107,0,.1);
+            }
+
+        .pass-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,.3);
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 6px;
+        }
+
+        .remember-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 24px 0;
+        }
+
+            .remember-row input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                accent-color: var(--or1);
+                cursor: pointer;
+            }
+
+            .remember-row label {
+                font-size: .9rem;
+                color: var(--muted);
+                cursor: pointer;
+            }
+
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--or1) 0%, var(--or2) 100%);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 10px 25px rgba(255,107,0,.3);
+            transition: all .3s ease;
+        }
+
+            .login-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 15px 35px rgba(255,107,0,.45);
+                filter: brightness(1.1);
+            }
+
+        .card-footer {
+            padding: 25px 40px;
+            border-top: 1px solid var(--border);
+            background: rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            font-size: .8rem;
+            color: var(--muted);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color .2s;
+        }
+
+            .footer-link:hover {
+                color: var(--white);
+            }
+
+        .footer-copy {
+            width: 100%;
+            text-align: center;
+            font-size: .75rem;
+            color: rgba(255,255,255,0.4);
+            margin-top: 10px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            display: none;
+        }
+
+        @@keyframes spin {
+            to
+
+        {
+            transform: rotate(360deg);
+        }
+
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="card-topbar"></div>
+
+        <div class="logo-section">
+            @if (!string.IsNullOrEmpty(company?.LogoPath))
+            {
+                <div class="logo-wrap">
+                    <img src="@($"{apiBase}{company.LogoPath}")" alt="@company.WebSiteTitle" />
+
+
+                </div>
+            }
+            else
+            {
+                <div class="logo-icon-wrap" style="width:70px; height:70px; background:linear-gradient(135deg, var(--or1), var(--or2)); border-radius:20px; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 25px rgba(255,107,0,0.3);">
+                    <i class="fas fa-layer-group" style="color:#fff; font-size:2rem;"></i>
+                </div>
+            }
+            <div class="company-name">@(company?.ShortCompanyName ?? "CRM Panel")  CRM</div>
+            @if (!string.IsNullOrEmpty(company?.Slogan))
+            {
+                <div class="company-slogan">@company.Slogan</div>
+            }
+        </div>
+
+        <div class="form-section">
+            <div class="form-title">Giriş Yap</div>
+           <br />
+
+            <form asp-action="Login" asp-controller="Auth" method="post" id="loginForm">
+                @Html.AntiForgeryToken()
+                @if (!string.IsNullOrEmpty(ViewBag.ReturnUrl as string))
+                {
+                    <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+                }
+
+                @{
+                    var errorMsg = ViewData.ModelState[""]?.Errors.FirstOrDefault()?.ErrorMessage;
+                }
+                @if (!string.IsNullOrEmpty(errorMsg))
+                {
+                    <div style="background: rgba(255,71,87,0.15); border: 1px solid rgba(255,71,87,0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; color: #ff4757; font-size: .9rem;">
+                        <i class="fas fa-circle-exclamation"></i>
+                        <span>@errorMsg</span>
+                    </div>
+                }
+                <div class="form-group">
+                    <label class="form-label">Kullanıcı Adı</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="Username" name="Username" class="form-input"
+                               value="@Model?.Username" placeholder="Kullanıcı adınız" required autofocus />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Şifre</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="Password" name="Password" class="form-input"
+                               placeholder="••••••••" required />
+                        <button type="button" class="pass-toggle" onclick="togglePassword()">
+                            <i class="fas fa-eye" id="passIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="remember-row">
+                    <input type="hidden" name="RememberMe" value="false" />
+                    <input type="checkbox" id="RememberMe" name="RememberMe" value="true" />
+                    <label for="RememberMe">Beni hatırla (7 gün)</label>
+                </div>
+
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <span id="btnText"> Ateşle 🔥</span>
+                    <div class="spinner" id="btnSpinner"></div>
+                </button>
+            </form>
+        </div>
+
+        <div class="card-footer">
+            @if (!string.IsNullOrEmpty(company?.Phone))
+            {
+                <a href="tel:@company.Phone" class="footer-link"><i class="fas fa-phone"></i> @company.Phone</a>
+            }
+@if (!string.IsNullOrEmpty(company?.Phone2))
+            {
+                <a href="tel:@company.Phone2" class="footer-link">
+                    <i class="fas fa-phone"></i> @company.Phone2
+                </a>
+            }
+            @if (!string.IsNullOrEmpty(company?.WebSiteLink))
+            {
+                <a href="@company.WebSiteLink" target="_blank" class="footer-link"><i class="fas fa-globe"></i> Web Sitesi</a>
+            }
+@if (!string.IsNullOrEmpty(company?.Email))
+            {
+                <a href="mailto:@company.Email" class="footer-link">
+                    <i class="fas fa-envelope"></i> @company.Email
+                </a>
+            }
+            <div class="footer-copy">
+                &copy; @DateTime.Now.Year @(company?.CompanyName ?? "CRM") &mdash; Tüm hakları saklıdır
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            var input = document.getElementById('Password');
+            var icon = document.getElementById('passIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', function () {
+            document.getElementById('loginBtn').disabled = true;
+            document.getElementById('btnText').style.display = 'none';
+            document.getElementById('btnSpinner').style.display = 'block';
+        });
+    </script>
+</body>
+</html>

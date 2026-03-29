@@ -1,0 +1,1549 @@
+﻿@model List<CRMProjectUI.Models.CustomerListDto>
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
+    ViewData["Title"] = "Müşteri Listesi";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+
+    int totalCount = Model?.Count ?? 0;
+    int activeCount = Model?.Count(x => x.Status == 1) ?? 0;
+    int passiveCount = Model?.Count(x => x.Status == 0) ?? 0;
+    int vipCount = Model?.Count(x => x.Importance == "VIP") ?? 0;
+    int totalTickets = Model?.Sum(x => x.TicketCount) ?? 0;
+    int expiredCount = Model?.Count(x => x.IsContractExpired) ?? 0;
+    int expiringSoon = Model?.Count(x => x.IsContractExpiringSoon) ?? 0;
+    string? successMsg = TempData["Success"] as string;
+    string? errorMsg = TempData["Error"] as string;
+    bool isSuperAdmin = User.IsInRole("SuperAdmin");
+    bool isAdminOrSuper = User.IsInRole("Admin") || isSuperAdmin;
+
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --ink: #0f1117;
+        --ink-soft: #4a4f5e;
+        --surface: #f7f8fc;
+        --white: #ffffff;
+        --accent: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --border: #e2e8f0;
+        --radius: 12px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.10);
+    }
+
+    .cl-page {
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    /* STAT CARDS */
+    .cl-stats {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .cl-stat {
+        flex: 1;
+        min-width: 130px;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: box-shadow .2s, transform .2s;
+    }
+
+        .cl-stat:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+    .cl-stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+        .cl-stat-icon.blue {
+            background: #eff6ff;
+            color: var(--accent);
+        }
+
+        .cl-stat-icon.green {
+            background: #f0fdf4;
+            color: var(--success);
+        }
+
+        .cl-stat-icon.yellow {
+            background: #fffbeb;
+            color: var(--warning);
+        }
+
+        .cl-stat-icon.red {
+            background: #fef2f2;
+            color: var(--danger);
+        }
+
+        .cl-stat-icon.purple {
+            background: #f5f3ff;
+            color: #7c3aed;
+        }
+
+    .cl-stat-label {
+        font-size: .7rem;
+        color: var(--ink-soft);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 2px;
+    }
+
+    .cl-stat-value {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--ink);
+        line-height: 1;
+    }
+
+    /* TOOLBAR */
+    .cl-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 18px;
+        margin-bottom: 16px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .cl-toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .cl-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cl-filter-btn {
+        font-size: .78rem;
+        font-weight: 600;
+        padding: 5px 14px;
+        border-radius: 20px;
+        border: 1.5px solid var(--border);
+        background: var(--surface);
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: all .18s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .cl-filter-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: #eff6ff;
+        }
+
+        .cl-filter-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .cl-filter-btn.success.active {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .cl-filter-btn.danger.active {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+    .cl-filter-count {
+        font-size: .68rem;
+        font-weight: 700;
+        background: rgba(255,255,255,.25);
+        padding: 1px 6px;
+        border-radius: 10px;
+    }
+
+    .cl-filter-btn:not(.active) .cl-filter-count {
+        background: var(--border);
+        color: var(--ink-soft);
+    }
+
+    /* Arama */
+    .cl-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        padding: 5px 14px;
+        transition: border-color .2s;
+    }
+
+        .cl-search:focus-within {
+            border-color: var(--accent);
+        }
+
+        .cl-search i {
+            color: var(--ink-soft);
+            font-size: .85rem;
+        }
+
+        .cl-search input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: .83rem;
+            color: var(--ink);
+            width: 180px;
+        }
+
+    .cl-add-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 18px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        font-size: .83rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        box-shadow: 0 3px 10px rgba(37,99,235,.35);
+        transition: background .2s, transform .15s;
+    }
+
+        .cl-add-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            color: #fff;
+            text-decoration: none;
+        }
+
+    /* CARD */
+    .cl-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+
+    /* TABLE */
+    .cl-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .cl-table thead th {
+            font-family: 'Syne', sans-serif;
+            font-size: .7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--ink-soft);
+            padding: 11px 14px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .cl-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .15s;
+        }
+
+            .cl-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .cl-table tbody tr:hover {
+                background: #f8fafd;
+            }
+
+        .cl-table tbody td {
+            padding: 10px 14px;
+            vertical-align: middle;
+            font-size: .855rem;
+        }
+
+    /* Pagination */
+    .cl-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+        border-top: 1px solid var(--border);
+        font-size: .8rem;
+        color: var(--ink-soft);
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .cl-page-btns {
+        display: flex;
+        gap: 4px;
+    }
+
+    .cl-page-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: .8rem;
+        transition: all .15s;
+    }
+
+        .cl-page-btn:hover {
+            background: #eff6ff;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .cl-page-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .cl-page-btn.disabled {
+            opacity: .4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+    /* BADGES */
+    .b-type {
+        font-size: .7rem;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .b-type.kurumsal {
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .b-type.bireysel {
+            background: #fffbeb;
+            color: #92400e;
+        }
+
+    .b-imp {
+        font-size: .7rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+    }
+
+        .b-imp.vip {
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            color: #fff;
+        }
+
+        .b-imp.onemli {
+            background: linear-gradient(135deg,#f093fb,#f5576c);
+            color: #fff;
+        }
+
+        .b-imp.normal {
+            background: linear-gradient(135deg,#4facfe,#00f2fe);
+            color: #fff;
+        }
+
+        .b-imp.dusuk {
+            background: #f1f5f9;
+            color: var(--ink-soft);
+        }
+
+    .b-status {
+        font-size: .7rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .b-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .b-status.active {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+            .b-status.active::before {
+                background: var(--success);
+            }
+
+        .b-status.passive {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+            .b-status.passive::before {
+                background: var(--danger);
+            }
+
+    .b-ticket {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+
+        .b-ticket.high {
+            background: #fef2f2;
+            color: var(--danger);
+            border: 1.5px solid #fecaca;
+        }
+
+        .b-ticket.medium {
+            background: #fffbeb;
+            color: #92400e;
+            border: 1.5px solid #fde68a;
+        }
+
+        .b-ticket.low {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1.5px solid #bbf7d0;
+        }
+
+    .b-contract {
+        font-size: .78rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .b-contract.expired {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .b-contract.soon {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        .b-contract.ok {
+            color: var(--success);
+        }
+
+    .cl-name-link {
+        font-weight: 600;
+        color: var(--accent);
+        text-decoration: none;
+        display: block;
+    }
+
+        .cl-name-link:hover {
+            text-decoration: underline;
+        }
+
+    .cl-name-short {
+        font-size: .75rem;
+        color: var(--ink-soft);
+    }
+
+    .cl-code {
+        font-size: .75rem;
+        color: var(--ink-soft);
+        font-weight: 600;
+        font-family: monospace;
+    }
+
+    .cl-contact a {
+        display: block;
+        font-size: .8rem;
+        text-decoration: none;
+        margin-bottom: 2px;
+    }
+
+        .cl-contact a:last-child {
+            margin-bottom: 0;
+        }
+
+        .cl-contact a.wa {
+            color: var(--success);
+        }
+
+        .cl-contact a.mail {
+            color: var(--accent);
+        }
+
+        .cl-contact a:hover {
+            text-decoration: underline;
+        }
+
+    .cl-actions {
+        display: flex;
+        gap: 4px;
+    }
+
+    .cl-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .78rem;
+        cursor: pointer;
+        text-decoration: none;
+        color: var(--ink-soft);
+        transition: background .15s, border-color .15s, color .15s, transform .12s;
+    }
+
+        .cl-btn:hover {
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+
+        .cl-btn.info:hover {
+            background: #eff6ff;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .cl-btn.warn:hover {
+            background: #fffbeb;
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        .cl-btn.toggle:hover {
+            background: #f0fdf4;
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .cl-btn.del:hover {
+            background: #fef2f2;
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+    .cl-empty {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--ink-soft);
+    }
+
+        .cl-empty i {
+            font-size: 2.5rem;
+            opacity: .2;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+    /* no-results row */
+    .cl-no-results {
+        text-align: center;
+        padding: 32px;
+        color: var(--ink-soft);
+        font-size: .9rem;
+    }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+@Html.AntiForgeryToken()
+
+<div class="cl-page">
+
+    <!-- STAT CARDS -->
+    <div class="cl-stats">
+        <div class="cl-stat">
+            <div class="cl-stat-icon blue"><i class="fas fa-users"></i></div>
+            <div><div class="cl-stat-label">Toplam Müşteri</div><div class="cl-stat-value">@totalCount</div></div>
+        </div>
+        <div class="cl-stat">
+            <div class="cl-stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div><div class="cl-stat-label">Aktif Müşteri</div><div class="cl-stat-value">@activeCount</div></div>
+        </div>
+        <div class="cl-stat">
+            <div class="cl-stat-icon red"><i class="fas fa-times-circle"></i></div>
+            <div><div class="cl-stat-label">Pasif Müşteri</div><div class="cl-stat-value">@passiveCount</div></div>
+        </div>
+        <div class="cl-stat">
+            <div class="cl-stat-icon purple"><i class="fas fa-star"></i></div>
+            <div><div class="cl-stat-label">VIP Müşteri</div><div class="cl-stat-value">@vipCount</div></div>
+        </div>
+        <div class="cl-stat">
+            <div class="cl-stat-icon yellow"><i class="fas fa-ticket-alt"></i></div>
+            <div><div class="cl-stat-label">Toplam Bırakılabilecek Talep</div><div class="cl-stat-value">@totalTickets</div></div>
+        </div>
+        @if (expiredCount > 0)
+        {
+            <div class="cl-stat">
+                <div class="cl-stat-icon red"><i class="fas fa-exclamation-circle"></i></div>
+                <div><div class="cl-stat-label">Sözleşme Bitti</div><div class="cl-stat-value" style="color:var(--danger);">@expiredCount</div></div>
+            </div>
+        }
+        @if (expiringSoon > 0)
+        {
+            <div class="cl-stat">
+                <div class="cl-stat-icon yellow"><i class="fas fa-exclamation-triangle"></i></div>
+                <div><div class="cl-stat-label">30 Günde Bitiyor</div><div class="cl-stat-value" style="color:var(--warning);">@expiringSoon</div></div>
+            </div>
+        }
+    </div>
+
+ 
+    <!-- TOOLBAR -->
+    <div class="cl-toolbar">
+        <div class="cl-toolbar-left">
+            <button class="cl-filter-btn active" onclick="filterByStatus('all', this)">
+                Tümü <span class="cl-filter-count">@totalCount</span>
+            </button>
+            <button class="cl-filter-btn success" onclick="filterByStatus('active', this)">
+                <i class="fas fa-circle" style="font-size:.45rem; color:var(--success);"></i>
+                Aktif <span class="cl-filter-count">@activeCount</span>
+            </button>
+            <button class="cl-filter-btn danger" onclick="filterByStatus('passive', this)">
+                <i class="fas fa-circle" style="font-size:.45rem; color:var(--danger);"></i>
+                Pasif <span class="cl-filter-count">@passiveCount</span>
+            </button>
+            <button type="button" class="cl-add-btn" style="background:#10b981; box-shadow: 0 3px 10px rgba(16,185,129,.35);"
+                    onclick="exportExcel()">
+                <i class="fas fa-file-excel"></i> Excel
+            </button>
+        </div>
+      
+        <div class="cl-toolbar-right">
+            <div class="cl-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Ara..." oninput="filterTable()" />
+            </div>
+            @if (isAdminOrSuper)
+            {
+                <a asp-action="Ekle" asp-controller="AdminMusteri" class="cl-add-btn">
+                    <i class="fas fa-plus"></i> Yeni Müşteri
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- TABLE CARD -->
+    <div class="cl-card">
+        @if (Model == null || !Model.Any())
+        {
+            <div class="cl-empty">
+                <i class="fas fa-users"></i>
+                Henüz kayıtlı müşteri bulunmuyor.
+                <div class="mt-3">
+                    @if (isAdminOrSuper)
+                    {
+                        <a asp-action="Ekle" asp-controller="AdminMusteri" class="cl-add-btn">
+                            <i class="fas fa-plus"></i> İlk Müşteriyi Ekle
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="cl-table" id="customerTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0)" style="cursor:pointer;">Kod <i class="fas fa-sort ml-1" style="opacity:.4;"></i></th>
+                            <th onclick="sortTable(1)" style="cursor:pointer;">Müşteri Adı <i class="fas fa-sort ml-1" style="opacity:.4;"></i></th>
+                            <th>Tip</th>
+                            <th>VKN / TC</th>
+                            <th>Yetkili</th>
+                            <th>İletişim</th>
+                            <th onclick="sortTable(6)" style="cursor:pointer;">Konum <i class="fas fa-sort ml-1" style="opacity:.4;"></i></th>
+                            <th>Önem</th>
+                            <th onclick="sortTable(8)" style="cursor:pointer;">Talep <i class="fas fa-sort ml-1" style="opacity:.4;"></i></th>
+                            <th onclick="sortTable(9)" style="cursor:pointer;">Sözleşme <i class="fas fa-sort ml-1" style="opacity:.4;"></i></th>
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        @foreach (var item in Model)
+                        {
+                            bool isActive = item.Status == 1;
+                            string ticketClass = item.TicketCount < 10 ? "high" : "low";
+
+                            string impClass = item.Importance?.ToLower() switch
+                            {
+                                "vip" => "vip",
+                                "önemli" => "onemli",
+                                "düşük" => "dusuk",
+                                _ => "normal"
+                            };
+                            string contractClass = item.IsContractExpired ? "expired" : item.IsContractExpiringSoon ? "soon" : "ok";
+                            string contractIcon = item.IsContractExpired ? "fa-exclamation-circle" : item.IsContractExpiringSoon ? "fa-exclamation-triangle" : "fa-check-circle";
+                            string rawPhone = item.Phone1?.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("+", "") ?? "";
+                            string waLink = rawPhone.StartsWith("90") ? $"https://wa.me/{rawPhone}" : $"https://wa.me/90{rawPhone}";
+                            string safeCustomerName = item.CustomerName.Replace("'", "\\'").Replace("\"", "&quot;");
+
+                            <tr data-status="@(isActive ? "active" : "passive")"
+                                data-search="@($"{item.CustomerCode} {item.CustomerName} {item.ShortName} {item.VKN} {item.TC} {item.OfficialName} {item.Phone1} {item.CompanyEmail} {item.Il} {item.Ilce}".ToLower())">
+                                <td><span class="cl-code">@(item.CustomerCode ?? "-")</span></td>
+                                <td>
+                                    <a asp-action="Detay" asp-controller="AdminMusteri" asp-route-id="@item.ID" class="cl-name-link">@item.CustomerName</a>
+                                    @if (!string.IsNullOrEmpty(item.ShortName))
+                                    {
+                                        <span class="cl-name-short">@item.ShortName</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="b-type @(item.CustomerType == "Kurumsal" ? "kurumsal" : "bireysel")">
+                                        <i class="fas @(item.CustomerType == "Kurumsal" ? "fa-building" : "fa-user")"></i>
+                                        @item.CustomerType
+                                    </span>
+                                </td>
+                                <td style="font-size:.78rem;">
+                                    @if (!string.IsNullOrEmpty(item.VKN))
+                                    {
+                                        <span style="color:var(--ink-soft);">VKN: </span>
+                            
+                                        <strong>@item.VKN</strong>
+                                    }
+                                    else if (!string.IsNullOrEmpty(item.TC))
+                                    {
+                                        <span style="color:var(--ink-soft);">TC: </span>
+                            
+                                        <strong>@item.TC</strong>
+                                    }
+                                    else
+                                    {
+
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td style="font-size:.82rem;">
+                                    @if (!string.IsNullOrEmpty(item.OfficialName))
+                                    {
+                                        <i class="fas fa-user-tie" style="color:var(--ink-soft); font-size:.7rem; margin-right:4px;"></i>
+                                        @item.OfficialName
+                                    }
+                                    else
+                                    {
+
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="cl-contact">
+                                        @if (!string.IsNullOrEmpty(item.Phone1))
+                                        {
+                                            <a href="@waLink" target="_blank" class="wa"><i class="fab fa-whatsapp mr-1"></i>@item.Phone1</a>
+                                        }
+                                        @if (!string.IsNullOrEmpty(item.CompanyEmail))
+                                        {
+                                            <a href="mailto:@item.CompanyEmail" class="mail"><i class="fas fa-envelope mr-1"></i>@item.CompanyEmail</a>
+                                        }
+                                    </div>
+                                </td>
+                                <td style="font-size:.82rem;">
+                                    @if (!string.IsNullOrEmpty(item.Il))
+                                    {
+                                        <i class="fas fa-map-marker-alt" style="color:var(--danger); font-size:.7rem; margin-right:3px;"></i>
+                                        @item.Il
+                                        @if (!string.IsNullOrEmpty(item.Ilce))
+                                        {
+                                            <span style="color:var(--ink-soft);"> / @item.Ilce</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td><span class="b-imp @impClass">@(item.Importance ?? "Normal")</span></td>
+                                <td class="text-center">
+                                    <span class="b-ticket @ticketClass" title="Destek talebi">@item.TicketCount</span>
+                                </td>
+                                <td>
+                                    @if (item.ContractEndDate.HasValue)
+                                    {
+                                        <span class="b-contract @contractClass">
+                                            <i class="fas @contractIcon"></i>
+                                            @item.ContractEndDate.Value.ToString("dd.MM.yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+
+                                        <span class="text-muted" style="font-size:.78rem;">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="b-status @(isActive ? "active" : "passive")">@(isActive ? "Aktif" : "Pasif")</span>
+                                </td>
+                                <td>
+                                    <div class="cl-actions">
+                                        <a asp-action="Detay" asp-controller="AdminMusteri" asp-route-id="@item.ID"
+                                           class="cl-btn info" title="Detay">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if (isAdminOrSuper)
+                                        {
+                                            <a asp-action="Duzenle" asp-controller="AdminMusteri" asp-route-id="@item.ID"
+                                               class="cl-btn warn" title="Düzenle">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        }
+                                        @if (isSuperAdmin)
+                                        {
+                                            <button type="button" class="cl-btn toggle"
+                                                    title="@(isActive ? "Pasif yap" : "Aktif yap")"
+                                                    onclick="toggleStatus(@item.ID, '@safeCustomerName')">
+                                                <i class="fas @(isActive ? "fa-toggle-on" : "fa-toggle-off")"></i>
+                                            </button>
+                                            <button type="button" class="cl-btn del" title="Sil"
+                                                    onclick="deleteCustomer(@item.ID, '@safeCustomerName')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            <button type="button" class="cl-btn" title="Dosyalar"
+                                                    style="color:#7c3aed;"
+                                                    onclick="openFiles(@item.ID, '@safeCustomerName')">
+                                                <i class="fas fa-folder-open"></i>
+                                            </button>
+                                        }
+                                        <a href="/AdminKullanici/Liste/@item.ID"
+                                           class="cl-btn" title="Kullanıcılar"
+                                           style="color:var(--purple);">
+                                            <i class="fas fa-users"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="cl-pagination" id="paginationBar">
+                <span id="paginationInfo"></span>
+                <div class="cl-page-btns" id="paginationBtns"></div>
+            </div>
+        }
+    </div>
+</div>
+<script>
+       
+    // ==================== STATE ====================
+    var allRows       = [];
+    var filteredRows  = [];
+    var currentStatus = 'all';
+    var currentSearch = '';
+    var currentPage   = 1;
+    var pageSize      = 25;
+    var sortCol       = -1;
+    var sortAsc       = true;
+
+    // ==================== INIT ====================
+    document.addEventListener('DOMContentLoaded', function () {
+        allRows = Array.from(document.querySelectorAll('#tableBody tr'));
+        applyFilters();
+
+        // TempData mesajları
+        var success = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Success"] as string ?? ""));
+        var error   = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Error"] as string ?? ""));
+        var warning = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Warning"] as string ?? ""));
+        if (success) Swal.fire({ icon:'success', title:'Başarılı!', text:success, timer:2500, showConfirmButton:false });
+        if (error)   Swal.fire({ icon:'error',   title:'Hata!',     text:error });
+        if (warning) Swal.fire({ icon:'warning', title:'Uyarı',     text:warning });
+    });
+
+    // ==================== FİLTRELEME ====================
+    function filterByStatus(status, el) {
+        document.querySelectorAll('.cl-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        el.classList.add('active');
+        currentStatus = status;
+        currentPage   = 1;
+        applyFilters();
+    }
+
+    function filterTable() {
+        currentSearch = document.getElementById('searchInput').value.toLowerCase().trim();
+        currentPage   = 1;
+        applyFilters();
+    }
+
+    function applyFilters() {
+        filteredRows = allRows.filter(function(row) {
+            var statusMatch = currentStatus === 'all'
+                || (currentStatus === 'active'  && row.getAttribute('data-status') === 'active')
+                || (currentStatus === 'passive' && row.getAttribute('data-status') === 'passive');
+
+            var searchMatch = currentSearch === ''
+                || (row.getAttribute('data-search') || '').includes(currentSearch);
+
+            return statusMatch && searchMatch;
+        });
+
+        if (sortCol >= 0) doSort();
+        renderPage();
+    }
+
+    // ==================== SIRALAMA ====================
+    function sortTable(col) {
+        if (sortCol === col) {
+            sortAsc = !sortAsc;
+        } else {
+            sortCol = col;
+            sortAsc = true;
+        }
+        doSort();
+        renderPage();
+    }
+
+    function doSort() {
+        filteredRows.sort(function(a, b) {
+            var aText = (a.cells[sortCol] ? a.cells[sortCol].textContent.trim() : '');
+            var bText = (b.cells[sortCol] ? b.cells[sortCol].textContent.trim() : '');
+            var aNum  = parseFloat(aText);
+            var bNum  = parseFloat(bText);
+            if (!isNaN(aNum) && !isNaN(bNum)) return sortAsc ? aNum - bNum : bNum - aNum;
+            return sortAsc ? aText.localeCompare(bText, 'tr') : bText.localeCompare(aText, 'tr');
+        });
+    }
+
+    // ==================== SAYFALAMA ====================
+    function renderPage() {
+        var tbody     = document.getElementById('tableBody');
+        var total     = filteredRows.length;
+        var totalPages= Math.max(1, Math.ceil(total / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        var start = (currentPage - 1) * pageSize;
+        var end   = Math.min(start + pageSize, total);
+
+        allRows.forEach(function(r) { r.style.display = 'none'; });
+
+        if (total === 0) {
+            if (!document.getElementById('noResultsRow')) {
+                var noRow = document.createElement('tr');
+                noRow.id  = 'noResultsRow';
+                noRow.innerHTML = '<td colspan="12" class="cl-no-results"><i class="fas fa-search mr-2"></i>Sonuç bulunamadı.</td>';
+                tbody.appendChild(noRow);
+            }
+            document.getElementById('noResultsRow').style.display = '';
+        } else {
+            var nr = document.getElementById('noResultsRow');
+            if (nr) nr.style.display = 'none';
+
+            filteredRows.slice(start, end).forEach(function(r) {
+                r.style.display = '';
+                tbody.appendChild(r);
+            });
+        }
+
+        document.getElementById('paginationInfo').textContent =
+            total === 0 ? 'Kayıt yok' :
+            (start + 1) + ' – ' + end + ' / ' + total + ' kayıt';
+
+        var btns = document.getElementById('paginationBtns');
+        btns.innerHTML = '';
+
+        function addBtn(label, page, disabled, active) {
+            var btn = document.createElement('div');
+            btn.className = 'cl-page-btn' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+            btn.innerHTML = label;
+            if (!disabled && !active) btn.onclick = function() { currentPage = page; renderPage(); };
+            btns.appendChild(btn);
+        }
+
+        addBtn('<i class="fas fa-chevron-left"></i>', currentPage - 1, currentPage === 1, false);
+
+        var from = Math.max(1, currentPage - 2);
+        var to   = Math.min(totalPages, currentPage + 2);
+        if (from > 1) { addBtn('1', 1, false, false); if (from > 2) addBtn('...', -1, true, false); }
+        for (var p = from; p <= to; p++) addBtn(String(p), p, false, p === currentPage);
+        if (to < totalPages) { if (to < totalPages - 1) addBtn('...', -1, true, false); addBtn(String(totalPages), totalPages, false, false); }
+
+        addBtn('<i class="fas fa-chevron-right"></i>', currentPage + 1, currentPage === totalPages, false);
+    }
+
+    // ==================== DURUM DEĞİŞTİR ====================
+    function toggleStatus(id, name) {
+        Swal.fire({
+            title: 'Durum Değiştir',
+            text: '"' + name + '" müşterisinin durumunu değiştirmek istiyor musunuz?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Evet, değiştir',
+            cancelButtonText: 'İptal'
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            fetch('/AdminMusteri/DurumDegistir/' + id, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.success) {
+                    Swal.fire({ icon: 'success', title: 'Başarılı!', text: r.message, timer: 2000, showConfirmButton: false })
+                        .then(function() { location.reload(); });
+                } else {
+                    Swal.fire('Hata!', r.message, 'error');
+                }
+            })
+            .catch(function() { Swal.fire('Hata!', 'İşlem sırasında bir hata oluştu', 'error'); });
+        });
+    }
+
+    // ==================== SİL ====================
+    function deleteCustomer(id, name) {
+        Swal.fire({
+            title: 'Silmek istediğinize emin misiniz?',
+            html: '<strong>"' + name + '"</strong> müşterisi silinecek.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Evet, sil',
+            cancelButtonText: 'İptal'
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            fetch('/AdminMusteri/Sil/' + id, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.success) {
+                    Swal.fire({ icon: 'success', title: 'Silindi!', text: r.message, timer: 2000, showConfirmButton: false })
+                        .then(function() { location.reload(); });
+                } else {
+                    Swal.fire('Hata!', r.message, 'error');
+                }
+            })
+            .catch(function() { Swal.fire('Hata!', 'Silme işlemi sırasında bir hata oluştu', 'error'); });
+        });
+    }
+
+    // ==================== EXCEL EXPORT ====================
+    function exportExcel() {
+        var data = [['Kod','Müşteri Adı','Kısa Ad','Tip','VKN/TC','Yetkili','Telefon','E-posta','İl','İlçe','Önem','Talep','Sözleşme Bitiş','Durum']];
+
+        document.querySelectorAll('#tableBody tr[data-status]').forEach(function(tr) {
+            var cells = tr.cells;
+            var phone = cells[5] && cells[5].querySelector('a.wa')   ? cells[5].querySelector('a.wa').textContent.trim()   : '';
+            var email = cells[5] && cells[5].querySelector('a.mail') ? cells[5].querySelector('a.mail').textContent.trim() : '';
+            var konum = cells[6] ? cells[6].textContent.trim() : '';
+            var ilParts = konum.split('/');
+
+            data.push([
+                cells[0]  ? cells[0].textContent.trim()  : '',
+                cells[1]  ? cells[1].querySelector('a') ? cells[1].querySelector('a').textContent.trim() : cells[1].textContent.trim() : '',
+                cells[1]  ? cells[1].querySelector('.cl-name-short') ? cells[1].querySelector('.cl-name-short').textContent.trim() : '' : '',
+                cells[2]  ? cells[2].textContent.trim()  : '',
+                cells[3]  ? cells[3].textContent.trim()  : '',
+                cells[4]  ? cells[4].textContent.trim()  : '',
+                phone,
+                email,
+                ilParts[0] ? ilParts[0].trim() : '',
+                ilParts[1] ? ilParts[1].trim() : '',
+                cells[7]  ? cells[7].textContent.trim()  : '',
+                cells[8]  ? cells[8].textContent.trim()  : '',
+                cells[9]  ? cells[9].textContent.trim()  : '',
+                cells[10] ? cells[10].textContent.trim() : ''
+            ]);
+        });
+
+        var ws   = XLSX.utils.aoa_to_sheet(data);
+        var wb   = XLSX.utils.book_new();
+
+        ws['!cols'] = [
+            {wch:12},{wch:35},{wch:20},{wch:12},{wch:15},
+            {wch:20},{wch:18},{wch:30},{wch:15},{wch:15},
+            {wch:10},{wch:8},{wch:15},{wch:10}
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Müşteriler');
+        XLSX.writeFile(wb, 'musteriler_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    }
+
+    // ==================== DOSYA YÖNETİMİ ====================
+    var currentFileCustomerId   = null;
+    var currentFileCustomerName = '';
+    var selectedFiles           = [];
+    var allFiles                = [];
+    var activeCategory          = 'Tümü';
+    var apiBaseUrl              = '';  // Razor'dan doldurulur:
+    var apiBaseUrl = '@apiBase';
+
+    function openFiles(customerId, customerName) {
+        currentFileCustomerId   = customerId;
+        currentFileCustomerName = customerName;
+        document.getElementById('fileModalSubtitle').textContent = customerName;
+        document.getElementById('fileModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        loadFiles();
+    }
+
+    function closeFileModal() {
+        document.getElementById('fileModal').style.display = 'none';
+        document.body.style.overflow = '';
+        document.getElementById('fileUploadInput').value = '';
+        document.getElementById('fileUploadName').textContent = 'Seçilmedi';
+        document.getElementById('fileDescription').value = '';
+        document.getElementById('uploadProgress').style.display = 'none';
+        selectedFiles = [];
+    }
+
+    function onFileSelected(input) {
+        selectedFiles = Array.from(input.files);
+        if (selectedFiles.length === 0) {
+            document.getElementById('fileUploadName').textContent = 'Seçilmedi';
+        } else if (selectedFiles.length === 1) {
+            document.getElementById('fileUploadName').textContent = selectedFiles[0].name;
+        } else {
+            document.getElementById('fileUploadName').textContent = selectedFiles.length + ' dosya seçildi';
+        }
+    }
+
+    function loadFiles() {
+        document.getElementById('fileListLoading').style.display  = 'block';
+        document.getElementById('fileListEmpty').style.display    = 'none';
+        document.getElementById('fileListContainer').style.display= 'none';
+
+        fetch('/AdminMusteri/DosyaListesi/' + currentFileCustomerId)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                allFiles = data.files || [];
+                renderFiles();
+            })
+            .catch(function() {
+                document.getElementById('fileListLoading').style.display = 'none';
+                document.getElementById('fileListEmpty').style.display   = 'block';
+            });
+    }
+
+    function renderFiles() {
+        document.getElementById('fileListLoading').style.display = 'none';
+
+        if (allFiles.length === 0) {
+            document.getElementById('fileListEmpty').style.display    = 'block';
+            document.getElementById('fileListContainer').style.display= 'none';
+            document.getElementById('fileCountInfo').textContent = '0 dosya';
+            return;
+        }
+
+        document.getElementById('fileListEmpty').style.display    = 'none';
+        document.getElementById('fileListContainer').style.display= 'block';
+
+        // Kategoriler
+        var categories = ['Tümü'].concat([...new Set(allFiles.map(function(f) { return f.category; }))]);
+        var catFilter  = document.getElementById('categoryFilter');
+        catFilter.innerHTML = '';
+        categories.forEach(function(cat) {
+            var btn = document.createElement('button');
+            btn.textContent = cat;
+            btn.style.cssText = 'padding:3px 12px; border-radius:20px; font-size:.75rem; font-weight:600; cursor:pointer; border:1.5px solid #e2e8f0; background:' + (cat === activeCategory ? '#7c3aed' : '#fff') + '; color:' + (cat === activeCategory ? '#fff' : '#4a4f5e') + ';';
+            btn.onclick = function() { activeCategory = cat; renderFiles(); };
+            catFilter.appendChild(btn);
+        });
+
+        // Filtrele
+        var filtered = activeCategory === 'Tümü' ? allFiles : allFiles.filter(function(f) { return f.category === activeCategory; });
+        document.getElementById('fileCountInfo').textContent = filtered.length + ' / ' + allFiles.length + ' dosya';
+
+        // Kartlar
+        var container = document.getElementById('fileCards');
+        container.innerHTML = '';
+           filtered.forEach(function(file) {
+        var iconMap = {
+            'PDF':    { icon: 'fa-file-pdf',     color: '#ef4444' },
+            'Excel':  { icon: 'fa-file-excel',   color: '#10b981' },
+            'Word':   { icon: 'fa-file-word',    color: '#2563eb' },
+            'Image':  { icon: 'fa-file-image',   color: '#f59e0b' },
+            'Text':   { icon: 'fa-file-alt',     color: '#6b7280' },
+            'Archive':{ icon: 'fa-file-archive', color: '#4a4f5e' }
+        };
+        var ic   = iconMap[file.fileType] || { icon: 'fa-file', color: '#4a4f5e' };
+        var size = file.fileSizeBytes < 1024 * 1024
+            ? (file.fileSizeBytes / 1024).toFixed(1) + ' KB'
+            : (file.fileSizeBytes / (1024 * 1024)).toFixed(1) + ' MB';
+
+        var fileUrl     = apiBaseUrl + file.relativePath; // önizleme — API'ye direkt
+        var downloadUrl = '/AdminMusteri/Dosya/' + file.id; // indirme — UI proxy
+        var safeFileName = file.originalFileName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        var previewable  = ['PDF', 'Image', 'Word', 'Excel', 'Text'].indexOf(file.fileType) >= 0;
+
+        var card = document.createElement('div');
+        card.style.cssText = 'display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; transition:background .15s;';
+        card.onmouseenter = function() { this.style.background = '#f8fafd'; };
+        card.onmouseleave = function() { this.style.background = '#fff'; };
+
+        card.innerHTML =
+            '<i class="fas ' + ic.icon + '" style="font-size:1.4rem; color:' + ic.color + '; flex-shrink:0; width:24px; text-align:center;"></i>' +
+            '<div style="flex:1; min-width:0;">' +
+                '<div style="font-weight:600; font-size:.85rem; color:#0f1117; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="' + file.originalFileName + '">' + file.originalFileName + '</div>' +
+                '<div style="font-size:.75rem; color:#4a4f5e;">' +
+                    '<span style="background:#f1f5f9; padding:1px 7px; border-radius:6px; margin-right:6px;">' + file.category + '</span>' +
+                    size +
+                    (file.description ? ' · ' + file.description : '') +
+                    ' · ' + new Date(file.uploadedDate).toLocaleDateString('tr-TR') +
+                '</div>' +
+            '</div>' +
+            '<div style="display:flex; gap:6px; flex-shrink:0;">' +
+                (previewable
+                    ? '<button onclick="openPreview(\'' + fileUrl + '\', \'' + safeFileName + '\', \'' + file.fileType + '\', ' + file.id + ')" ' +
+                      'style="width:30px; height:30px; border-radius:8px; border:1px solid #e2e8f0; background:#f0fdf4; display:flex; align-items:center; justify-content:center; color:#10b981; cursor:pointer; font-size:.78rem;" title="Görüntüle">' +
+                      '<i class="fas fa-eye"></i></button>'
+                    : '') +
+                '<a href="' + downloadUrl + '" target="_blank" ' +
+                'style="width:30px; height:30px; border-radius:8px; border:1px solid #e2e8f0; background:#f7f8fc; display:flex; align-items:center; justify-content:center; color:#2563eb; text-decoration:none; font-size:.78rem;" title="İndir">' +
+                '<i class="fas fa-download"></i></a>' +
+                '<button onclick="deleteFile(' + file.id + ', \'' + safeFileName + '\')" ' +
+                'style="width:30px; height:30px; border-radius:8px; border:1px solid #e2e8f0; background:#f7f8fc; display:flex; align-items:center; justify-content:center; color:#ef4444; cursor:pointer; font-size:.78rem;" title="Sil">' +
+                '<i class="fas fa-trash"></i></button>' +
+            '</div>';
+
+        container.appendChild(card);
+    });
+    }
+
+    function uploadFiles() {
+        if (selectedFiles.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Uyarı', text: 'Lütfen en az bir dosya seçin.' });
+            return;
+        }
+
+        var btn      = document.getElementById('uploadBtn');
+        btn.disabled = true;
+        btn.innerHTML= '<i class="fas fa-spinner fa-spin"></i> Yükleniyor...';
+        document.getElementById('uploadProgress').style.display = 'block';
+
+        var token    = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        var category = document.getElementById('fileCategory').value;
+        var desc     = document.getElementById('fileDescription').value;
+        var total    = selectedFiles.length;
+        var errors   = 0;
+
+        function uploadNext(index) {
+            if (index >= total) {
+                btn.disabled = false;
+                btn.innerHTML= '<i class="fas fa-upload"></i> Yükle';
+                document.getElementById('uploadProgress').style.display = 'none';
+                document.getElementById('fileUploadInput').value = '';
+                document.getElementById('fileUploadName').textContent = 'Seçilmedi';
+                document.getElementById('fileDescription').value = '';
+                selectedFiles = [];
+
+                if (errors === 0) {
+                    Swal.fire({ icon: 'success', title: 'Başarılı!', text: total + ' dosya yüklendi.', timer: 2000, showConfirmButton: false });
+                } else {
+                    Swal.fire({ icon: 'warning', title: 'Kısmi Başarı', text: (total - errors) + ' dosya yüklendi, ' + errors + ' dosya başarısız.' });
+                }
+                loadFiles();
+                return;
+            }
+
+            var file    = selectedFiles[index];
+            var pct     = Math.round((index / total) * 100);
+            document.getElementById('uploadProgressBar').style.width = pct + '%';
+            document.getElementById('uploadProgressText').textContent = (index + 1) + ' / ' + total + ' — ' + file.name;
+
+            var formData = new FormData();
+            formData.append('file', file);
+            formData.append('category', category);
+            if (desc) formData.append('description', desc);
+
+            fetch('/AdminMusteri/DosyaYukle/' + currentFileCustomerId, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                body: formData
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (!r.success) errors++;
+                uploadNext(index + 1);
+            })
+            .catch(function() {
+                errors++;
+                uploadNext(index + 1);
+            });
+        }
+
+        uploadNext(0);
+    }
+
+    function deleteFile(fileId, fileName) {
+        Swal.fire({
+            title: 'Dosyayı sil?',
+            html: '<strong>"' + fileName + '"</strong> silinecek.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Evet, sil',
+            cancelButtonText: 'İptal'
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            fetch('/AdminMusteri/DosyaSil/' + fileId, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (r.success) {
+                    allFiles = allFiles.filter(function(f) { return f.id !== fileId; });
+                    renderFiles();
+                    Swal.fire({ icon: 'success', title: 'Silindi!', text: r.message, timer: 1500, showConfirmButton: false });
+                } else {
+                    Swal.fire('Hata!', r.message, 'error');
+                }
+            });
+        });
+    }
+
+    // ==================== DOSYA ÖNİZLEME ====================
+    function openPreview(fileUrl, fileName, fileType, fileId) {
+        var modal   = document.getElementById('previewModal');
+        var content = document.getElementById('previewContent');
+        var nameEl  = document.getElementById('previewFileName');
+        var iconEl  = document.getElementById('previewFileIcon');
+        var dlBtn   = document.getElementById('previewDownloadBtn');
+
+        nameEl.textContent = fileName;
+        dlBtn.href = '/AdminMusteri/Dosya/' + fileId;
+
+        var iconMap = {
+            'PDF':   { icon: 'fa-file-pdf',   color: '#dc2626' },
+            'Image': { icon: 'fa-file-image', color: '#d97706' },
+            'Word':  { icon: 'fa-file-word',  color: '#2563eb' },
+            'Excel': { icon: 'fa-file-excel', color: '#16a34a' },
+            'Text':  { icon: 'fa-file-alt',   color: '#4a4f5e' }
+        };
+        var ic = iconMap[fileType] || { icon: 'fa-file', color: '#7c3aed' };
+        iconEl.className = 'fas ' + ic.icon;
+        iconEl.style.color = ic.color;
+
+        content.innerHTML = '';
+
+        if (fileType === 'PDF') {
+            content.innerHTML = '<iframe src="' + fileUrl + '" style="width:100%; height:70vh; border:none; border-radius:0 0 16px 16px;"></iframe>';
+
+        } else if (fileType === 'Image') {
+            content.innerHTML = '<img src="' + fileUrl + '" style="max-width:100%; max-height:70vh; object-fit:contain; border-radius:8px; padding:16px;" />';
+
+        } else if (fileType === 'Text') {
+            content.innerHTML = '<div style="padding:24px; width:100%;"><i class="fas fa-spinner fa-spin"></i> Yükleniyor...</div>';
+            fetch(fileUrl)
+                .then(function(r) { return r.text(); })
+                .then(function(text) {
+                    content.innerHTML = '<pre style="padding:24px; margin:0; font-size:.85rem; white-space:pre-wrap; word-break:break-word; width:100%; max-height:70vh; overflow-y:auto; background:#fff;">' + escapeHtml(text) + '</pre>';
+                })
+                .catch(function() {
+                    content.innerHTML = '<div style="padding:24px; color:#dc2626;">Dosya okunamadı.</div>';
+                });
+
+        } else if (fileType === 'Word' || fileType === 'Excel') {
+            var googleUrl = 'https://docs.google.com/viewer?url=' + encodeURIComponent(fileUrl) + '&embedded=true';
+            content.innerHTML = '<iframe src="' + googleUrl + '" style="width:100%; height:70vh; border:none;"></iframe>';
+
+        } else {
+            content.innerHTML = '<div style="padding:32px; text-align:center; color:#4a4f5e;"><i class="fas fa-eye-slash" style="font-size:2rem; opacity:.3; display:block; margin-bottom:8px;"></i>Bu dosya türü önizlenemiyor.<br><a href="/AdminMusteri/Dosya/' + fileId + '" style="color:#7c3aed; font-weight:600;">İndirmek için tıklayın</a></div>';
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function closePreviewModal() {
+        var modal   = document.getElementById('previewModal');
+        var content = document.getElementById('previewContent');
+        modal.style.display = 'none';
+        content.innerHTML = '';
+    }
+
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    // ESC ile kapat
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closePreviewModal();
+            closeFileModal();
+        }
+    });
+</script>
+
+<!-- DOSYA MODAL -->
+<div id="fileModal" style="display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,.5); align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; width:780px; max-width:95vw; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.2);">
+
+        <!-- Modal Header -->
+        <div style="padding:20px 24px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+            <div>
+                <h5 style="margin:0; font-weight:700; color:#0f1117;">
+                    <i class="fas fa-folder-open mr-2" style="color:#7c3aed;"></i>
+                    Dosya Yönetimi
+                </h5>
+                <small id="fileModalSubtitle" style="color:#4a4f5e;"></small>
+            </div>
+            <button onclick="closeFileModal()" style="border:none; background:none; font-size:1.2rem; color:#4a4f5e; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Yükleme Alanı -->
+        <div style="padding:16px 24px; border-bottom:1px solid #e2e8f0; background:#f7f8fc; flex-shrink:0;">
+            <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                <div style="flex:1; min-width:200px;">
+                    <label style="font-size:.75rem; font-weight:600; color:#4a4f5e; display:block; margin-bottom:4px;">Dosya Seç</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label for="fileUploadInput" style="display:inline-flex; align-items:center; gap:6px; padding:7px 14px; background:#fff; border:1.5px solid #e2e8f0; border-radius:8px; cursor:pointer; font-size:.82rem; font-weight:600; color:#4a4f5e; transition:border-color .2s;">
+                            <i class="fas fa-paperclip"></i> Dosya Seç
+                        </label>
+                        <input type="file" id="fileUploadInput" style="display:none;"
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.zip,.rar"
+                               onchange="onFileSelected(this)" multiple />
+                        <span id="fileUploadName" style="font-size:.8rem; color:#4a4f5e;">Seçilmedi</span>
+                    </div>
+                </div>
+                <div style="min-width:140px;">
+                    <label style="font-size:.75rem; font-weight:600; color:#4a4f5e; display:block; margin-bottom:4px;">Kategori</label>
+                    <select id="fileCategory" style="width:100%; padding:7px 10px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.82rem; background:#fff;">
+                        <option value="Genel">Genel</option>
+                        <option value="Sözleşme">Sözleşme</option>
+                        <option value="Fatura">Fatura</option>
+                        <option value="Teklif">Teklif</option>
+                        <option value="Teknik">Teknik</option>
+                        <option value="Hukuki">Hukuki</option>
+                    </select>
+                </div>
+                <div style="flex:1; min-width:160px;">
+                    <label style="font-size:.75rem; font-weight:600; color:#4a4f5e; display:block; margin-bottom:4px;">Açıklama</label>
+                    <input type="text" id="fileDescription" placeholder="Opsiyonel..."
+                           style="width:100%; padding:7px 10px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:.82rem;" />
+                </div>
+                <button onclick="uploadFiles()" id="uploadBtn"
+                        style="padding:7px 18px; background:#7c3aed; color:#fff; border:none; border-radius:8px; font-size:.82rem; font-weight:600; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-upload"></i> Yükle
+                </button>
+            </div>
+            <!-- Upload progress -->
+            <div id="uploadProgress" style="display:none; margin-top:10px;">
+                <div style="background:#e2e8f0; border-radius:20px; height:6px; overflow:hidden;">
+                    <div id="uploadProgressBar" style="height:100%; background:#7c3aed; width:0%; transition:width .3s; border-radius:20px;"></div>
+                </div>
+                <small id="uploadProgressText" style="color:#4a4f5e; font-size:.75rem;"></small>
+            </div>
+        </div>
+
+        <!-- Dosya Listesi -->
+        <div style="flex:1; overflow-y:auto; padding:16px 24px;">
+            <div id="fileListLoading" style="text-align:center; padding:32px; color:#4a4f5e;">
+                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i>
+                <p class="mt-2">Dosyalar yükleniyor...</p>
+            </div>
+            <div id="fileListEmpty" style="display:none; text-align:center; padding:32px; color:#4a4f5e;">
+                <i class="fas fa-folder-open" style="font-size:2rem; opacity:.2; display:block; margin-bottom:8px;"></i>
+                Henüz dosya yüklenmemiş.
+            </div>
+            <div id="fileListContainer" style="display:none;">
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;" id="categoryFilter"></div>
+                <div id="fileCards" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div style="padding:12px 24px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; background:#f7f8fc;">
+            <small id="fileCountInfo" style="color:#4a4f5e;"></small>
+            <button onclick="closeFileModal()" style="padding:7px 18px; border:1.5px solid #e2e8f0; background:#fff; border-radius:8px; font-size:.82rem; font-weight:600; cursor:pointer;">
+                Kapat
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ÖNİZLEME MODAL -->
+<div id="previewModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.7); align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; width:900px; max-width:96vw; max-height:92vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3);">
+
+        <!-- Header -->
+        <div style="padding:16px 24px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <i id="previewFileIcon" class="fas fa-file" style="color:#7c3aed; font-size:1.2rem;"></i>
+                <span id="previewFileName" style="font-weight:600; color:#0f1117; font-size:.95rem;"></span>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <a id="previewDownloadBtn" href="#" target="_blank"
+                   style="padding:6px 14px; background:#7c3aed; color:#fff; border-radius:8px; font-size:.8rem; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-download"></i> İndir
+                </a>
+                <button onclick="closePreviewModal()"
+                        style="border:none; background:none; font-size:1.2rem; color:#4a4f5e; cursor:pointer; padding:4px 8px;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- İçerik -->
+        <div id="previewContent" style="flex:1; overflow:auto; padding:0; min-height:400px; display:flex; align-items:center; justify-content:center; background:#f7f8fc;">
+        </div>
+    </div>
+</div>

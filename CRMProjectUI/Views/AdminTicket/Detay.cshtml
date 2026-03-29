@@ -1,0 +1,1313 @@
+﻿@model CRMProjectUI.Models.TicketDto
+@{
+    ViewData["Title"] = "Ticket Detay";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+    bool isSuperAdmin = User.IsInRole("SuperAdmin");
+    bool isAdmin = User.IsInRole("Admin");
+    bool isUser = User.IsInRole("User");
+    bool isStaff = isSuperAdmin || isAdmin;
+    int callerUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out int uid) ? uid : 0;
+    bool isClosed = Model.Status == 2 || Model.Status == 3 || Model.Status == 6;
+    string statusClass = Model.Status switch
+    {
+        0 => "bs-0",
+        1 => "bs-1",
+        2 => "bs-2",
+        3 => "bs-3",
+        4 => "bs-4",
+        5 => "bs-5",
+        _ => "bs-0"
+    };
+    string prioClass = Model.Priority switch
+    {
+        1 => "bp-1",
+        2 => "bp-2",
+        3 => "bp-3",
+        4 => "bp-4",
+        _ => "bp-2"
+    };
+    string? successMsg = TempData["Success"] as string;
+    string? errorMsg = TempData["Error"] as string;
+    string? warnMsg = TempData["Warning"] as string;
+    var adminUsers = ViewBag.AdminUsers as List<CRMProjectUI.Models.UserListDto>
+                     ?? new List<CRMProjectUI.Models.UserListDto>();
+    var previewExts = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".pdf" };
+
+    // ← BU SATIRI EKLE
+    string apiBase = ViewBag.ApiBase as string ?? "";
+}
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --ink: #0f1117;
+        --ink-soft: #4a4f5e;
+        --surface: #f7f8fc;
+        --white: #fff;
+        --accent: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --purple: #7c3aed;
+        --border: #e2e8f0;
+        --radius: 12px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.10);
+    }
+
+    body {
+        font-family: 'DM Sans',sans-serif;
+    }
+    /* ── KART ── */
+    .td-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 18px;
+        overflow: hidden;
+    }
+
+    .td-card-header {
+        padding: 13px 18px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+        .td-card-header h6 {
+            margin: 0;
+            font-weight: 700;
+            font-size: .88rem;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+    .td-card-body {
+        padding: 18px;
+    }
+    /* ── BADGES ── */
+    .b-status {
+        font-size: .72rem;
+        font-weight: 600;
+        padding: 4px 11px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+    }
+
+        .b-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+    .bs-0 {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+        .bs-0::before {
+            background: #94a3b8;
+        }
+
+    .bs-1 {
+        background: #eef2ff;
+        color: #3730a3;
+    }
+
+        .bs-1::before {
+            background: #4f46e5;
+        }
+
+    .bs-2 {
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+        .bs-2::before {
+            background: var(--success);
+        }
+
+    .bs-3 {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+        .bs-3::before {
+            background: var(--danger);
+        }
+
+    .bs-4 {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+        .bs-4::before {
+            background: var(--warning);
+        }
+
+    .bs-5 {
+        background: #f5f3ff;
+        color: #5b21b6;
+    }
+
+        .bs-5::before {
+            background: var(--purple);
+        }
+
+    .b-priority {
+        font-size: .7rem;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 6px;
+        white-space: nowrap;
+    }
+
+    .bp-1 {
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+    .bp-2 {
+        background: #eff6ff;
+        color: #1e40af;
+    }
+
+    .bp-3 {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .bp-4 {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+    /* ── META SATIRI ── */
+    .td-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    /* ── BİLGİ SATIRI ── */
+    .td-info-row {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .td-info-item {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        font-size: .85rem;
+    }
+
+    .td-info-label {
+        min-width: 130px;
+        color: var(--ink-soft);
+        font-weight: 600;
+        font-size: .78rem;
+        flex-shrink: 0;
+    }
+
+    .td-info-value {
+        color: var(--ink);
+        flex: 1;
+    }
+    /* ── AÇIKLAMA ── */
+    .td-description {
+        font-size: .88rem;
+        line-height: 1.7;
+        color: var(--ink);
+        white-space: pre-wrap;
+        background: var(--surface);
+        border-radius: 9px;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+    }
+    /* ── DOSYALAR ── */
+    .td-file-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 13px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--white);
+        transition: background .15s;
+    }
+
+        .td-file-item:hover {
+            background: #f8fafd;
+        }
+
+    .td-file-name {
+        flex: 1;
+        font-size: .82rem;
+        font-weight: 600;
+        color: var(--ink);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .td-file-size {
+        font-size: .75rem;
+        color: var(--ink-soft);
+        white-space: nowrap;
+    }
+
+    .td-file-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .74rem;
+        cursor: pointer;
+        text-decoration: none;
+        color: var(--ink-soft);
+        transition: all .15s;
+    }
+
+        .td-file-btn:hover {
+            background: #eff6ff;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+    /* ── YORUMLAR ── */
+    .td-comment {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+        .td-comment:last-child {
+            margin-bottom: 0;
+        }
+    /* ── AVATAR — profil foto varsa img, yoksa baş harf ── */
+    .td-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .72rem;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+        overflow: hidden;
+        position: relative;
+    }
+
+        .td-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+        }
+
+        .td-avatar.staff {
+            background: var(--purple);
+        }
+
+        .td-avatar.user {
+            background: var(--accent);
+        }
+
+        .td-avatar.me {
+            background: var(--success);
+        }
+    /* mini avatar (bilgiler paneli) */
+    .td-avatar-mini {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .6rem;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+        overflow: hidden;
+        vertical-align: middle;
+    }
+
+        .td-avatar-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+        }
+
+    .td-comment-bubble {
+        flex: 1;
+    }
+
+    .td-comment-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+        flex-wrap: wrap;
+    }
+
+    .td-comment-name {
+        font-size: .82rem;
+        font-weight: 700;
+        color: var(--ink);
+    }
+
+    .td-comment-date {
+        font-size: .72rem;
+        color: var(--ink-soft);
+    }
+
+    .td-comment-text {
+        font-size: .84rem;
+        color: var(--ink);
+        line-height: 1.6;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0 9px 9px 9px;
+        padding: 10px 13px;
+    }
+
+        .td-comment-text.mine {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            border-radius: 9px 0 9px 9px;
+        }
+    /* ── YORUM FORMU ── */
+    .td-comment-form {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+    }
+
+    .td-textarea {
+        width: 100%;
+        padding: 10px 13px;
+        border: 1.5px solid var(--border);
+        border-radius: 9px;
+        font-size: .85rem;
+        color: var(--ink);
+        resize: vertical;
+        min-height: 80px;
+        outline: none;
+        font-family: 'DM Sans',sans-serif;
+        transition: border-color .2s;
+    }
+
+        .td-textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+        }
+    /* ── BUTONLAR ── */
+    .td-btn {
+        padding: 7px 16px;
+        border-radius: 8px;
+        font-size: .82rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all .15s;
+        border: none;
+    }
+
+    .td-btn-primary {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(37,99,235,.3);
+    }
+
+        .td-btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+    .td-btn-secondary {
+        background: var(--white);
+        color: var(--ink-soft);
+        border: 1.5px solid var(--border);
+    }
+
+        .td-btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+    .td-btn-success {
+        background: var(--success);
+        color: #fff;
+    }
+
+        .td-btn-success:hover {
+            background: #059669;
+        }
+
+    .td-btn-purple {
+        background: var(--purple);
+        color: #fff;
+    }
+
+        .td-btn-purple:hover {
+            background: #6d28d9;
+        }
+
+    .td-btn-warning {
+        background: var(--warning);
+        color: #fff;
+    }
+
+        .td-btn-warning:hover {
+            background: #d97706;
+        }
+    /* ── DOSYA YÜKLEME ── */
+    .td-upload-area {
+        border: 2px dashed var(--border);
+        border-radius: 9px;
+        padding: 18px;
+        text-align: center;
+        cursor: pointer;
+        background: var(--surface);
+        transition: all .2s;
+    }
+
+        .td-upload-area:hover {
+            border-color: var(--accent);
+            background: #eff6ff;
+        }
+
+        .td-upload-area i {
+            font-size: 1.5rem;
+            color: #cbd5e1;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .td-upload-area p {
+            margin: 0;
+            font-size: .82rem;
+            color: var(--ink-soft);
+        }
+    /* ── ÇÖZÜM NOTU ── */
+    .td-solution {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 9px;
+        padding: 14px 16px;
+    }
+
+        .td-solution.failed {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+    /* ── MODAL ── */
+    .td-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9998;
+        background: rgba(0,0,0,.5);
+        align-items: center;
+        justify-content: center;
+    }
+
+    .td-modal-box {
+        background: #fff;
+        border-radius: 16px;
+        width: 460px;
+        max-width: 95vw;
+        box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+
+    .td-modal-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+        .td-modal-header h6 {
+            margin: 0;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+    .td-modal-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .td-modal-footer {
+        padding: 14px 20px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .td-label {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .td-select, .td-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        font-size: .85rem;
+        color: var(--ink);
+        background: #fff;
+        outline: none;
+    }
+
+        .td-select:focus, .td-input:focus {
+            border-color: var(--accent);
+        }
+    /* ── ÖN İZLEME MODAL ── */
+    #previewModal .td-modal-box {
+        width: 860px;
+        max-width: 97vw;
+    }
+
+    #previewContent {
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #0f1117;
+        border-radius: 0 0 16px 16px;
+        overflow: hidden;
+    }
+
+        #previewContent img {
+            max-width: 100%;
+            max-height: 75vh;
+            object-fit: contain;
+            display: block;
+        }
+
+        #previewContent iframe {
+            width: 100%;
+            height: 75vh;
+            border: none;
+            display: block;
+        }
+    /* ── TIMELINE ── */
+    .td-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .td-tl-item {
+        display: flex;
+        gap: 12px;
+        position: relative;
+        padding-bottom: 14px;
+    }
+
+        .td-tl-item:last-child {
+            padding-bottom: 0;
+        }
+
+    .td-tl-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .7rem;
+        flex-shrink: 0;
+        z-index: 1;
+    }
+
+    .td-tl-line {
+        position: absolute;
+        left: 13px;
+        top: 28px;
+        bottom: 0;
+        width: 2px;
+        background: var(--border);
+    }
+
+    .td-tl-item:last-child .td-tl-line {
+        display: none;
+    }
+
+    .td-tl-content {
+        flex: 1;
+        padding-top: 4px;
+    }
+
+    .td-tl-title {
+        font-size: .82rem;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    .td-tl-date {
+        font-size: .73rem;
+        color: var(--ink-soft);
+        margin-top: 1px;
+    }
+</style>
+@Html.AntiForgeryToken()
+
+    <!-- BREADCRUMB + BAŞLIK -->
+    <div class="d-flex align-items-center justify-content-between mb-3" style="flex-wrap:wrap; gap:10px;">
+        <div>
+            <h5 style="font-family:'Syne',sans-serif; font-weight:700; margin:0;">
+                <i class="fas fa-ticket-alt mr-2 text-primary"></i>@Model.TicketNo
+            </h5>
+            <small style="color:var(--ink-soft);">
+                <a asp-action="Liste" asp-controller="AdminTicket" style="color:var(--accent);">Talepler</a>
+                <i class="fas fa-chevron-right mx-1" style="font-size:.6rem;"></i> @Model.TicketNo
+            </small>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a asp-action="Liste" asp-controller="AdminTicket" class="td-btn td-btn-secondary">
+                <i class="fas fa-arrow-left"></i> Listeye Dön
+            </a>
+        </div>
+    </div>
+    <!-- META -->
+    <div class="td-meta">
+        <span class="b-status @statusClass">@Model.StatusText</span>
+        <span class="b-priority @prioClass">@Model.PriorityText</span>
+        @if (!string.IsNullOrEmpty(Model.LogoProductName))
+        {
+            <span style="font-size:.78rem; background:#f5f3ff; color:var(--purple); padding:3px 10px; border-radius:20px; font-weight:600;">
+                <i class="fas fa-cube mr-1"></i>@Model.LogoProductName
+            </span>
+        }
+        @if (isStaff && !string.IsNullOrEmpty(Model.CustomerName))
+        {
+            <span style="font-size:.78rem; background:#eff6ff; color:var(--accent); padding:3px 10px; border-radius:20px; font-weight:600;">
+                <i class="fas fa-building mr-1"></i>@Model.CustomerName
+            </span>
+        }
+
+    </div>
+    <div class="row">
+        <!-- SOL KOLON -->
+        <div class="col-md-8">
+            <!-- BAŞLIK + AÇIKLAMA -->
+            <div class="td-card">
+                <div class="td-card-header">
+                    <h6><i class="fas fa-file-alt" style="color:var(--accent);"></i> Talep Detayı</h6>
+                    <span style="font-size:.75rem; color:var(--ink-soft);">
+                        @Model.OpenedDate?.ToString("dd.MM.yyyy HH:mm")
+                    </span>
+                </div>
+                <div class="td-card-body">
+                    <h6 style="font-weight:700; font-size:1rem; margin-bottom:12px;">@Model.Title</h6>
+                    <div class="td-description">@Model.Description</div>
+                </div>
+            </div>
+            <!-- ÇÖZÜM NOTU — kapalıysa göster -->
+            @if (isClosed && !string.IsNullOrEmpty(Model.SolutionNote))
+            {
+                <div class="td-card">
+                    <div class="td-card-header">
+                        <h6>
+                            <i class="fas @(Model.Status == 2 ? "fa-check-circle" : "fa-times-circle")"
+                               style="color:@(Model.Status == 2 ? "var(--success)" : "var(--danger)");"></i>
+                            Çözüm Notu
+                        </h6>
+                    </div>
+                    <div class="td-card-body">
+                        <div class="td-solution @(Model.Status == 3 ? "failed" : "")">
+                            @Model.SolutionNote
+                        </div>
+                    </div>
+                </div>
+            }
+            <!-- DOSYALAR -->
+            <div class="td-card">
+                <div class="td-card-header">
+                    <h6>
+                        <i class="fas fa-paperclip" style="color:var(--warning);"></i> Dosyalar
+                        <span style="font-size:.72rem; font-weight:400; color:var(--ink-soft);">(@Model.Files.Count)</span>
+                    </h6>
+                    @if (!isClosed)
+                    {
+                        <button class="td-btn td-btn-secondary" style="font-size:.76rem; padding:5px 12px;"
+                                onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-plus"></i> Dosya Ekle
+                        </button>
+                    }
+                </div>
+                <div class="td-card-body">
+                    @if (!Model.Files.Any())
+                    {
+                        <div style="text-align:center; padding:20px; color:var(--ink-soft);">
+                            <i class="fas fa-folder-open" style="font-size:1.8rem; opacity:.2; display:block; margin-bottom:8px;"></i>
+                            <small>Henüz dosya eklenmemiş</small>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="display:flex; flex-direction:column; gap:7px;">
+                            @foreach (var f in Model.Files)
+                            {
+                                var fExt = System.IO.Path.GetExtension(f.OriginalFileName)?.ToLower() ?? "";
+                                bool canPreview = previewExts.Contains(fExt);
+                                bool isImgPreview = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" }.Contains(fExt);
+                                <div class="td-file-item">
+                                    <i class="fas @f.FileIconClass" style="font-size:1.2rem; color:@f.FileIconColor; flex-shrink:0; width:20px; text-align:center;"></i>
+                                    <span class="td-file-name" title="@f.OriginalFileName">@f.OriginalFileName</span>
+                                    <span class="td-file-size">@f.FileSizeDisplay</span>
+                                    <span style="font-size:.72rem; color:var(--ink-soft);">@f.UploadedDate.ToString("dd.MM.yyyy")</span>
+                                    @if (canPreview)
+                                    {
+                                        /* Önizleme butonu — sadece resim ve PDF için */
+                                        <button type="button" class="td-file-btn" title="Ön İzleme"
+                                                onclick="previewFile('@f.ID', '@Html.Raw(f.OriginalFileName.Replace("'", "\\'"))', '@(isImgPreview ? "image" : "pdf")')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    }
+                                    <a asp-action="Dosya" asp-controller="AdminTicket" asp-route-fileId="@f.ID"
+                                       class="td-file-btn" title="İndir">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    }
+                    @if (!isClosed)
+                    {
+                        <form asp-action="DosyaYukle" asp-controller="AdminTicket" asp-route-id="@Model.ID"
+                              method="post" enctype="multipart/form-data" id="fileUploadForm" style="margin-top:12px;">
+                            @Html.AntiForgeryToken()
+                            <div class="td-upload-area" onclick="document.getElementById('fileInput').click()"
+                                 ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+                                 ondragleave="this.style.borderColor='var(--border)'"
+                                 ondrop="onFileDrop(event)">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Sürükle & bırak veya <strong style="color:var(--accent);">tıkla</strong></p>
+                                <small style="color:#94a3b8;">PDF, Excel, Word, Görsel · Maks. 20MB</small>
+                            </div>
+                            <input type="file" id="fileInput" name="file" style="display:none;"
+                                   accept=".pdf,.xls,.xlsx,.doc,.docx,.jpg,.jpeg,.png,.gif,.bmp,.txt"
+                                   onchange="submitFileForm()" />
+                        </form>
+                    }
+                </div>
+            </div>
+            <!-- YORUMLAR -->
+            <div class="td-card">
+                <div class="td-card-header">
+                    <h6>
+                        <i class="fas fa-comments" style="color:var(--accent);"></i> Yorumlar
+                        <span style="font-size:.72rem; font-weight:400; color:var(--ink-soft);">(@Model.Comments.Count)</span>
+                    </h6>
+                </div>
+                <div class="td-card-body">
+                    @if (!Model.Comments.Any())
+                    {
+                        <div style="text-align:center; padding:20px; color:var(--ink-soft);">
+                            <i class="fas fa-comment-slash" style="font-size:1.8rem; opacity:.2; display:block; margin-bottom:8px;"></i>
+                            <small>Henüz yorum yapılmamış</small>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var c in Model.Comments)
+                        {
+                            bool isMe = c.UserID == callerUserId;
+                            bool isStaffComment = c.UserIsAdmin >= 1;
+                            string initials = string.IsNullOrEmpty(c.UserFullName) ? "?"
+                            : string.Concat(c.UserFullName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+                            string avatarClass = isMe ? "me" : isStaffComment ? "staff" : "user";
+   
+
+                            string bubbleBg = isMe ? "#eff6ff" : isStaffComment ? "#f5f3ff" : "var(--surface)";
+                            string bubbleBorder = isMe ? "#bfdbfe" : isStaffComment ? "#ddd6fe" : "var(--border)";
+                            string bubbleRadius = isMe ? "9px 0 9px 9px" : "0 9px 9px 9px";
+                            string badgeBg = c.UserIsAdmin == 2 ? "#fef2f2" : c.UserIsAdmin == 1 ? "#eef2ff" : "#f1f5f9";
+
+                            <div class="td-comment">
+                                <div class="td-avatar @avatarClass" style="overflow:hidden; padding:0; flex-shrink:0;">
+                                    @if (!string.IsNullOrEmpty(c.UserPicture))
+                                    {
+                                        <img src="@(apiBase + c.UserPicture)"
+                                             alt="@initials"
+                                             style="width:100%;height:100%;object-fit:cover;border-radius:50%;"
+                                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                                        <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@initials</span>
+                                    }
+                                    else
+                                    {
+                                        @initials
+                                    }
+                                </div>
+                                <div class="td-comment-bubble">
+                                    <div class="td-comment-header">
+                                        <span class="td-comment-name">@c.UserFullName</span>
+                                        <span class="td-comment-role"
+                                              style="background:@badgeBg; color:@c.RoleBadgeColor; font-size:.68rem; font-weight:600; padding:2px 8px; border-radius:10px;">
+                                            @c.RoleBadge
+                                        </span>
+                                        <span class="td-comment-date">@c.CreatedDate.ToString("dd.MM.yyyy HH:mm")</span>
+                                    </div>
+                                    <div class="td-comment-text"
+                                         style="background:@bubbleBg; border-color:@bubbleBorder; border-radius:@bubbleRadius;">
+                                        @c.Comment
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    <!-- YORUM FORMU -->
+                    @if (!isClosed)
+                    {
+                        <div class="td-comment-form">
+                            <form asp-action="YorumEkle" asp-controller="AdminTicket" asp-route-id="@Model.ID"
+                                  method="post" id="commentForm">
+                                @Html.AntiForgeryToken()
+                                <textarea name="comment" class="td-textarea" id="commentInput"
+                                      placeholder="Yorumunuzu yazın..." maxlength="4000"
+                                      oninput="updateCommentCounter(this)"></textarea>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                                    <small id="commentCounter" style="color:var(--ink-soft); font-size:.73rem;">0 / 4000</small>
+                                    <button type="submit" class="td-btn td-btn-primary" id="commentBtn">
+                                        <i class="fas fa-paper-plane"></i> Yorum Ekle
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="margin-top:12px; padding:10px 14px; background:#f1f5f9; border-radius:8px; font-size:.82rem; color:var(--ink-soft); text-align:center;">
+                            <i class="fas fa-lock mr-1"></i> Kapalı ticketa yorum eklenemez
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <!-- SAĞ KOLON -->
+        <div class="col-md-4">
+            <!-- TICKET BİLGİLERİ -->
+            <div class="td-card">
+                <div class="td-card-header">
+                    <h6><i class="fas fa-info-circle" style="color:var(--accent);"></i> Bilgiler</h6>
+                </div>
+                <div class="td-card-body">
+                    <div class="td-info-row">
+                        <div class="td-info-item">
+                            <span class="td-info-label">Ticket No</span>
+                            <span class="td-info-value" style="font-family:monospace; font-weight:600;">@Model.TicketNo</span>
+                        </div>
+                        @if (isStaff)
+                        {
+                            <div class="td-info-item">
+                                <span class="td-info-label">Müşteri</span>
+                                <span class="td-info-value">@Model.CustomerName<br /><small style="color:var(--ink-soft); font-family:monospace;"></small></span>
+                            </div>
+                        }
+                        <div class="td-info-item">
+                            <span class="td-info-label">Müşteri Ürünü</span>
+                            <span class="td-info-value">@(Model.LogoProductName ?? "-")</span>
+                        </div>
+
+                        <!-- ── OLUŞTURAN — mini avatar ── -->
+                        <div class="td-info-item">
+                            <span class="td-info-label">Oluşturan</span>
+                            <span class="td-info-value">
+                                @if (!string.IsNullOrEmpty(Model.CreatedByName))
+                                {
+                                    string cbInitials = string.Concat(Model.CreatedByName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+                                    <span style="display:flex; align-items:center; gap:8px;">
+                                        <span class="td-avatar-mini" style="background:var(--accent); overflow:hidden; padding:0;">
+                                            @if (!string.IsNullOrEmpty(Model.CreatedByPicture))
+                                            {
+                                                <img src="@(apiBase + Model.CreatedByPicture)"
+                                                     alt="@cbInitials"
+                                                     style="width:100%;height:100%;object-fit:cover;border-radius:50%;"
+                                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                                                <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@cbInitials</span>
+                                            }
+                                            else
+                                            {
+                                                @cbInitials
+                                            }
+                                        </span>
+                                        @Model.CreatedByName
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>-</span>
+                                }
+                            </span>
+                        </div>
+
+                        <!-- ── ATANAN — mini avatar ── -->
+                        <div class="td-info-item">
+                            <span class="td-info-label">Atanan</span>
+                            <span class="td-info-value">
+                                @if (!string.IsNullOrEmpty(Model.AssignedToName))
+                                {
+                                    string atInitials = string.Concat(Model.AssignedToName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+                                    <span style="display:flex; align-items:center; gap:8px;">
+                                        <span class="td-avatar-mini" style="background:var(--purple); overflow:hidden; padding:0;">
+                                            @if (!string.IsNullOrEmpty(Model.AssignedToPicture))
+                                            {
+                                                <img src="@(apiBase + Model.AssignedToPicture)"
+                                                     alt="@atInitials"
+                                                     style="width:100%;height:100%;object-fit:cover;border-radius:50%;"
+                                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                                                <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@atInitials</span>
+                                            }
+                                            else
+                                            {
+                                                @atInitials
+                                            }
+                                        </span>
+                                        <span style="color:var(--success); font-weight:600;">@Model.AssignedToName</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--danger); font-style:italic;">Atanmadı</span>
+                                }
+                            </span>
+                        </div>
+
+                        <div class="td-info-item">
+                            <span class="td-info-label">Açılış Tarihi</span>
+                            <span class="td-info-value">@Model.OpenedDate?.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                        @if (Model.AssignedDate.HasValue)
+                        {
+                            <div class="td-info-item">
+                                <span class="td-info-label">Atanma Tarihi</span>
+                                <span class="td-info-value">@Model.AssignedDate.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            </div>
+                        }
+                        @if (Model.ResolvedDate.HasValue)
+                        {
+                            <div class="td-info-item">
+                                <span class="td-info-label">Kapanış Tarihi</span>
+                                <span class="td-info-value">@Model.ResolvedDate.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            </div>
+                        }
+                    <div class="td-info-item">
+                        <span class="td-info-label">Çalışma Süresi</span>
+                        <span class="td-info-value" style="font-weight:600;" id="workingDuration">
+                            @Model.WorkingMinuteDisplay
+                        </span>
+                    </div>
+                    </div>
+                </div>
+            </div>
+            <!-- SÜREÇ TAKİBİ -->
+            <div class="td-card">
+                <div class="td-card-header">
+                    <h6><i class="fas fa-stream" style="color:var(--purple);"></i> Süreç</h6>
+                </div>
+                <div class="td-card-body">
+                    <div class="td-timeline">
+                        <div class="td-tl-item">
+                            <div class="td-tl-line"></div>
+                            <div class="td-tl-dot" style="background:#eff6ff; color:var(--accent);"><i class="fas fa-plus" style="font-size:.6rem;"></i></div>
+                            <div class="td-tl-content">
+                                <div class="td-tl-title">Talep Oluşturuldu</div>
+                                <div class="td-tl-date">@Model.OpenedDate?.ToString("dd.MM.yyyy HH:mm")</div>
+                            </div>
+                        </div>
+                        @if (Model.AssignedDate.HasValue)
+                        {
+                            <div class="td-tl-item">
+                                <div class="td-tl-line"></div>
+                                <div class="td-tl-dot" style="background:#f5f3ff; color:var(--purple);"><i class="fas fa-user-check" style="font-size:.6rem;"></i></div>
+                                <div class="td-tl-content">
+                                    <div class="td-tl-title">Atandı — @(Model.AssignedToName ?? "")</div>
+                                    <div class="td-tl-date">@Model.AssignedDate.Value.ToString("dd.MM.yyyy HH:mm")</div>
+                                </div>
+                            </div>
+                        }
+                        @if (Model.ResolvedDate.HasValue)
+                        {
+                            <div class="td-tl-item">
+                                <div class="td-tl-line"></div>
+                                <div class="td-tl-dot" style="background:@(Model.Status == 2 ? "#f0fdf4" : "#fef2f2"); color:@(Model.Status == 2 ? "var(--success)" : "var(--danger)");"><i class="fas @(Model.Status == 2 ? "fa-check" : "fa-times")" style="font-size:.6rem;"></i></div>
+                                <div class="td-tl-content">
+                                    <div class="td-tl-title">@(Model.Status == 2 ? "Başarıyla Kapandı" : "Çözülemedi")</div>
+                                    <div class="td-tl-date">@Model.ResolvedDate.Value.ToString("dd.MM.yyyy HH:mm")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ ÖN İZLEME MODAL ══ -->
+<div id="previewModal" class="td-modal" style="z-index:9999;" onclick="closePreviewModal(event)">
+    <div class="td-modal-box" onclick="event.stopPropagation()">
+        <div class="td-modal-header">
+            <h6 style="display:flex;align-items:center;gap:8px;">
+                <i class="fas fa-eye" style="color:var(--accent);"></i>
+                <span id="previewTitle" style="font-size:.88rem; max-width:600px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></span>
+            </h6>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <a id="previewDownloadLink" href="#" class="td-file-btn" title="İndir" style="width:auto;padding:0 10px;gap:5px;font-size:.76rem;">
+                    <i class="fas fa-download"></i> İndir
+                </a>
+                <button onclick="closePreviewModal()"
+                        style="border:none;background:none;font-size:1.1rem;color:var(--ink-soft);cursor:pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div id="previewContent"></div>
+    </div>
+</div>
+
+<!-- ══ DEVİR MODAL ══ -->
+@if (isStaff)
+{
+    <div id="assignModal" class="td-modal">
+        <div class="td-modal-box">
+            <div class="td-modal-header">
+                <h6>
+                    <i class="fas fa-user-check mr-2" style="color:var(--purple);"></i>
+                    Ticket Devret
+                </h6>
+                <button onclick="closeAssignModal()"
+                        style="border:none;background:none;font-size:1.1rem;color:var(--ink-soft);cursor:pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="td-modal-body">
+                <div>
+                    <label class="td-label">Atanacak Kişi</label>
+                    <select id="assignUserSelect" class="td-select">
+                        <option value="">Seçiniz...</option>
+                        @foreach (var u in adminUsers)
+                        {
+                            <option value="@u.ID" selected="@(Model.AssignedToUserID == u.ID)">
+                                @u.FullName (@(u.ISAdmin == 2 ? "SuperAdmin" : "Admin"))
+                            </option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="td-modal-footer">
+                <button onclick="closeAssignModal()" class="td-btn td-btn-secondary">İptal</button>
+                <button onclick="submitAssign()" class="td-btn td-btn-purple">
+                    <i class="fas fa-check"></i> Devret
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- ══ DURUM MODAL ══ -->
+    <div id="statusModal" class="td-modal">
+        <div class="td-modal-box">
+            <div class="td-modal-header">
+                <h6>
+                    <i class="fas fa-exchange-alt mr-2" style="color:var(--success);"></i>
+                    Durum Değiştir
+                </h6>
+                <button onclick="closeStatusModal()"
+                        style="border:none;background:none;font-size:1.1rem;color:var(--ink-soft);cursor:pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="td-modal-body">
+                <div>
+                    <label class="td-label">Yeni Durum</label>
+                    <select id="statusSelect" class="td-select" onchange="onStatusChange()">
+                        <option value="0" selected="@(Model.Status == 0)">Beklemede</option>
+                        <option value="1" selected="@(Model.Status == 1)">İşlemde</option>
+                        <option value="2" selected="@(Model.Status == 2)">Başarılı Kapandı ✅</option>
+                        <option value="3" selected="@(Model.Status == 3)">Çözülemedi ❌</option>
+                        <option value="4" selected="@(Model.Status == 4)">Müşteri Bize Dönecek</option>
+                        <option value="5" selected="@(Model.Status == 5)">Müşteriye Geri Döneceğiz</option>
+                    </select>
+                </div>
+                <div id="solutionGroup" style="display:none;">
+                    <label class="td-label">
+                        Çözüm Notu <span style="color:var(--danger);">*</span>
+                    </label>
+                    <textarea id="solutionInput" class="td-textarea" rows="3" placeholder="Çözüm açıklaması..."></textarea>
+                </div>
+                <div id="workingMinGroup" style="display:none;">
+                    <label class="td-label">
+                        Çalışma Süresi <small style="font-weight:400;">(dakika)</small>
+                    </label>
+                    <input type="number" id="workingMinInput" class="td-input" min="0" value="0" />
+                </div>
+            </div>
+            <div class="td-modal-footer">
+                <button onclick="closeStatusModal()" class="td-btn td-btn-secondary">İptal</button>
+                <button onclick="submitStatus()" class="td-btn td-btn-success">
+                    <i class="fas fa-save"></i> Güncelle
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<div id="tempData"
+     data-success="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(successMsg ?? ""))"
+     data-error="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(errorMsg ?? ""))"
+     data-warn="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(warnMsg ?? ""))">
+</div>
+@section Scripts {
+<script>
+          var ticketId = @Model.ID;
+        var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+        window.addEventListener('load', function () {
+            var s = '@Html.Raw(successMsg?.Replace("'", "\\'") ?? "")';
+            var e = '@Html.Raw(errorMsg?.Replace("'", "\\'") ?? "")';
+            var w = '@Html.Raw(warnMsg?.Replace("'", "\\'") ?? "")';
+
+            if (s && s.trim() !== '') Swal.fire({ icon:'success', title:'Başarılı!', text:s, timer:2500, showConfirmButton:false });
+            if (e && e.trim() !== '') Swal.fire({ icon:'error',   title:'Hata!',     text:e });
+            if (w && w.trim() !== '') Swal.fire({ icon:'warning', title:'Uyarı',     text:w, timer:3000 });
+        });
+
+        // ── YORUM COUNTER ──
+        function updateCommentCounter(el) {
+            document.getElementById('commentCounter').textContent = el.value.length + ' / 4000';
+        }
+
+        // ── YORUM FORM ──
+        document.getElementById('commentForm')?.addEventListener('submit', function(e) {
+            var val = document.getElementById('commentInput').value.trim();
+            if (!val) {
+                e.preventDefault();
+                Swal.fire({ icon:'warning', title:'Boş Yorum', text:'Yorum alanı boş olamaz.' });
+                return;
+            }
+            var btn = document.getElementById('commentBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ekleniyor...';
+        });
+
+        // ── DOSYA YÜKLEME ──
+        function submitFileForm() {
+            var input = document.getElementById('fileInput');
+            if (!input.files || input.files.length === 0) return;
+            var file = input.files[0];
+            if (file.size > 20 * 1024 * 1024) {
+                Swal.fire({ icon:'warning', title:'Dosya Çok Büyük', text:'Maks. 20MB yükleyebilirsiniz.' });
+                input.value = '';
+                return;
+            }
+            document.getElementById('fileUploadForm').submit();
+        }
+
+        function onFileDrop(e) {
+            e.preventDefault();
+            e.currentTarget.style.borderColor = 'var(--border)';
+            var files = e.dataTransfer.files;
+            if (files.length > 0) {
+                var dt = new DataTransfer();
+                dt.items.add(files[0]);
+                document.getElementById('fileInput').files = dt.files;
+                submitFileForm();
+            }
+        }
+
+        @if (Model.Status == 1 && Model.TakenInProgressDate.HasValue)
+        {
+                <text>
+                (function() {
+                    var taken  = new Date('@Model.TakenInProgressDate.Value.ToString("o")');
+                    var now    = new Date();
+                    var diff   = Math.floor((now - taken) / 60000);
+                    if (diff < 0) diff = 0;
+                    var h = Math.floor(diff / 60);
+                    var m = diff % 60;
+                    var display = h > 0 ? h + ' sa ' + m + ' dk' : m + ' dk';
+                    var el = document.getElementById('workingDuration');
+                    if (el) el.textContent = display;
+                })();
+                </text>
+        }
+
+        // ── ÖN İZLEME ──
+        function previewFile(fileId, fileName, type) {
+            var url = '/AdminTicket/Dosya/' + fileId;
+            document.getElementById('previewTitle').textContent = fileName;
+            document.getElementById('previewDownloadLink').href = url;
+
+            var content = document.getElementById('previewContent');
+            content.innerHTML = '<div style="padding:40px;color:#94a3b8;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;"></i></div>';
+            document.getElementById('previewModal').style.display = 'flex';
+
+            if (type === 'image') {
+                var img = new Image();
+                img.onload = function() {
+                    content.innerHTML = '';
+                    content.appendChild(img);
+                };
+                img.onerror = function() {
+                    content.innerHTML = '<div style="padding:30px;color:#ef4444;font-size:.85rem;">Görsel yüklenemedi.</div>';
+                };
+                img.src = url;
+                img.style.cssText = 'max-width:100%;max-height:75vh;object-fit:contain;display:block;';
+            } else if (type === 'pdf') {
+                content.innerHTML = '<iframe src="' + url + '#toolbar=1" style="width:100%;height:75vh;border:none;display:block;"></iframe>';
+            } else {
+                content.innerHTML = '<div style="padding:40px;text-align:center;color:#94a3b8;"><i class="fas fa-file" style="font-size:3rem;opacity:.3;display:block;margin-bottom:12px;"></i><p style="font-size:.85rem;">Bu dosya türü önizlenemiyor.</p></div>';
+            }
+        }
+
+        function closePreviewModal(e) {
+            if (!e || e.target === document.getElementById('previewModal')) {
+                document.getElementById('previewModal').style.display = 'none';
+                document.getElementById('previewContent').innerHTML = '';
+            }
+        }
+
+        function closePreview() {
+            var modal = document.getElementById('previewModal');
+            if (modal) modal.style.display = 'none';
+            var content = document.getElementById('previewContent');
+            if (content) content.innerHTML = '';
+        }
+
+        // ── ESC ──
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closePreview();
+        });
+</script>
+}

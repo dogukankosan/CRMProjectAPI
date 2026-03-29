@@ -1,682 +1,854 @@
-﻿<!DOCTYPE html>
+﻿@inject CRMProjectUI.APIService.CompanyApiService CompanyService
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    var company = await CompanyService.GetCompanyAsync();
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
+    string? userPicture = User.FindFirst("Picture")?.Value;
+    string avatarSrc = string.IsNullOrEmpty(userPicture)
+        ? "/adminThema/assets/img/user.png"
+        : $"{apiBase}{userPicture}";
+    string fullName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "Kullanıcı";
+
+    // IsAdmin: 0=User, 1=Admin, 2=SuperAdmin
+    int isAdminValue = int.TryParse(User.FindFirst("IsAdmin")?.Value, out int av) ? av : 0;
+    bool isUser = isAdminValue == 0;
+    bool isAdmin = isAdminValue >= 1;
+    bool isSuperAdmin = isAdminValue == 2;
+    bool isAdminOrSuperAdmin = isAdmin; // isAdmin zaten SuperAdmin'i kapsıyor
+
+    string roleBadgeClass = isSuperAdmin ? "superadmin" : isAdmin ? "admin" : "user";
+    string roleText = isSuperAdmin ? "Süper Admin" : isAdmin ? "Admin" : "Kullanıcı";
+
+    // WhatsApp numaraları
+    string whatsappPhone = !string.IsNullOrEmpty(company?.Phone)
+        ? new string(company.Phone.Where(char.IsDigit).ToArray()) : "";
+    string whatsappPhone2 = !string.IsNullOrEmpty(company?.Phone2)
+        ? new string(company.Phone2.Where(char.IsDigit).ToArray()) : "";
+
+    // Dinamik URL
+    string faviconUrl = string.IsNullOrEmpty(company?.FaviconPath)
+        ? "/adminThema/assets/img/favicon.ico"
+        : $"{apiBase}{company.FaviconPath}";
+    string logoUrl = string.IsNullOrEmpty(company?.LogoPath)
+        ? "/adminThema/assets/img/logo.png"
+        : $"{apiBase}{company.LogoPath}";
+}
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no" name="viewport">
-    <title>Otika - Admin Dashboard Template</title>
+    <title>@(company?.MetaTitle ?? company?.WebSiteTitle ?? "Yönetim Paneli")</title>
+
+    @if (!string.IsNullOrEmpty(company?.MetaDescription))
+    {
+        <meta name="description" content="@company.MetaDescription">
+    }
+    @if (!string.IsNullOrEmpty(company?.MetaKeywords))
+    {
+        <meta name="keywords" content="@company.MetaKeywords">
+    }
+    @if (!string.IsNullOrEmpty(company?.CanonicalUrl))
+    {
+        <link rel="canonical" href="@company.CanonicalUrl" />
+    }
+    <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index, follow">
+
+    @* Open Graph *@
+    <meta property="og:locale" content="tr_TR">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="@company?.CompanyName">
+    <meta property="og:title" content="@(company?.MetaTitle ?? company?.WebSiteTitle ?? company?.CompanyName)">
+    @if (!string.IsNullOrEmpty(company?.MetaDescription))
+    {
+        <meta property="og:description" content="@company.MetaDescription">
+    }
+    @if (!string.IsNullOrEmpty(company?.WebSiteLink))
+    {
+        <meta property="og:url" content="@company.WebSiteLink">
+    }
+    <meta property="og:image" content="@logoUrl">
+    <meta property="og:image:alt" content="@company?.CompanyName Logo">
+
+    @* Twitter Card *@
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@(company?.MetaTitle ?? company?.WebSiteTitle ?? company?.CompanyName)">
+    @if (!string.IsNullOrEmpty(company?.MetaDescription))
+    {
+        <meta name="twitter:description" content="@company.MetaDescription">
+    }
+    <meta name="twitter:image" content="@logoUrl">
+
+    @* Schema.org *@
+    <script type="application/ld+json">
+        {
+            "@@context": "https://schema.org",
+            "@@type": "Organization",
+            "name": "@company?.CompanyName",
+            "url": "@company?.WebSiteLink",
+            "logo": "@logoUrl"
+            @if (!string.IsNullOrEmpty(company?.MetaDescription))
+            {
+                    @:,"description": "@company.MetaDescription"
+            }
+            @if (company?.FoundedYear.HasValue == true)
+            {
+                    @:,"foundingDate": "@company.FoundedYear"
+            }
+            ,"contactPoint": {
+                "@@type": "ContactPoint",
+                "telephone": "@company?.Phone",
+                "email": "@company?.Email",
+                "contactType": "customer service",
+                "availableLanguage": "Turkish"
+            }
+            ,"address": {
+                "@@type": "PostalAddress",
+                "streetAddress": "@company?.Address",
+                "addressCountry": "TR"
+            }
+            @{
+                    var socialLinks = new List<string>();
+                    if (!string.IsNullOrEmpty(company?.InstagramLink)) socialLinks.Add($"\"{company.InstagramLink}\"");
+                    if (!string.IsNullOrEmpty(company?.LinkedinLink)) socialLinks.Add($"\"{company.LinkedinLink}\"");
+                    if (!string.IsNullOrEmpty(company?.YoutubeLink)) socialLinks.Add($"\"{company.YoutubeLink}\"");
+            }
+            @if (socialLinks.Any())
+            {
+                    @:,"sameAs": [@Html.Raw(string.Join(",", socialLinks))]
+            }
+        }
+    </script>
+
+    <link rel="shortcut icon" type="image/x-icon" href="@faviconUrl" />
+    <link rel="apple-touch-icon" href="@faviconUrl" />
+
     <link rel="stylesheet" href="~/adminThema/assets/css/app.min.css">
     <link rel="stylesheet" href="~/adminThema/assets/css/style.css">
     <link rel="stylesheet" href="~/adminThema/assets/css/components.css">
     <link rel="stylesheet" href="~/adminThema/assets/css/custom.css">
-    <link rel='shortcut icon' type='image/x-icon' href='~/adminThema/assets/img/favicon.ico' />
+    <link rel="stylesheet" href="~/adminThema/assets/assets/bundles/datatables/datatables.min.css">
+    <link rel="stylesheet" href="~/adminThema/assets/assets/bundles/datatables/DataTables-1.10.16/css/dataTables.bootstrap4.min.css">
+    <link href="~/css/site.css" rel="stylesheet" />
+
+    <style>
+        .whatsapp-link {
+            color: #25D366;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-nav .dropdown.dropdown-list-toggle {
+            position: relative;
+        }
+            .whatsapp-link:hover {
+                color: #128C7E;
+                transform: scale(1.1);
+            }
+
+        .dropdown-list-content a:hover,
+        .dropdown-list-content a:hover *,
+        .dropdown-list-content a:focus,
+        .dropdown-list-content a:focus *,
+        [class*="theme-"] .navbar .dropdown-list-content a:hover,
+        [class*="theme-"] .navbar .dropdown-list-content a:hover * {
+            color: unset !important;
+            background: #f8fafd !important;
+            text-decoration: none !important;
+        }
+        .social-link {
+            transition: all 0.3s ease;
+            margin-left: 8px;
+        }
+
+            .social-link:hover {
+                transform: scale(1.15);
+            }
+
+            .social-link.instagram:hover {
+                color: #E4405F;
+            }
+
+            .social-link.linkedin:hover {
+                color: #0A66C2;
+            }
+
+            .social-link.youtube:hover {
+                color: #FF0000;
+            }
+
+        .footer-divider {
+            border-left: 1px solid #dee2e6;
+            height: 20px;
+            margin: 0 15px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .user-avatar-nav {
+            width: 54px !important; /* biraz daha geniş */
+            height: 54px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.85); /* belirgin border */
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* hafif gölge */
+            transition: transform 0.2s, box-shadow 0.2s; /* hover animasyonu */
+        }
+
+            .user-avatar-nav:hover {
+                transform: scale(1.12); /* hover’da hafif büyüsün */
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); /* gölge artsın */
+                cursor: pointer;
+            }
+        .role-badge {
+            display: inline-block;
+            font-size: .65rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+            .role-badge.superadmin {
+                background: #e53e3e;
+                color: #fff;
+            }
+
+            .role-badge.admin {
+                background: #667eea;
+                color: #fff;
+            }
+
+            .role-badge.user {
+                background: #e2e8f0;
+                color: #4a5568;
+            }
+    </style>
+
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
+    <script>
+        (function () {
+            var theme = localStorage.getItem('sidebar-color');
+            if (theme) document.body.classList.add('theme-' + theme);
+            if (localStorage.getItem('layout-color') === '2') document.body.classList.add('dark');
+            if (localStorage.getItem('mini-sidebar') === 'true') document.body.classList.add('sidebar-mini');
+        })();
+    </script>
     <div class="loader"></div>
     <div id="app">
         <div class="main-wrapper main-wrapper-1">
             <div class="navbar-bg"></div>
+
+            @* ── NAVBAR ── *@
             <nav class="navbar navbar-expand-lg main-navbar sticky">
                 <div class="form-inline mr-auto">
                     <ul class="navbar-nav mr-3">
                         <li>
-                            <a href="#" data-toggle="sidebar" class="nav-link nav-link-lg
-         collapse-btn"> <i data-feather="align-justify"></i></a>
+                            <a href="#" data-toggle="sidebar" class="nav-link nav-link-lg collapse-btn">
+                                <i data-feather="align-justify"></i>
+                            </a>
                         </li>
                         <li>
                             <a href="#" class="nav-link nav-link-lg fullscreen-btn">
                                 <i data-feather="maximize"></i>
                             </a>
                         </li>
-                        <li>
-                            <form class="form-inline mr-auto">
-                                <div class="search-element">
-                                    <input class="form-control" type="search" placeholder="Search" aria-label="Search" data-width="200">
-                                    <button class="btn" type="submit">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                </div>
-                            </form>
-                        </li>
                     </ul>
                 </div>
                 <ul class="navbar-nav navbar-right">
+                    @* Bildirimler *@
                     <li class="dropdown dropdown-list-toggle">
-                        <a href="#" data-toggle="dropdown"
-                           class="nav-link nav-link-lg message-toggle">
-                            <i data-feather="mail"></i>
-                            <span class="badge headerBadge1">
-                                6
-                            </span>
-                        </a>
-                        <div class="dropdown-menu dropdown-list dropdown-menu-right pullDown">
-                            <div class="dropdown-header">
-                                Messages
-                                <div class="float-right">
-                                    <a href="#">Mark All As Read</a>
-                                </div>
-                            </div>
-                            <div class="dropdown-list-content dropdown-list-message">
-                                <a href="#" class="dropdown-item">
-                                    <span class="dropdown-item-avatar
-           text-white">
-                                        <img alt="image" src="~/adminThema/assets/img/users/user-1.png" class="rounded-circle">
-                                    </span> <span class="dropdown-item-desc">
-                                        <span class="message-user">
-                                            John
-                                            Deo
-                                        </span>
-                                        <span class="time messege-text">Please check your mail !!</span>
-                                        <span class="time">2 Min Ago</span>
-                                    </span>
-                                </a> <a href="#" class="dropdown-item">
-                                    <span class="dropdown-item-avatar text-white">
-                                        <img alt="image" src="~/adminThema/assets/img/users/user-2.png" class="rounded-circle">
-                                    </span> <span class="dropdown-item-desc">
-                                        <span class="message-user">
-                                            Sarah
-                                            Smith
-                                        </span> <span class="time messege-text">
-                                            Request for leave
-                                            application
-                                        </span>
-                                        <span class="time">5 Min Ago</span>
-                                    </span>
-                                </a> <a href="#" class="dropdown-item">
-                                    <span class="dropdown-item-avatar text-white">
-                                        <img alt="image" src="~/adminThema/assets/img/users/user-5.png" class="rounded-circle">
-                                    </span> <span class="dropdown-item-desc">
-                                        <span class="message-user">
-                                            Jacob
-                                            Ryan
-                                        </span> <span class="time messege-text">
-                                            Your payment invoice is
-                                            generated.
-                                        </span> <span class="time">12 Min Ago</span>
-                                    </span>
-                                </a> <a href="#" class="dropdown-item">
-                                    <span class="dropdown-item-avatar text-white">
-                                        <img alt="image" src="~/adminThema/assets/img/users/user-4.png" class="rounded-circle">
-                                    </span> <span class="dropdown-item-desc">
-                                        <span class="message-user">
-                                            Lina
-                                            Smith
-                                        </span> <span class="time messege-text">
-                                            hii John, I have upload
-                                            doc
-                                            related to task.
-                                        </span> <span class="time">
-                                            30
-                                            Min Ago
-                                        </span>
-                                    </span>
-                                </a> <a href="#" class="dropdown-item">
-                                    <span class="dropdown-item-avatar text-white">
-                                        <img alt="image" src="~/adminThema/assets/img/users/user-3.png" class="rounded-circle">
-                                    </span> <span class="dropdown-item-desc">
-                                        <span class="message-user">
-                                            Jalpa
-                                            Joshi
-                                        </span> <span class="time messege-text">
-                                            Please do as specify.
-                                            Let me
-                                            know if you have any query.
-                                        </span> <span class="time">
-                                            1
-                                            Days Ago
-                                        </span>
-                                    </span>
-                                </a> <a href="#" class="dropdown-item">
-                                    <span class="dropdown-item-avatar text-white">
-                                        <img alt="image" src="~/adminThema/assets/img/users/user-2.png" class="rounded-circle">
-                                    </span> <span class="dropdown-item-desc">
-                                        <span class="message-user">
-                                            Sarah
-                                            Smith
-                                        </span> <span class="time messege-text">Client Requirements</span>
-                                        <span class="time">2 Days Ago</span>
-                                    </span>
-                                </a>
-                            </div>
-                            <div class="dropdown-footer text-center">
-                                <a href="#">View All <i class="fas fa-chevron-right"></i></a>
-                            </div>
-                        </div>
-                    </li>
-                    <li class="dropdown dropdown-list-toggle">
-                        <a href="#" data-toggle="dropdown"
-                           class="nav-link notification-toggle nav-link-lg">
+                        <a href="#" data-toggle="dropdown" class="nav-link notification-toggle nav-link-lg">
                             <i data-feather="bell" class="bell"></i>
+                            <span id="myNotifBadge" style="display:none; position:absolute; top:6px; right:2px; background:#ef4444; color:#fff !important; font-size:.6rem; font-weight:700; min-width:16px; height:16px; padding:0 4px; border-radius:8px; display:flex; align-items:center; justify-content:center; line-height:1; z-index:10;"></span>
                         </a>
-                        <div class="dropdown-menu dropdown-list dropdown-menu-right pullDown">
+                        <div class="dropdown-menu dropdown-list dropdown-menu-right pullDown" style="width:340px;">
                             <div class="dropdown-header">
-                                Notifications
-                                <div class="float-right">
-                                    <a href="#">Mark All As Read</a>
+                                <i class="fas fa-ticket-alt mr-1"></i> Üzerimdeki Açık Ticketlar
+                            </div>
+                            <div class="dropdown-list-content dropdown-list-icons" id="myNotifList">
+                                <div class="text-center p-3" style="color:#94a3b8; font-size:.82rem;">
+                                    <i class="fas fa-spinner fa-spin mr-1"></i> Yükleniyor...
                                 </div>
                             </div>
-                            <div class="dropdown-list-content dropdown-list-icons">
-                                <a href="#" class="dropdown-item dropdown-item-unread">
-                                    <span class="dropdown-item-icon bg-primary text-white">
-                                        <i class="fas
-            fa-code"></i>
-                                    </span> <span class="dropdown-item-desc">
-                                        Template update is
-                                        available now! <span class="time">
-                                            2 Min
-                                            Ago
-                                        </span>
-                                    </span>
-                                </a> <a href="#" class="dropdown-item">
-                                    <span class="dropdown-item-icon bg-info text-white">
-                                        <i class="far
-            fa-user"></i>
-                                    </span> <span class="dropdown-item-desc">
-                                        <b>You</b> and <b>
-                                            Dedik
-                                            Sugiharto
-                                        </b> are now friends <span class="time">
-                                            10 Hours
-                                            Ago
-                                        </span>
-                                    </span>
-                                </a> <a href="#" class="dropdown-item">
-                                    <span class="dropdown-item-icon bg-success text-white">
-                                        <i class="fas
-            fa-check"></i>
-                                    </span> <span class="dropdown-item-desc">
-                                        <b>Kusnaedi</b> has
-                                        moved task <b>Fix bug header</b> to <b>Done</b> <span class="time">
-                                            12
-                                            Hours
-                                            Ago
-                                        </span>
-                                    </span>
-                                </a> <a href="#" class="dropdown-item">
-                                    <span class="dropdown-item-icon bg-danger text-white">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                    </span> <span class="dropdown-item-desc">
-                                        Low disk space. Let's
-                                        clean it! <span class="time">17 Hours Ago</span>
-                                    </span>
-                                </a> <a href="#" class="dropdown-item">
-                                    <span class="dropdown-item-icon bg-info text-white">
-                                        <i class="fas
-            fa-bell"></i>
-                                    </span> <span class="dropdown-item-desc">
-                                        Welcome to Otika
-                                        template! <span class="time">Yesterday</span>
-                                    </span>
-                                </a>
-                            </div>
                             <div class="dropdown-footer text-center">
-                                <a href="#">View All <i class="fas fa-chevron-right"></i></a>
+                                <a href="/AdminTicket/Liste">Tüm Ticketlar <i class="fas fa-chevron-right"></i></a>
                             </div>
                         </div>
                     </li>
+                    <li class="dropdown dropdown-list-toggle">
+    <a href="#" data-toggle="dropdown" class="nav-link notification-toggle nav-link-lg">
+        <i data-feather="message-square"></i>
+                            <span id="companyNotifBadge" style="display:none; position:absolute; top:6px; right:2px; background:#7c3aed; color:#fff !important; font-size:.6rem; font-weight:700; min-width:16px; height:16px; padding:0 4px; border-radius:8px; display:flex; align-items:center; justify-content:center; line-height:1; z-index:10;"></span>
+    </a>
+    <div class="dropdown-menu dropdown-list dropdown-menu-right pullDown" style="width:360px;">
+        <div class="dropdown-header">
+            <i class="fas fa-comments mr-1"></i> Firma Yorumları & Dosyaları
+        </div>
+        <div class="dropdown-list-content dropdown-list-icons" id="companyNotifList">
+            <div class="text-center p-3" style="color:#94a3b8; font-size:.82rem;">
+                <i class="fas fa-spinner fa-spin mr-1"></i> Yükleniyor...
+            </div>
+        </div>
+        <div class="dropdown-footer text-center">
+            <a href="/AdminTicket/Liste">Tüm Ticketlar <i class="fas fa-chevron-right"></i></a>
+        </div>
+    </div>
+                    @* Kullanıcı Menüsü *@
                     <li class="dropdown">
-                        <a href="#" data-toggle="dropdown"
-                           class="nav-link dropdown-toggle nav-link-lg nav-link-user">
-                            <img alt="image" src="~/adminThema/assets/img/user.png"
-                                 class="user-img-radious-style"> <span class="d-sm-none d-lg-inline-block"></span>
-                        </a>
+                     <a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user">
+    @if (!string.IsNullOrEmpty(userPicture))
+    {
+        <img alt="@fullName" src="@avatarSrc" class="user-avatar-nav" />
+    }
+    else
+    {
+     
+            // Baş harfleri hesaplayan C# bloğu
+            string initials = string.Concat(
+                fullName.Split(' ')
+                .Where(w => w.Length > 0)
+                .Take(2)
+                .Select(w => w[0].ToString().ToUpper()));
+
+            if (string.IsNullOrEmpty(initials))
+            {
+                initials = fullName.Length >= 1 ? fullName[0].ToString().ToUpper() : "?";
+            }
+       
+        
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff !important;font-weight:700;font-size:.85rem;border:2px solid rgba(255,255,255,.3);">
+            @initials
+        </div>
+    }
+</a>
                         <div class="dropdown-menu dropdown-menu-right pullDown">
-                            <div class="dropdown-title">Hello Sarah Smith</div>
-                            <a href="profile.html" class="dropdown-item has-icon">
-                                <i class="far
-          fa-user"></i> Profile
-                            </a> <a href="timeline.html" class="dropdown-item has-icon">
-                                <i class="fas fa-bolt"></i>
-                                Activities
-                            </a> <a href="#" class="dropdown-item has-icon">
-                                <i class="fas fa-cog"></i>
-                                Settings
+                            <div class="dropdown-title">
+                                Merhaba, @fullName
+                                <span class="role-badge @roleBadgeClass">@roleText</span>
+                            </div>
+                            <a href="/AdminKullanici/Profil" class="dropdown-item has-icon">
+                                <i class="fas fa-user"></i> Profilim
                             </a>
                             <div class="dropdown-divider"></div>
-                            <a href="auth-login.html" class="dropdown-item has-icon text-danger">
-                                <i class="fas fa-sign-out-alt"></i>
-                                Logout
-                            </a>
+                            <form asp-action="Logout" asp-controller="Auth" method="post" style="margin:0;">
+                                @Html.AntiForgeryToken()
+                                <button type="submit"
+                                        class="dropdown-item has-icon text-danger"
+                                        style="background:none;border:none;width:100%;text-align:left;cursor:pointer;padding:.25rem 1.5rem;">
+                                    <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                                </button>
+                            </form>
                         </div>
                     </li>
                 </ul>
             </nav>
+
+            @* ── SIDEBAR ── *@
             <div class="main-sidebar sidebar-style-2">
                 <aside id="sidebar-wrapper">
                     <div class="sidebar-brand">
-                        <a href="index.html">
-                            <img alt="image" src="~/adminThema/assets/img/logo.png" class="header-logo" /> <span class="logo-name">Otika</span>
+
+
+
+                        <a href="/">
+                            <img alt="@company?.CompanyName Logo" src="@logoUrl" class="header-logo"/>
+                            <br />
+                            <span class="logo-name">@company?.ShortCompanyName</span>
                         </a>
+                  
+
+
+
+
+
+
+
+                        @if (!string.IsNullOrEmpty(company?.Slogan))
+                        {
+                            <div style="font-size:9px;color:#888;margin-top:-15px;text-transform:none;">
+                                @company.Slogan
+                            </div>
+                        }
                     </div>
+                    <hr />
                     <ul class="sidebar-menu">
-                        <li class="menu-header">Main</li>
-                        <li class="dropdown active">
-                            <a href="index.html" class="nav-link"><i data-feather="monitor"></i><span>Dashboard</span></a>
-                        </li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown">
-                                <i data-feather="briefcase"></i><span>Widgets</span>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="widget-chart.html">Chart Widgets</a></li>
-                                <li><a class="nav-link" href="widget-data.html">Data Widgets</a></li>
-                            </ul>
-                        </li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown"><i data-feather="command"></i><span>Apps</span></a>
-                            <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="chat.html">Chat</a></li>
-                                <li><a class="nav-link" href="portfolio.html">Portfolio</a></li>
-                                <li><a class="nav-link" href="blog.html">Blog</a></li>
-                                <li><a class="nav-link" href="calendar.html">Calendar</a></li>
-                            </ul>
-                        </li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown"><i data-feather="mail"></i><span>Email</span></a>
-                            <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="email-inbox.html">Inbox</a></li>
-                                <li><a class="nav-link" href="email-compose.html">Compose</a></li>
-                                <li><a class="nav-link" href="email-read.html">read</a></li>
-                            </ul>
-                        </li>
-                        <li class="menu-header">UI Elements</li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown">
-                                <i data-feather="copy"></i><span>
-                                    Basic
-                                    Components
-                                </span>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="alert.html">Alert</a></li>
-                                <li><a class="nav-link" href="badge.html">Badge</a></li>
-                                <li><a class="nav-link" href="breadcrumb.html">Breadcrumb</a></li>
-                                <li><a class="nav-link" href="buttons.html">Buttons</a></li>
-                                <li><a class="nav-link" href="collapse.html">Collapse</a></li>
-                                <li><a class="nav-link" href="dropdown.html">Dropdown</a></li>
-                                <li><a class="nav-link" href="checkbox-and-radio.html">Checkbox &amp; Radios</a></li>
-                                <li><a class="nav-link" href="list-group.html">List Group</a></li>
-                                <li><a class="nav-link" href="media-object.html">Media Object</a></li>
-                                <li><a class="nav-link" href="navbar.html">Navbar</a></li>
-                                <li><a class="nav-link" href="pagination.html">Pagination</a></li>
-                                <li><a class="nav-link" href="popover.html">Popover</a></li>
-                                <li><a class="nav-link" href="progress.html">Progress</a></li>
-                                <li><a class="nav-link" href="tooltip.html">Tooltip</a></li>
-                                <li><a class="nav-link" href="flags.html">Flag</a></li>
-                                <li><a class="nav-link" href="typography.html">Typography</a></li>
-                            </ul>
-                        </li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown">
-                                <i data-feather="shopping-bag"></i><span>Advanced</span>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="avatar.html">Avatar</a></li>
-                                <li><a class="nav-link" href="card.html">Card</a></li>
-                                <li><a class="nav-link" href="modal.html">Modal</a></li>
-                                <li><a class="nav-link" href="sweet-alert.html">Sweet Alert</a></li>
-                                <li><a class="nav-link" href="toastr.html">Toastr</a></li>
-                                <li><a class="nav-link" href="empty-state.html">Empty State</a></li>
-                                <li><a class="nav-link" href="multiple-upload.html">Multiple Upload</a></li>
-                                <li><a class="nav-link" href="pricing.html">Pricing</a></li>
-                                <li><a class="nav-link" href="tabs.html">Tab</a></li>
-                            </ul>
-                        </li>
-                        <li><a class="nav-link" href="blank.html"><i data-feather="file"></i><span>Blank Page</span></a></li>
-                        <li class="menu-header">Otika</li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown"><i data-feather="layout"></i><span>Forms</span></a>
-                            <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="basic-form.html">Basic Form</a></li>
-                                <li><a class="nav-link" href="forms-advanced-form.html">Advanced Form</a></li>
-                                <li><a class="nav-link" href="forms-editor.html">Editor</a></li>
-                                <li><a class="nav-link" href="forms-validation.html">Validation</a></li>
-                                <li><a class="nav-link" href="form-wizard.html">Form Wizard</a></li>
-                            </ul>
-                        </li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown"><i data-feather="grid"></i><span>Tables</span></a>
-                            <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="basic-table.html">Basic Tables</a></li>
-                                <li><a class="nav-link" href="advance-table.html">Advanced Table</a></li>
-                                <li><a class="nav-link" href="datatables.html">Datatable</a></li>
-                                <li><a class="nav-link" href="export-table.html">Export Table</a></li>
-                                <li><a class="nav-link" href="editable-table.html">Editable Table</a></li>
-                            </ul>
-                        </li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown">
-                                <i data-feather="pie-chart"></i><span>Charts</span>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="chart-amchart.html">amChart</a></li>
-                                <li><a class="nav-link" href="chart-apexchart.html">apexchart</a></li>
-                                <li><a class="nav-link" href="chart-echart.html">eChart</a></li>
-                                <li><a class="nav-link" href="chart-chartjs.html">Chartjs</a></li>
-                                <li><a class="nav-link" href="chart-sparkline.html">Sparkline</a></li>
-                                <li><a class="nav-link" href="chart-morris.html">Morris</a></li>
-                            </ul>
-                        </li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown"><i data-feather="feather"></i><span>Icons</span></a>
-                            <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="icon-font-awesome.html">Font Awesome</a></li>
-                                <li><a class="nav-link" href="icon-material.html">Material Design</a></li>
-                                <li><a class="nav-link" href="icon-ionicons.html">Ion Icons</a></li>
-                                <li><a class="nav-link" href="icon-feather.html">Feather Icons</a></li>
-                                <li><a class="nav-link" href="icon-weather-icon.html">Weather Icon</a></li>
-                            </ul>
-                        </li>
-                        <li class="menu-header">Media</li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown"><i data-feather="image"></i><span>Gallery</span></a>
-                            <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="light-gallery.html">Light Gallery</a></li>
-                                <li><a href="gallery1.html">Gallery 2</a></li>
-                            </ul>
-                        </li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown"><i data-feather="flag"></i><span>Sliders</span></a>
-                            <ul class="dropdown-menu">
-                                <li><a href="carousel.html">Bootstrap Carousel.html</a></li>
-                                <li><a class="nav-link" href="owl-carousel.html">Owl Carousel</a></li>
-                            </ul>
-                        </li>
-                        <li><a class="nav-link" href="timeline.html"><i data-feather="sliders"></i><span>Timeline</span></a></li>
-                        <li class="menu-header">Maps</li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown">
-                                <i data-feather="map"></i><span>
-                                    Google
-                                    Maps
-                                </span>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a href="gmaps-advanced-route.html">Advanced Route</a></li>
-                                <li><a href="gmaps-draggable-marker.html">Draggable Marker</a></li>
-                                <li><a href="gmaps-geocoding.html">Geocoding</a></li>
-                                <li><a href="gmaps-geolocation.html">Geolocation</a></li>
-                                <li><a href="gmaps-marker.html">Marker</a></li>
-                                <li><a href="gmaps-multiple-marker.html">Multiple Marker</a></li>
-                                <li><a href="gmaps-route.html">Route</a></li>
-                                <li><a href="gmaps-simple.html">Simple</a></li>
-                            </ul>
-                        </li>
                         <li>
-                            <a class="nav-link" href="vector-map.html">
-                                <i data-feather="map-pin"></i><span>
-                                    Vector
-                                    Map
-                                </span>
+                            <a href="/" class="nav-link">
+                                <i data-feather="monitor"></i><span>Anasayfa</span>
                             </a>
                         </li>
-                        <li class="menu-header">Pages</li>
+
                         <li class="dropdown">
                             <a href="#" class="menu-toggle nav-link has-dropdown">
-                                <i data-feather="user-check"></i><span>Auth</span>
+                                <i data-feather="life-buoy"></i><span>Destek Talepleri</span>
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a href="auth-login.html">Login</a></li>
-                                <li><a href="auth-register.html">Register</a></li>
-                                <li><a href="auth-forgot-password.html">Forgot Password</a></li>
-                                <li><a href="auth-reset-password.html">Reset Password</a></li>
-                                <li><a href="subscribe.html">Subscribe</a></li>
+                                    <li><a class="nav-link" href="/AdminTicket/Liste">Aktif Talepler</a></li>
+                                    <li><a class="nav-link" href="/AdminTicket/Ekle">Yeni Talep Oluştur</a></li>
                             </ul>
                         </li>
+
                         <li class="dropdown">
                             <a href="#" class="menu-toggle nav-link has-dropdown">
-                                <i data-feather="alert-triangle"></i><span>Errors</span>
+                                <i data-feather="book-open"></i><span>Bilgi Bankası</span>
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="errors-503.html">503</a></li>
-                                <li><a class="nav-link" href="errors-403.html">403</a></li>
-                                <li><a class="nav-link" href="errors-404.html">404</a></li>
-                                <li><a class="nav-link" href="errors-500.html">500</a></li>
+                                <li><a class="nav-link" href="/AdminBilgiBankasi/Liste">Dökümanlar</a></li>
+                                @if (isAdmin)
+                                {
+                                    <li><a class="nav-link" href="/AdminBilgiBankasi/Ekle">Yeni Makale</a></li>
+                                }
                             </ul>
                         </li>
+
+                        @if (isAdmin)
+                        {
+                            <li class="dropdown">
+                                <a href="#" class="menu-toggle nav-link has-dropdown">
+                                    <i data-feather="users"></i><span>Müşteriler</span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="nav-link" href="/AdminMusteri/Liste">Müşteri Listesi</a></li>
+                                </ul>
+                            </li>
+                        }
+                    
                         <li class="dropdown">
                             <a href="#" class="menu-toggle nav-link has-dropdown">
-                                <i data-feather="anchor"></i><span>
-                                    Other
-                                    Pages
-                                </span>
+                                <i data-feather="bar-chart-2"></i><span>Raporlar</span>
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="nav-link" href="create-post.html">Create Post</a></li>
-                                <li><a class="nav-link" href="posts.html">Posts</a></li>
-                                <li><a class="nav-link" href="profile.html">Profile</a></li>
-                                <li><a class="nav-link" href="contact.html">Contact</a></li>
-                                <li><a class="nav-link" href="invoice.html">Invoice</a></li>
-                            </ul>
-                        </li>
-                        <li class="dropdown">
-                            <a href="#" class="menu-toggle nav-link has-dropdown">
-                                <i data-feather="chevrons-down"></i><span>Multilevel</span>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a href="#">Menu 1</a></li>
-                                <li class="dropdown">
-                                    <a href="#" class="has-dropdown">Menu 2</a>
-                                    <ul class="dropdown-menu">
-                                        <li><a href="#">Child Menu 1</a></li>
-                                        <li class="dropdown">
-                                            <a href="#" class="has-dropdown">Child Menu 2</a>
-                                            <ul class="dropdown-menu">
-                                                <li><a href="#">Child Menu 1</a></li>
-                                                <li><a href="#">Child Menu 2</a></li>
-                                            </ul>
-                                        </li>
-                                        <li><a href="#"> Child Menu 3</a></li>
-                                    </ul>
+                                @if (isSuperAdmin || isAdmin)
+                                {
+                                    <li><a class="nav-link" href="/AdminTicket/BenimRaporom">Performansım</a></li>
+                                }
+                                @if (isSuperAdmin)
+                                {
+                                    <li><a class="nav-link" href="/AdminTicket/Rapor">Ticket Analizi</a></li>
+                                }
+                                @if (isUser)
+                                {
+                                    <li><a class="nav-link" href="/AdminTicket/UserRapor">Analizlerim</a></li>
+                                }
+                                <li>
+                                    <a class="nav-link" href="/AdminTicket/TumTalepler">
+                                        @if (isUser)
+                                        {
+                                            <text>Tüm Taleplerim</text>
+                                        }
+                                        else
+                                        {
+
+                                            <text>Tüm Talepler</text>
+                                        }
+                                    </a>
                                 </li>
                             </ul>
                         </li>
+                            
+                         
+                  
+                        @if (isSuperAdmin)
+                        {
+                            <li class="dropdown">
+                                <a href="#" class="menu-toggle nav-link has-dropdown">
+                                    <i data-feather="briefcase"></i><span>Şirket Bilgileri</span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="nav-link" href="/AdminSirket/Liste">Şirket Tanımı</a></li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="menu-toggle nav-link has-dropdown">
+                                    <i data-feather="settings"></i><span>Ayarlar</span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="nav-link" href="/AdminMail/Ayarlar">Mail Ayarları</a></li>
+                                </ul>
+                            </li>
+                        }
                     </ul>
                 </aside>
             </div>
+
+            @* ── ANA İÇERİK ── *@
             <div class="main-content">
                 <section class="section">
-                    @* <div class="row ">
-                        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-xs-12">
-                            <div class="card">
-                                <div class="card-statistic-4">
-                                    <div class="align-items-center justify-content-between">
-                                        <div class="row ">
-                                            <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pr-0 pt-3">
-                                                <div class="card-content">
-                                                    <h5 class="font-15">New Booking</h5>
-                                                    <h2 class="mb-3 font-18">258</h2>
-                                                    <p class="mb-0"><span class="col-green">10%</span> Increase</p>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pl-0">
-                                                <div class="banner-img">
-                                                    <img src="~/adminThema/assets/img/banner/1.png" alt="">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-xs-12">
-                            <div class="card">
-                                <div class="card-statistic-4">
-                                    <div class="align-items-center justify-content-between">
-                                        <div class="row ">
-                                            <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pr-0 pt-3">
-                                                <div class="card-content">
-                                                    <h5 class="font-15"> Customers</h5>
-                                                    <h2 class="mb-3 font-18">1,287</h2>
-                                                    <p class="mb-0"><span class="col-orange">09%</span> Decrease</p>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pl-0">
-                                                <div class="banner-img">
-                                                    <img src="~/adminThema/assets/img/banner/2.png" alt="">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-xs-12">
-                            <div class="card">
-                                <div class="card-statistic-4">
-                                    <div class="align-items-center justify-content-between">
-                                        <div class="row ">
-                                            <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pr-0 pt-3">
-                                                <div class="card-content">
-                                                    <h5 class="font-15">New Project</h5>
-                                                    <h2 class="mb-3 font-18">128</h2>
-                                                    <p class="mb-0">
-                                                        <span class="col-green">18%</span>
-                                                        Increase
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pl-0">
-                                                <div class="banner-img">
-                                                    <img src="~/adminThema/assets/img/banner/3.png" alt="">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-xs-12">
-                            <div class="card">
-                                <div class="card-statistic-4">
-                                    <div class="align-items-center justify-content-between">
-                                        <div class="row ">
-                                            <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pr-0 pt-3">
-                                                <div class="card-content">
-                                                    <h5 class="font-15">Revenue</h5>
-                                                    <h2 class="mb-3 font-18">$48,697</h2>
-                                                    <p class="mb-0"><span class="col-green">42%</span> Increase</p>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pl-0">
-                                                <div class="banner-img">
-                                                    <img src="~/adminThema/assets/img/banner/4.png" alt="">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> *@
                     @RenderBody()
                 </section>
+
+                @* Tema Ayarları Paneli *@
                 <div class="settingSidebar">
                     <a href="javascript:void(0)" class="settingPanelToggle">
                         <i class="fa fa-spin fa-cog"></i>
                     </a>
                     <div class="settingSidebar-body ps-container ps-theme-default">
-                        <div class=" fade show active">
-                            <div class="setting-panel-header">
-                                Setting Panel
-                            </div>
+                        <div class="fade show active">
+                            <div class="setting-panel-header">Temalar</div>
                             <div class="p-15 border-bottom">
-                                <h6 class="font-medium m-b-10">Select Layout</h6>
+                                <h6 class="font-medium m-b-10">Tema Modu</h6>
                                 <div class="selectgroup layout-color w-50">
                                     <label class="selectgroup-item">
                                         <input type="radio" name="value" value="1" class="selectgroup-input-radio select-layout" checked>
-                                        <span class="selectgroup-button">Light</span>
+                                        <span class="selectgroup-button">Açık</span>
                                     </label>
                                     <label class="selectgroup-item">
                                         <input type="radio" name="value" value="2" class="selectgroup-input-radio select-layout">
-                                        <span class="selectgroup-button">Dark</span>
+                                        <span class="selectgroup-button">Koyu</span>
                                     </label>
                                 </div>
                             </div>
                             <div class="p-15 border-bottom">
-                                <h6 class="font-medium m-b-10">Sidebar Color</h6>
-                                <div class="selectgroup selectgroup-pills sidebar-color">
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="icon-input" value="1" class="selectgroup-input select-sidebar">
-                                        <span class="selectgroup-button selectgroup-button-icon" data-toggle="tooltip"
-                                              data-original-title="Light Sidebar"><i class="fas fa-sun"></i></span>
-                                    </label>
-                                    <label class="selectgroup-item">
-                                        <input type="radio" name="icon-input" value="2" class="selectgroup-input select-sidebar" checked>
-                                        <span class="selectgroup-button selectgroup-button-icon" data-toggle="tooltip"
-                                              data-original-title="Dark Sidebar"><i class="fas fa-moon"></i></span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="p-15 border-bottom">
-                                <h6 class="font-medium m-b-10">Color Theme</h6>
+                                <h6 class="font-medium m-b-10">Renk Teması</h6>
                                 <div class="theme-setting-options">
                                     <ul class="choose-theme list-unstyled mb-0">
-                                        <li title="white" class="active">
-                                            <div class="white"></div>
-                                        </li>
-                                        <li title="cyan">
-                                            <div class="cyan"></div>
-                                        </li>
-                                        <li title="black">
-                                            <div class="black"></div>
-                                        </li>
-                                        <li title="purple">
-                                            <div class="purple"></div>
-                                        </li>
-                                        <li title="orange">
-                                            <div class="orange"></div>
-                                        </li>
-                                        <li title="green">
-                                            <div class="green"></div>
-                                        </li>
-                                        <li title="red">
-                                            <div class="red"></div>
-                                        </li>
+                                        <li title="white" class="active"><div class="white"></div></li>
+                                        <li title="cyan"><div class="cyan"></div></li>
+                                        <li title="black"><div class="black"></div></li>
+                                        <li title="purple"><div class="purple"></div></li>
+                                        <li title="orange"><div class="orange"></div></li>
+                                        <li title="green"><div class="green"></div></li>
+                                        <li title="red"><div class="red"></div></li>
                                     </ul>
                                 </div>
                             </div>
                             <div class="p-15 border-bottom">
                                 <div class="theme-setting-options">
                                     <label class="m-b-0">
-                                        <input type="checkbox" name="custom-switch-checkbox" class="custom-switch-input"
-                                               id="mini_sidebar_setting">
+                                        <input type="checkbox" id="mini_sidebar_setting" class="custom-switch-input">
                                         <span class="custom-switch-indicator"></span>
-                                        <span class="control-label p-l-10">Mini Sidebar</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="p-15 border-bottom">
-                                <div class="theme-setting-options">
-                                    <label class="m-b-0">
-                                        <input type="checkbox" name="custom-switch-checkbox" class="custom-switch-input"
-                                               id="sticky_header_setting">
-                                        <span class="custom-switch-indicator"></span>
-                                        <span class="control-label p-l-10">Sticky Header</span>
+                                        <span class="control-label p-l-10">Küçük Menü</span>
                                     </label>
                                 </div>
                             </div>
                             <div class="mt-4 mb-4 p-3 align-center rt-sidebar-last-ele">
                                 <a href="#" class="btn btn-icon icon-left btn-primary btn-restore-theme">
-                                    <i class="fas fa-undo"></i> Restore Default
+                                    <i class="fas fa-undo"></i> Temaları Sıfırla
                                 </a>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            @* ── FOOTER ── *@
             <footer class="main-footer">
                 <div class="footer-left">
-                    <a href="templateshub.net">Templateshub</a></a>
+                    <strong>@company?.CompanyName</strong> &copy; @DateTime.Now.Year
+                    @if (company?.FoundedYear.HasValue == true)
+                    {
+                        <span class="ml-1">| Kuruluş: @company.FoundedYear</span>
+                    }
                 </div>
-                <div class="footer-right">          
+
+                <div class="footer-right">
+
+                    @* TELEFON 1 *@
+                    @if (!string.IsNullOrEmpty(company?.Phone))
+                    {
+                        <span class="mr-2" title="Telefon">
+                            <a href="tel:@company.Phone" class="text-dark">@company.Phone</a>
+
+                            @if (!string.IsNullOrEmpty(whatsappPhone))
+                            {
+                                <a href="https://wa.me/@whatsappPhone" target="_blank"
+                                   class="whatsapp-link ml-1" title="WhatsApp ile Ara">
+                                    <i class="fab fa-whatsapp"></i>
+                                </a>
+                            }
+                        </span>
+                    }
+
+                    @* TELEFON 2 *@
+                    @if (!string.IsNullOrEmpty(company?.Phone2))
+                    {
+                        <span class="footer-divider"></span>
+                        <span class="mr-2" title="Telefon 2">
+                            <a href="tel:@company.Phone2" class="text-dark">@company.Phone2</a>
+
+                            @if (!string.IsNullOrEmpty(whatsappPhone2))
+                            {
+                                <a href="https://wa.me/@whatsappPhone2" target="_blank"
+                                   class="whatsapp-link ml-1" title="WhatsApp ile Ara">
+                                    <i class="fab fa-whatsapp"></i>
+                                </a>
+                            }
+                        </span>
+                    }
+
+                    @* EMAIL *@
+                    @if (!string.IsNullOrEmpty(company?.Email))
+                    {
+                        <span class="footer-divider"></span>
+                        <span class="mr-2" title="E-posta">
+                            <a href="mailto:@company.Email" class="text-dark" style="text-transform:none;">
+                                <i class="fas fa-envelope"></i> @company.Email.ToLower()
+                            </a>
+                        </span>
+                    }
+
+                    @* WEBSITE *@
+                    @if (!string.IsNullOrEmpty(company?.WebSiteLink))
+                    {
+                        <span class="footer-divider"></span>
+                        <span class="mr-2" title="Website">
+                            <a href="@company.WebSiteLink" target="_blank" class="text-dark">
+                                <i class="fas fa-globe"></i> Web Site
+                            </a>
+                        </span>
+                    }
+
+                    @* INSTAGRAM *@
+                    @if (!string.IsNullOrEmpty(company?.InstagramLink))
+                    {
+                        <a href="@company.InstagramLink" target="_blank" class="social-link instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    }
+
+                    @* LINKEDIN *@
+                    @if (!string.IsNullOrEmpty(company?.LinkedinLink))
+                    {
+                        <a href="@company.LinkedinLink" target="_blank" class="social-link linkedin">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    }
+
+                    @* YOUTUBE *@
+                    @if (!string.IsNullOrEmpty(company?.YoutubeLink))
+                    {
+                        <a href="@company.YoutubeLink" target="_blank" class="social-link youtube">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                    }
+
+                    @* ÇALIŞMA SAATLERİ *@
+                    @if (!string.IsNullOrEmpty(company?.WorkingHours))
+                    {
+                        <span class="footer-divider"></span>
+                        <span class="mr-2" title="Çalışma Saatleri">
+                            <i class="far fa-clock"></i> @company.WorkingHours
+                        </span>
+                    }
+
                 </div>
             </footer>
         </div>
     </div>
     <script src="~/adminThema/assets/js/app.min.js"></script>
     <script src="~/adminThema/assets/bundles/apexcharts/apexcharts.min.js"></script>
-    <script src="~/adminThema/assets/js/page/index.js"></script>
     <script src="~/adminThema/assets/js/scripts.js"></script>
     <script src="~/adminThema/assets/js/custom.js"></script>
+    <script src="~/adminThema/assets/bundles/datatables/datatables.min.js"></script>
+    <script src="~/adminThema/assets/bundles/datatables/DataTables-1.10.16/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // ── Tema modu radio (Açık/Koyu) ──
+            document.querySelectorAll('.select-layout').forEach(function (radio) {
+                var saved = localStorage.getItem('layout-color');
+                if (saved && radio.value === saved) radio.checked = true;
+                radio.addEventListener('change', function () {
+                    localStorage.setItem('layout-color', this.value);
+                    if (this.value === '2') {
+                        document.body.classList.add('dark');
+                    } else {
+                        document.body.classList.remove('dark');
+                    }
+                });
+            });
+
+            // ── Renk teması ──
+            document.querySelectorAll('.choose-theme li').forEach(function (li) {
+                var saved = localStorage.getItem('sidebar-color');
+                if (saved && li.title === saved) {
+                    document.querySelectorAll('.choose-theme li').forEach(function (x) { x.classList.remove('active'); });
+                    li.classList.add('active');
+                }
+                li.addEventListener('click', function () {
+                    var theme = this.title;
+                    localStorage.setItem('sidebar-color', theme);
+                    document.querySelectorAll('.choose-theme li').forEach(function (x) { x.classList.remove('active'); });
+                    this.classList.add('active');
+                    document.body.classList.remove(
+                        'theme-white', 'theme-cyan', 'theme-black',
+                        'theme-purple', 'theme-orange', 'theme-green', 'theme-red'
+                    );
+                    document.body.classList.add('theme-' + theme);
+                });
+            });
+
+            // ── Mini menü switch ──
+            var miniSwitch = document.getElementById('mini_sidebar_setting');
+            if (miniSwitch) {
+                miniSwitch.checked = localStorage.getItem('mini-sidebar') === 'true';
+                miniSwitch.addEventListener('change', function () {
+                    localStorage.setItem('mini-sidebar', this.checked);
+                    document.body.classList.toggle('sidebar-mini', this.checked);
+                });
+            }
+
+            // ── Tema sıfırla ──
+            var resetBtn = document.querySelector('.btn-restore-theme');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    localStorage.removeItem('layout-color');
+                    localStorage.removeItem('sidebar-color');
+                    localStorage.removeItem('mini-sidebar');
+                    document.body.classList.remove(
+                        'dark', 'sidebar-mini',
+                        'theme-white', 'theme-cyan', 'theme-black',
+                        'theme-purple', 'theme-orange', 'theme-green', 'theme-red'
+                    );
+                    document.body.classList.add('theme-white');
+                    document.querySelectorAll('.choose-theme li').forEach(function (x) { x.classList.remove('active'); });
+                    var whiteLi = document.querySelector('.choose-theme li[title="white"]');
+                    if (whiteLi) whiteLi.classList.add('active');
+                });
+            }
+
+            // ── KENDİ BİLDİRİMLERİM ──
+            fetch('/Notification/MyNotifications')
+                .then(function(r){ return r.json(); })
+                .then(function(data) {
+                    var list  = document.getElementById('myNotifList');
+                    var badge = document.getElementById('myNotifBadge');
+                    if (!list) return;
+
+                    if (!data || !data.tickets || data.tickets.length === 0) {
+                        list.innerHTML =
+                            '<div style="padding:24px;text-align:center;">' +
+                            '<div style="width:44px;height:44px;border-radius:50%;background:#f0fdf4;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">' +
+                            '<i class="fas fa-check" style="color:#10b981;font-size:1.1rem;"></i></div>' +
+                            '<div style="font-size:.82rem;font-weight:600;color:#0f1117;">Harika!</div>' +
+                            '<div style="font-size:.75rem;color:#94a3b8;margin-top:3px;">Üzerinizde açık ticket yok</div>' +
+                            '</div>';
+                        return;
+                    }
+
+                    badge.textContent = data.count > 9 ? '9+' : data.count;
+                 badge.style.display = 'flex';  // 'inline' yerine
+
+                    var prioMap = {
+                        4: { color:'#ef4444', bg:'#fef2f2', icon:'fa-fire' },
+                        3: { color:'#f59e0b', bg:'#fffbeb', icon:'fa-arrow-up' },
+                        2: { color:'#3b82f6', bg:'#eff6ff', icon:'fa-minus' },
+                        1: { color:'#94a3b8', bg:'#f1f5f9', icon:'fa-arrow-down' }
+                    };
+
+                    var html = '';
+                    data.tickets.forEach(function(t) {
+                        var p = prioMap[t.priority] || prioMap[2];
+                        var waitH     = t.waitingHours || 0;
+                        var waitColor = waitH > 48 ? '#ef4444' : waitH > 24 ? '#f59e0b' : '#94a3b8';
+                        var waitTxt   = waitH > 0 ? waitH + ' sa önce' : 'Az önce';
+
+                        html +=
+                            '<a href="/AdminTicket/Detay/' + t.id + '" style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;text-decoration:none;transition:background .15s;" onmouseover="this.style.background=\'#f8fafd\'" onmouseout="this.style.background=\'\'">'+
+                                '<div style="width:36px;height:36px;border-radius:10px;background:' + p.bg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                                    '<i class="fas ' + p.icon + '" style="color:' + p.color + ';font-size:.8rem;"></i>' +
+                                '</div>' +
+                                '<div style="flex:1;min-width:0;">' +
+                                    '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+                                        '<span style="font-size:.75rem;font-family:monospace;font-weight:700;color:' + p.color + ';">' + t.ticketNo + '</span>' +
+                                        '<span style="font-size:.68rem;color:' + waitColor + ';white-space:nowrap;">' + waitTxt + '</span>' +
+                                    '</div>' +
+                                    '<div style="font-size:.78rem;font-weight:600;color:#0f1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">' + (t.title.length > 38 ? t.title.substring(0,38) + '…' : t.title) + '</div>' +
+                                    '<div style="font-size:.7rem;color:#94a3b8;margin-top:2px;">' +
+                                        '<i class="fas fa-building" style="font-size:.6rem;margin-right:3px;"></i>' + (t.customerName || '') +
+                                    '</div>' +
+                                '</div>' +
+                            '</a>';
+                    });
+                    list.innerHTML = html;
+                })
+                .catch(function() {
+                    var list = document.getElementById('myNotifList');
+                    if (list) list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:.8rem;"><i class="fas fa-exclamation-circle mr-1"></i>Yüklenemedi</div>';
+                });
+
+            // ── FİRMA BİLDİRİMLERİ ──
+            fetch('/Notification/CompanyNotifications')
+                .then(function(r){ return r.json(); })
+                .then(function(data) {
+                    var list  = document.getElementById('companyNotifList');
+                    var badge = document.getElementById('companyNotifBadge');
+                    if (!list) return;
+
+                    if (!data || data.totalCount === 0) {
+                        list.innerHTML =
+                            '<div style="padding:24px;text-align:center;">' +
+                            '<div style="width:44px;height:44px;border-radius:50%;background:#f0fdf4;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">' +
+                            '<i class="fas fa-check" style="color:#10b981;font-size:1.1rem;"></i></div>' +
+                            '<div style="font-size:.82rem;font-weight:600;color:#0f1117;">Yeni aktivite yok</div>' +
+                            '<div style="font-size:.75rem;color:#94a3b8;margin-top:3px;">Firma ticketlarında son aktivite bulunmuyor</div>' +
+                            '</div>';
+                        return;
+                    }
+
+                    badge.textContent = data.totalCount > 9 ? '9+' : data.totalCount;
+        badge.style.display = 'flex';  // 'inline' yerine
+
+                    var html = '';
+
+                    (data.comments || []).forEach(function(c) {
+                        html +=
+                            '<a href="/AdminTicket/Detay/' + c.ticketID + '" style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;text-decoration:none;transition:background .15s;" onmouseover="this.style.background=\'#f8fafd\'" onmouseout="this.style.background=\'\'">'+
+                                '<div style="width:36px;height:36px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                                    '<i class="fas fa-comment-alt" style="color:#2563eb;font-size:.8rem;"></i>' +
+                                '</div>' +
+                                '<div style="flex:1;min-width:0;">' +
+                                    '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+                                        '<span style="font-size:.75rem;font-family:monospace;font-weight:700;color:#2563eb;">' + c.ticketNo + '</span>' +
+                                        '<span style="font-size:.68rem;color:#94a3b8;white-space:nowrap;">' + (c.elapsedText || '') + '</span>' +
+                                    '</div>' +
+                                    '<div style="font-size:.78rem;font-weight:600;color:#0f1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">' + (c.title || '') + '</div>' +
+                                    '<div style="font-size:.7rem;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                                        '<i class="fas fa-user" style="font-size:.6rem;margin-right:3px;"></i>' + (c.userFullName || '') +
+                                        ' — ' + (c.shortComment || '') +
+                                    '</div>' +
+                                '</div>' +
+                            '</a>';
+                    });
+
+                    (data.files || []).forEach(function(f) {
+                        html +=
+                            '<a href="/AdminTicket/Detay/' + f.ticketID + '" style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;text-decoration:none;transition:background .15s;" onmouseover="this.style.background=\'#f8fafd\'" onmouseout="this.style.background=\'\'">'+
+                                '<div style="width:36px;height:36px;border-radius:10px;background:#fffbeb;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                                    '<i class="fas fa-paperclip" style="color:#f59e0b;font-size:.8rem;"></i>' +
+                                '</div>' +
+                                '<div style="flex:1;min-width:0;">' +
+                                    '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+                                        '<span style="font-size:.75rem;font-family:monospace;font-weight:700;color:#f59e0b;">' + f.ticketNo + '</span>' +
+                                        '<span style="font-size:.68rem;color:#94a3b8;white-space:nowrap;">' + (f.elapsedText || '') + '</span>' +
+                                    '</div>' +
+                                    '<div style="font-size:.78rem;font-weight:600;color:#0f1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">' + (f.title || '') + '</div>' +
+                                    '<div style="font-size:.7rem;color:#94a3b8;margin-top:2px;">' +
+                                        '<i class="fas fa-file" style="font-size:.6rem;margin-right:3px;"></i>' + (f.originalFileName || '') +
+                                        ' · ' + (f.uploadedByName || '') +
+                                    '</div>' +
+                                '</div>' +
+                            '</a>';
+                    });
+
+                    list.innerHTML = html;
+                })
+                .catch(function() {
+                    var list = document.getElementById('companyNotifList');
+                    if (list) list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:.8rem;"><i class="fas fa-exclamation-circle mr-1"></i>Yüklenemedi</div>';
+                });
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
 </body>
+
 </html>

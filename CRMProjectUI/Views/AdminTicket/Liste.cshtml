@@ -1,0 +1,1396 @@
+﻿@model List<CRMProjectUI.Models.TicketListDto>
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    ViewData["Title"] = "Destek Talepleri";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
+    bool isSuperAdmin = User.IsInRole("SuperAdmin");
+    bool isAdmin = User.IsInRole("Admin");
+    bool isUser = User.IsInRole("User");
+    bool isStaff = isSuperAdmin || isAdmin;
+    int callerUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out int cuid) ? cuid : 0;
+    // Başarılı (2) hariç tüm kayıtlar
+    var filtered = Model?.Where(x => x.Status != 2 && x.Status != 3 && x.Status != 6).ToList()
+                   ?? new List<CRMProjectUI.Models.TicketListDto>();
+
+    int total = filtered.Count;
+    int beklemede = filtered.Count(x => x.Status == 0);
+    int islemde = filtered.Count(x => x.Status == 1);
+    int cozemedi = filtered.Count(x => x.Status == 3);
+    int musteriBekle = filtered.Count(x => x.Status == 4);
+    int bizDonecek = filtered.Count(x => x.Status == 5);
+    int acik = filtered.Count(x => x.Status == 0 || x.Status == 1);
+
+    string? successMsg = TempData["Success"] as string;
+    string? errorMsg = TempData["Error"] as string;
+
+    var adminUsers = ViewBag.AdminUsers as List<CRMProjectUI.Models.UserListDto>
+                     ?? new List<CRMProjectUI.Models.UserListDto>();
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --ink: #0f1117;
+        --ink-soft: #4a4f5e;
+        --surface: #f7f8fc;
+        --white: #fff;
+        --accent: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --purple: #7c3aed;
+        --border: #e2e8f0;
+        --radius: 12px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.10);
+    }
+
+    .tl-page {
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .tl-stats {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+
+    .tl-stat {
+        flex: 1;
+        min-width: 110px;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 13px 15px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        transition: box-shadow .2s, transform .2s;
+        cursor: pointer;
+    }
+
+        .tl-stat:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+    .tl-stat-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .85rem;
+        flex-shrink: 0;
+    }
+
+        .tl-stat-icon.blue {
+            background: #eff6ff;
+            color: var(--accent);
+        }
+
+        .tl-stat-icon.gray {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .tl-stat-icon.indigo {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .tl-stat-icon.red {
+            background: #fef2f2;
+            color: var(--danger);
+        }
+
+        .tl-stat-icon.amber {
+            background: #fffbeb;
+            color: var(--warning);
+        }
+
+    .tl-desc-preview {
+        font-size: .71rem;
+        color: var(--ink-soft);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 240px;
+        margin-top: 2px;
+        cursor: default;
+        transition: all .2s;
+    }
+
+        .tl-desc-preview:hover {
+            white-space: normal;
+            overflow: visible;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            z-index: 10;
+            max-width: 320px;
+        }
+    .tl-stat-label {
+        font-size: .66rem;
+        color: var(--ink-soft);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 1px;
+    }
+
+    .tl-stat-value {
+        font-family: 'Syne',sans-serif;
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--ink);
+        line-height: 1;
+    }
+
+    .tl-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 10px 15px;
+        margin-bottom: 13px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .tl-toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .tl-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .tl-filter-btn {
+        font-size: .74rem;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 20px;
+        border: 1.5px solid var(--border);
+        background: var(--surface);
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: all .18s;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+    }
+
+        .tl-filter-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: #eff6ff;
+        }
+
+        .tl-filter-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .tl-filter-btn.s0.active {
+            background: #64748b;
+            border-color: #64748b;
+        }
+
+        .tl-filter-btn.s1.active {
+            background: #4f46e5;
+            border-color: #4f46e5;
+        }
+
+        .tl-filter-btn.s3.active {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .tl-filter-btn.s45.active {
+            background: var(--warning);
+            border-color: var(--warning);
+        }
+
+    .tl-filter-count {
+        font-size: .64rem;
+        font-weight: 700;
+        background: rgba(255,255,255,.25);
+        padding: 1px 5px;
+        border-radius: 9px;
+    }
+
+    .tl-filter-btn:not(.active) .tl-filter-count {
+        background: var(--border);
+        color: var(--ink-soft);
+    }
+
+    .tl-search {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        padding: 5px 13px;
+        transition: border-color .2s;
+    }
+
+        .tl-search:focus-within {
+            border-color: var(--accent);
+        }
+
+        .tl-search i {
+            color: var(--ink-soft);
+            font-size: .82rem;
+        }
+
+        .tl-search input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: .82rem;
+            color: var(--ink);
+            width: 170px;
+        }
+
+    .tl-add-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 15px;
+        border-radius: 9px;
+        background: var(--accent);
+        color: #fff;
+        font-size: .82rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        box-shadow: 0 3px 10px rgba(37,99,235,.35);
+        transition: background .2s, transform .15s;
+    }
+
+        .tl-add-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            color: #fff;
+            text-decoration: none;
+        }
+
+    .tl-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+
+    .tl-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .tl-table thead th {
+            font-family: 'Syne',sans-serif;
+            font-size: .67rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--ink-soft);
+            padding: 10px 12px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+            .tl-table thead th.sortable {
+                cursor: pointer;
+                user-select: none;
+            }
+
+                .tl-table thead th.sortable:hover {
+                    color: var(--accent);
+                }
+
+        .tl-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .15s;
+        }
+
+            .tl-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .tl-table tbody tr:hover {
+                background: #f8fafd;
+            }
+
+        .tl-table tbody td {
+            padding: 8px 12px;
+            vertical-align: middle;
+            font-size: .835rem;
+        }
+
+    .b-status {
+        font-size: .68rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        white-space: nowrap;
+    }
+
+        .b-status::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+    .bs-0 {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+        .bs-0::before {
+            background: #94a3b8;
+        }
+
+    .bs-1 {
+        background: #eef2ff;
+        color: #3730a3;
+    }
+
+        .bs-1::before {
+            background: #4f46e5;
+        }
+
+    .bs-3 {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+        .bs-3::before {
+            background: var(--danger);
+        }
+
+    .bs-4 {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+        .bs-4::before {
+            background: var(--warning);
+        }
+
+    .bs-5 {
+        background: #f5f3ff;
+        color: #5b21b6;
+    }
+
+        .bs-5::before {
+            background: var(--purple);
+        }
+
+    .b-priority {
+        font-size: .67rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 6px;
+        white-space: nowrap;
+    }
+
+    .bp-1 {
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+    .bp-2 {
+        background: #eff6ff;
+        color: #1e40af;
+    }
+
+    .bp-3 {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .bp-4 {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+    .b-vip {
+        font-size: .62rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 10px;
+        white-space: nowrap;
+        display: inline-block;
+    }
+
+        .b-vip.vip {
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            color: #fff;
+        }
+
+        .b-vip.onemli {
+            background: linear-gradient(135deg,#f093fb,#f5576c);
+            color: #fff;
+        }
+
+        .b-vip.dusuk {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .b-vip.normal {
+            background: #eff6ff;
+            color: #1e40af;
+        }
+    .tl-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .62rem;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+        .tl-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .tl-avatar.blue {
+            background: var(--accent);
+        }
+
+        .tl-avatar.green {
+            background: var(--success);
+        }
+
+    .tl-user {
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+    }
+
+    .tl-user-name {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--ink);
+        line-height: 1.3;
+    }
+
+    .tl-user-contact {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+        margin-top: 2px;
+    }
+
+        .tl-user-contact a {
+            font-size: .69rem;
+            color: var(--ink-soft);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+            .tl-user-contact a:hover {
+                color: var(--accent);
+            }
+
+    .tl-duration {
+        font-size: .75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+        .tl-duration.active {
+            color: #4f46e5;
+        }
+
+        .tl-duration.late {
+            color: var(--danger);
+        }
+
+        .tl-duration.normal {
+            color: var(--ink-soft);
+        }
+
+    .tl-title-link {
+        font-weight: 600;
+        color: var(--ink);
+        text-decoration: none;
+        display: block;
+        max-width: 240px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+        .tl-title-link:hover {
+            color: var(--accent);
+        }
+
+    .tl-sub {
+        font-size: .72rem;
+        color: var(--ink-soft);
+        margin-top: 1px;
+    }
+
+    .tl-actions {
+        display: flex;
+        gap: 3px;
+    }
+
+    .tl-btn {
+        width: 27px;
+        height: 27px;
+        border-radius: 7px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .72rem;
+        cursor: pointer;
+        text-decoration: none;
+        color: var(--ink-soft);
+        transition: all .15s;
+    }
+
+        .tl-btn:hover {
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+
+        .tl-btn.info:hover {
+            background: #eff6ff;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .tl-btn.assign:hover {
+            background: #f5f3ff;
+            border-color: var(--purple);
+            color: var(--purple);
+        }
+
+        .tl-btn.status:hover {
+            background: #f0fdf4;
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+    .tl-unassigned {
+        color: #dc2626;
+        font-size: .74rem;
+        font-style: italic;
+    }
+
+    .tl-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 15px;
+        border-top: 1px solid var(--border);
+        font-size: .77rem;
+        color: var(--ink-soft);
+        flex-wrap: wrap;
+        gap: 7px;
+    }
+
+    .tl-page-btns {
+        display: flex;
+        gap: 3px;
+    }
+
+    .tl-page-btn {
+        width: 27px;
+        height: 27px;
+        border-radius: 7px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: .77rem;
+        transition: all .15s;
+    }
+
+        .tl-page-btn:hover {
+            background: #eff6ff;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .tl-page-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .tl-page-btn.disabled {
+            opacity: .4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+    .tl-empty {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--ink-soft);
+    }
+
+        .tl-empty i {
+            font-size: 2.5rem;
+            opacity: .2;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+    .tl-no-results {
+        text-align: center;
+        padding: 28px;
+        color: var(--ink-soft);
+        font-size: .87rem;
+    }
+</style>
+
+@Html.AntiForgeryToken()
+<div class="tl-page">
+
+    <!-- STAT CARDS -->
+    <div class="tl-stats">
+        <div class="tl-stat" onclick="filterByStatus('all', this)">
+            <div class="tl-stat-icon blue"><i class="fas fa-ticket-alt"></i></div>
+            <div><div class="tl-stat-label">Toplam</div><div class="tl-stat-value">@total</div></div>
+        </div>
+        <div class="tl-stat" onclick="filterByStatus('open', this)">
+            <div class="tl-stat-icon indigo"><i class="fas fa-folder-open"></i></div>
+            <div><div class="tl-stat-label">Aktif</div><div class="tl-stat-value" style="color:#4f46e5;">@acik</div></div>
+        </div>
+        <div class="tl-stat" onclick="filterByStatus('0', this)">
+            <div class="tl-stat-icon gray"><i class="fas fa-clock"></i></div>
+            <div><div class="tl-stat-label">Beklemede</div><div class="tl-stat-value" style="color:#64748b;">@beklemede</div></div>
+        </div>
+        <div class="tl-stat" onclick="filterByStatus('1', this)">
+            <div class="tl-stat-icon indigo"><i class="fas fa-spinner"></i></div>
+            <div><div class="tl-stat-label">İşlemde</div><div class="tl-stat-value" style="color:#4f46e5;">@islemde</div></div>
+        </div>
+ 
+        <div class="tl-stat" onclick="filterByStatus('45', this)">
+            <div class="tl-stat-icon amber"><i class="fas fa-hourglass-half"></i></div>
+            <div><div class="tl-stat-label">Bekliyor</div><div class="tl-stat-value" style="color:var(--warning);">@(musteriBekle + bizDonecek)</div></div>
+        </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="tl-toolbar">
+        <div class="tl-toolbar-left">
+            <button class="tl-filter-btn active" onclick="filterByStatus('open', this)">
+                Aktif <span class="tl-filter-count">@acik</span>
+            </button>
+            <button class="tl-filter-btn" onclick="filterByStatus('all', this)">
+                Tümü <span class="tl-filter-count">@total</span>
+            </button>
+            <button class="tl-filter-btn s0" onclick="filterByStatus('0', this)">
+                <i class="fas fa-circle" style="font-size:.4rem;color:#94a3b8;"></i>
+                Beklemede <span class="tl-filter-count">@beklemede</span>
+            </button>
+            <button class="tl-filter-btn s1" onclick="filterByStatus('1', this)">
+                <i class="fas fa-circle" style="font-size:.4rem;color:#4f46e5;"></i>
+                İşlemde <span class="tl-filter-count">@islemde</span>
+            </button>
+
+            <button class="tl-filter-btn s45" onclick="filterByStatus('45', this)">
+                <i class="fas fa-circle" style="font-size:.4rem;color:var(--warning);"></i>
+                Bekliyor <span class="tl-filter-count">@(musteriBekle + bizDonecek)</span>
+            </button>
+        </div>
+        <div class="tl-toolbar-right">
+            <div class="tl-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Ticket no, başlık, müşteri..." oninput="filterTable()" />
+            </div>
+
+                <a asp-action="Ekle" asp-controller="AdminTicket" class="tl-add-btn">
+                    <i class="fas fa-plus"></i> Yeni Ticket
+                </a>
+
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="tl-card">
+        @if (!filtered.Any())
+        {
+            <div class="tl-empty">
+                <i class="fas fa-ticket-alt"></i>
+                Henüz kayıtlı destek talebi bulunmuyor.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="tl-table" id="ticketTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" onclick="sortTable(0)">No</th>
+                            <th>Başlık</th>
+                            @if (isStaff)
+                            {
+                                <th>Müşteri</th>
+                            }
+                            <th>Öncelik</th>
+                            <th>Durum</th>
+                            <th>Oluşturan</th>
+                            <th>Kaydı Karşılayan</th>
+                            <th>Süre</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        @foreach (var item in filtered)
+                        {
+                            bool closed = item.Status == 2 || item.Status == 3 || item.Status == 6;
+                            string sClass = $"bs-{item.Status}";
+                            string pClass = $"bp-{item.Priority}";
+
+                            string statusText = item.Status switch
+                            {
+                                0 => "Beklemede",
+                                1 => "İşlemde",
+                                3 => "Çözülemedi",
+                                4 => "Müşteri Dönecek",
+                                5 => "Biz Döneceğiz",
+                                _ => "-"
+                            };
+
+                            string prioText = item.Priority switch { 1 => "Düşük", 2 => "Normal", 3 => "Yüksek", 4 => "Kritik", _ => "Normal" };
+                            string prioIcon = item.Priority switch { 4 => "fa-fire", 3 => "fa-arrow-up", 2 => "fa-minus", _ => "fa-arrow-down" };
+
+                            string cbInit = string.IsNullOrEmpty(item.CreatedByName) ? "?"
+                            : string.Concat(item.CreatedByName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+
+                            string atInit = string.IsNullOrEmpty(item.AssignedToName) ? "?"
+                            : string.Concat(item.AssignedToName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+
+                            // DB'deki değerlerle birebir eşleştir
+                            string impClass = item.CustomerImportance switch
+                            {
+                                "VIP" => "vip",
+                                "Önemli" => "onemli",
+                                "Düşük" => "dusuk",
+                                "Normal" => "normal",
+                                _ => ""
+                            };
+
+                            // Süre hesapla
+                            string durationStr = "-";
+                            string durationClass = "normal";
+                            if (item.Status == 1 && item.TakenInProgressDate.HasValue)
+                            {
+                                var diff = DateTime.Now - item.TakenInProgressDate.Value;
+                                durationStr = diff.TotalDays >= 1 ? $"{(int)diff.TotalDays}g {(int)diff.TotalHours % 24}sa"
+                                : diff.TotalHours >= 1 ? $"{(int)diff.TotalHours}sa {(int)diff.TotalMinutes % 60}dk"
+                                : $"{(int)diff.TotalMinutes}dk";
+                                durationClass = diff.TotalHours > 24 ? "late" : "active";
+                            }
+                            else if (item.Status == 0 && item.OpenedDate.HasValue)
+                            {
+                                var diff = DateTime.Now - item.OpenedDate.Value;
+                                durationStr = diff.TotalDays >= 1 ? $"{(int)diff.TotalDays}g bekliyor"
+                                : diff.TotalHours >= 1 ? $"{(int)diff.TotalHours}sa bekliyor"
+                                : $"{(int)diff.TotalMinutes}dk bekliyor";
+                                durationClass = diff.TotalHours > 48 ? "late" : "normal";
+                            }
+                            // ← BURAYA YAPISTIR
+                            else if ((item.Status == 4 || item.Status == 5) && item.OpenedDate.HasValue)
+                            {
+                                var diff = DateTime.Now - item.OpenedDate.Value;
+                                string label = item.Status == 4 ? "müşteri bekliyor" : "biz döneceğiz";
+                                durationStr = diff.TotalDays >= 1 ? $"{(int)diff.TotalDays}g {label}"
+                                : diff.TotalHours >= 1 ? $"{(int)diff.TotalHours}sa {label}"
+                                : $"{(int)diff.TotalMinutes}dk {label}";
+                                durationClass = diff.TotalHours > 72 ? "late" : "normal";
+                            }
+
+                            string safeSearch = $"{item.TicketNo} {item.Title} {item.CustomerName} {item.LogoProductName} {item.CreatedByName} {item.AssignedToName} {item.CustomerImportance}".ToLower();
+
+                            <tr data-status="@item.Status"
+                                data-search="@safeSearch"
+                                data-assigned="@(item.AssignedToUserID?.ToString() ?? "")">
+
+                                <!-- NO -->
+                                <td>
+                                    <span style="font-family:monospace; font-size:.75rem; color:var(--ink-soft); font-weight:600;">@item.TicketNo</span>
+                                </td>
+
+                                <!-- BAŞLIK / ÜRÜN / AÇIKLAMA -->
+                                <td>
+                                    <a asp-action="Detay" asp-controller="AdminTicket"
+                                       asp-route-id="@item.ID" class="tl-title-link" title="@item.Title">
+                                        @item.Title
+                                    </a>
+                                    @if (!string.IsNullOrEmpty(item.LogoProductName))
+                                    {
+                                        <span class="tl-sub">
+                                            <i class="fas fa-cube mr-1" style="font-size:.62rem;"></i>@item.LogoProductName
+                                        </span>
+                                    }
+                           
+                                    @if (!string.IsNullOrEmpty(item.Description))
+                                    {
+                                        <div class="tl-desc-preview" title="@item.Description">
+                                            @(item.Description.Length > 55 ? item.Description.Substring(0, 55) + "…" : item.Description)
+                                        </div>
+                                    }
+                                </td>
+                                @if (isStaff)
+                                {
+                                    <td>
+                                        <div style="font-weight:600; font-size:.81rem;">@item.CustomerName</div>
+                                        <div style="display:flex; align-items:center; gap:5px; margin-top:2px; flex-wrap:wrap;">
+                                            @if (item.CustomerImportance != null)
+                                            {
+                                                <span class="b-vip @impClass">@item.CustomerImportance</span>
+                                            }
+                                        </div>
+                                    </td>
+                                }
+
+                                <!-- ÖNCELİK -->
+                                <td>
+                                    <span class="b-priority @pClass">
+                                        <i class="fas @prioIcon mr-1"></i>@prioText
+                                    </span>
+                                </td>
+
+                                <!-- DURUM -->
+                                <td>
+                                    <span class="b-status @sClass">@statusText</span>
+                                </td>
+
+                                <!-- OLUŞTURAN -->
+                                <td>
+                                    <div class="tl-user">
+                                        <div class="tl-avatar blue">
+                                            @if (!string.IsNullOrEmpty(item.CreatedByPicture))
+                                            {
+                                                <img src="@(apiBase + item.CreatedByPicture)" alt="@cbInit"
+                                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                                                <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@cbInit</span>
+                                            }
+                                            else
+                                            {
+
+                                                @cbInit
+                                            }
+                                        </div>
+                                        <div>
+                                            <div class="tl-user-name">@(item.CreatedByName ?? "-")</div>
+                                            <div class="tl-user-contact">
+                                                @if (!string.IsNullOrEmpty(item.CreatedByPhone))
+                                                {
+                                                    <a href="tel:@item.CreatedByPhone" onclick="event.stopPropagation()">
+                                                        <i class="fas fa-phone"></i>@item.CreatedByPhone
+                                                    </a>
+                                                }
+                                                @if (!string.IsNullOrEmpty(item.CreatedByEmail))
+                                                {
+                                                    <a href="mailto:@item.CreatedByEmail" onclick="event.stopPropagation()">
+                                                        <i class="fas fa-envelope"></i>@item.CreatedByEmail
+                                                    </a>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- ATANAN -->
+                                <td>
+                                    @if (!string.IsNullOrEmpty(item.AssignedToName))
+                                    {
+                                        <div class="tl-user">
+                                            <div class="tl-avatar green">
+                                                @if (!string.IsNullOrEmpty(item.AssignedToPicture))
+                                                {
+                                                    <img src="@(apiBase + item.AssignedToPicture)" alt="@atInit"
+                                                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                                                    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@atInit</span>
+                                                }
+                                                else
+                                                {
+
+                                                    @atInit
+                                                }
+                                            </div>
+                                            <span style="font-size:.8rem; font-weight:600;">@item.AssignedToName</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="tl-unassigned"><i class="fas fa-user-slash mr-1"></i>Atanmadı</span>
+                                    }
+                                </td>
+
+                                <!-- SÜRE -->
+                                <td>
+                                    <span class="tl-duration @durationClass">
+                                        <i class="fas @(item.Status == 1 ? "fa-spinner fa-spin" : "fa-clock")" style="font-size:.65rem;"></i>
+                                        @durationStr
+                                    </span>
+                                </td>
+
+                                <!-- İŞLEM -->
+                                <td>
+                                    <div class="tl-actions">
+                                        <a asp-action="Detay" asp-controller="AdminTicket"
+                                           asp-route-id="@item.ID" class="tl-btn info" title="Detay">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if (isStaff && !closed)
+                                        {
+                                            <button type="button" class="tl-btn assign" title="Devret / Ata"
+                                                    onclick="openAssignModal(@item.ID,
+                        '@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Title ?? "")',
+                        @(item.AssignedToUserID?.ToString() ?? "null"),
+                        '@(item.AssignedToUserID?.ToString() ?? "")')">
+                                                <i class="fas fa-user-check"></i>
+                                            </button>
+                                            <button type="button" class="tl-btn status" title="Durum Değiştir"
+                                                    data-id="@item.ID"
+                                                    data-title="@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Title ?? "")"
+                                                    data-status="@item.Status"
+                                                    data-opened="@((item.TakenInProgressDate ?? item.OpenedDate)?.ToString("o") ?? "")"
+                                                    data-assigned="@(item.AssignedToUserID?.ToString() ?? "")"
+                                                    onclick="openStatusModal(this)">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="tl-pagination" id="paginationBar">
+                <span id="paginationInfo"></span>
+                <div class="tl-page-btns" id="paginationBtns"></div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- ══ DEVİR MODAL ══ -->
+@if (isStaff)
+{
+    <div id="assignModal" style="display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,.5); align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:16px; width:420px; max-width:95vw; box-shadow:0 20px 60px rgba(0,0,0,.2);">
+            <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <h6 style="margin:0; font-weight:700; color:var(--ink);"><i class="fas fa-user-check mr-2" style="color:var(--purple);"></i>Devret / Ata</h6>
+                    <small id="assignModalTitle" style="color:var(--ink-soft);"></small>
+                </div>
+                <button onclick="closeAssignModal()" style="border:none;background:none;font-size:1.1rem;color:var(--ink-soft);cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="padding:18px 20px;">
+                <label style="font-size:.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">Atanacak Kişi</label>
+                <select id="assignUserSelect" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.85rem;background:#fff;color:var(--ink);">
+                    <option value="">Seçiniz...</option>
+                    @foreach (var u in adminUsers)
+                    {
+                        @if (isSuperAdmin || u.ISAdmin == 1)
+                        {
+                            <option value="@u.ID">@u.FullName (@(u.ISAdmin == 2 ? "SuperAdmin" : "Admin"))</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+                <button onclick="closeAssignModal()" style="padding:7px 15px;border:1.5px solid var(--border);background:#fff;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;">İptal</button>
+                <button onclick="submitAssign()" style="padding:7px 15px;background:var(--purple);color:#fff;border:none;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                    <i class="fas fa-check"></i> Devret
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusModal" style="display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,.5); align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:16px; width:460px; max-width:95vw; box-shadow:0 20px 60px rgba(0,0,0,.2);">
+            <div style="padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <h6 style="margin:0; font-weight:700; color:var(--ink);"><i class="fas fa-exchange-alt mr-2" style="color:var(--success);"></i>Durum Değiştir</h6>
+                    <small id="statusModalTitle" style="color:var(--ink-soft);"></small>
+                </div>
+                <button onclick="closeStatusModal()" style="border:none;background:none;font-size:1.1rem;color:var(--ink-soft);cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="padding:18px 20px; display:flex; flex-direction:column; gap:13px;">
+                <div>
+                    <label style="font-size:.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:5px;">Yeni Durum</label>
+                    <select id="statusSelect" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.85rem;background:#fff;color:var(--ink);" onchange="onStatusChange()">
+                        <option value="0">Beklemede</option>
+                        <option value="1">İşlemde</option>
+                        <option value="2">Başarılı Kapandı ✅</option>
+                        <option value="3">Çözülemedi ❌</option>
+                        <option value="4">Müşteri Bize Dönecek</option>
+                        <option value="5">Müşteriye Geri Döneceğiz</option>
+                        @if (isSuperAdmin)
+                        {
+                            <option value="6">İptal Edildi 🚫</option>
+                        }
+                    </select>
+                </div>
+                <div id="solutionNoteGroup" style="display:none;">
+                    <label style="font-size:.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:5px;">
+                        Çözüm Notu <span style="color:var(--danger);">*</span>
+                    </label>
+                    <textarea id="solutionNoteInput" rows="3"
+                          style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.85rem;resize:vertical;"
+                          placeholder="Çözüm açıklaması..."></textarea>
+                </div><div id="cancelReasonGroup" style="display:none;">
+                    <label style="font-size:.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:5px;">
+                        İptal Nedeni <span style="color:var(--danger);">*</span>
+                    </label>
+                    <textarea id="cancelReasonInput" rows="2"
+                          style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.85rem;resize:vertical;"
+                          placeholder="İptal nedeni yazınız..."></textarea>
+                </div>
+                <div id="workingMinGroup" style="display:none;">
+                    <label style="font-size:.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:5px;">
+                        Çalışma Süresi <small style="font-weight:400;">(dakika)</small>
+                    </label>
+                    <input type="number" id="workingMinInput" min="0" value="0"
+                           style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.85rem;" />
+                </div>
+            </div>
+            <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+                <button onclick="closeStatusModal()" style="padding:7px 15px;border:1.5px solid var(--border);background:#fff;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;">İptal</button>
+                <button onclick="submitStatus()" style="padding:7px 15px;background:var(--success);color:#fff;border:none;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                    <i class="fas fa-save"></i> Güncelle
+                </button>
+            </div>
+        </div>
+    </div>
+}
+<div id="tempData"
+     data-success='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(successMsg ?? ""))'
+     data-error='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(errorMsg ?? ""))'>
+</div>
+
+<script>
+    var token = '';
+    var allRows      = [];
+    var filteredRows = [];
+    var currentFilter= 'open';
+    var currentSearch= '';
+    var currentPage  = 1;
+    var pageSize     = 20;
+    var sortCol      = -1;
+    var sortAsc      = true;
+
+      document.addEventListener('DOMContentLoaded', function () {
+        token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        allRows = Array.from(document.querySelectorAll('#tableBody tr'));
+        applyFilters();
+    });
+
+    // TempData mesajları — DOMContentLoaded dışında, direkt çalıştır
+    (function() {
+        var td = document.getElementById('tempData');
+        if (!td) return;
+        var s = '', e = '';
+        try { s = JSON.parse(td.getAttribute('data-success') || '""'); } catch(ex) { s = ''; }
+        try { e = JSON.parse(td.getAttribute('data-error')   || '""'); } catch(ex) { e = ''; }
+        if (s && s.trim()) {
+            setTimeout(function() {
+                Swal.fire({ icon:'success', title:'Başarılı!', text:s, timer:2500, showConfirmButton:false });
+            }, 300);
+        }
+        if (e && e.trim()) {
+            setTimeout(function() {
+                Swal.fire({ icon:'error', title:'Hata!', text:e });
+            }, 300);
+        }
+    })();
+
+    function filterByStatus(val, el) {
+        document.querySelectorAll('.tl-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+        if (el) el.classList.add('active');
+        currentFilter = val;
+        currentPage   = 1;
+        applyFilters();
+    }
+
+    function filterTable() {
+        currentSearch = document.getElementById('searchInput').value.toLowerCase().trim();
+        currentPage   = 1;
+        applyFilters();
+    }
+
+    function applyFilters() {
+        filteredRows = allRows.filter(function(row) {
+            var s  = row.getAttribute('data-status');
+            var sm = currentFilter === 'all'
+                || (currentFilter === 'open' && (s === '0' || s === '1'))
+                || (currentFilter === '45'   && (s === '4' || s === '5'))
+                || currentFilter === s;
+            var srch = currentSearch === '' || (row.getAttribute('data-search') || '').includes(currentSearch);
+            return sm && srch;
+        });
+        if (sortCol >= 0) doSort();
+        renderPage();
+    }
+
+    function sortTable(col) {
+        sortAsc = (sortCol === col) ? !sortAsc : true;
+        sortCol = col;
+        doSort(); renderPage();
+    }
+    function doSort() {
+        filteredRows.sort(function(a, b) {
+            var at = a.cells[sortCol] ? a.cells[sortCol].textContent.trim() : '';
+            var bt = b.cells[sortCol] ? b.cells[sortCol].textContent.trim() : '';
+            var an = parseFloat(at), bn = parseFloat(bt);
+            if (!isNaN(an) && !isNaN(bn)) return sortAsc ? an - bn : bn - an;
+            return sortAsc ? at.localeCompare(bt,'tr') : bt.localeCompare(at,'tr');
+        });
+    }
+
+    function renderPage() {
+        var tbody      = document.getElementById('tableBody');
+        var total      = filteredRows.length;
+        var totalPages = Math.max(1, Math.ceil(total / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+        var start = (currentPage - 1) * pageSize;
+        var end   = Math.min(start + pageSize, total);
+
+        allRows.forEach(function(r){ r.style.display = 'none'; });
+        var nr = document.getElementById('noResultsRow');
+        if (total === 0) {
+            if (!nr) {
+                nr = document.createElement('tr');
+                nr.id = 'noResultsRow';
+        nr.innerHTML = '<td colspan="@(isStaff ? 9 : 8)" class="tl-no-results"><i class="fas fa-search mr-2"></i>Sonuç bulunamadı.</td>';
+                tbody.appendChild(nr);
+            }
+            nr.style.display = '';
+        } else {
+            if (nr) nr.style.display = 'none';
+            filteredRows.slice(start, end).forEach(function(r){ r.style.display = ''; tbody.appendChild(r); });
+        }
+
+        document.getElementById('paginationInfo').textContent = total === 0
+            ? 'Kayıt yok' : (start + 1) + ' – ' + end + ' / ' + total + ' kayıt';
+
+        var btns = document.getElementById('paginationBtns');
+        btns.innerHTML = '';
+        function addBtn(lbl, page, disabled, active) {
+            var btn = document.createElement('div');
+            btn.className = 'tl-page-btn' + (disabled?' disabled':'') + (active?' active':'');
+            btn.innerHTML = lbl;
+            if (!disabled && !active) btn.onclick = function(){ currentPage = page; renderPage(); };
+            btns.appendChild(btn);
+        }
+        addBtn('<i class="fas fa-chevron-left"></i>', currentPage-1, currentPage===1, false);
+        var from = Math.max(1, currentPage-2), to = Math.min(totalPages, currentPage+2);
+        if (from>1){ addBtn('1',1,false,false); if(from>2) addBtn('...',-1,true,false); }
+        for(var p=from;p<=to;p++) addBtn(String(p),p,false,p===currentPage);
+        if(to<totalPages){ if(to<totalPages-1) addBtn('...',-1,true,false); addBtn(String(totalPages),totalPages,false,false); }
+        addBtn('<i class="fas fa-chevron-right"></i>', currentPage+1, currentPage===totalPages, false);
+    }
+
+    var assignTicketId = null;
+    function openAssignModal(id, title, currentUserId, assignedTo) {
+        var callerId = '@callerUserId';
+        var isSA     = @(isSuperAdmin ? "true" : "false");
+
+        // Admin kısıtlaması
+        if (!isSA) {
+            if (assignedTo && assignedTo !== callerId) {
+                Swal.fire({ icon:'warning', title:'Yetkisiz', text:'Bu ticket başka birine atanmış, devredemezsiniz.' });
+                return;
+            }
+        }
+
+        assignTicketId = id;
+        document.getElementById('assignModalTitle').textContent = title;
+        document.getElementById('assignUserSelect').value = currentUserId || '';
+        document.getElementById('assignModal').style.display = 'flex';
+    }
+    function closeAssignModal() { document.getElementById('assignModal').style.display = 'none'; assignTicketId = null; }
+    function submitAssign() {
+        var userId = document.getElementById('assignUserSelect').value;
+        if (!userId) { Swal.fire({icon:'warning', title:'Uyarı', text:'Lütfen bir kullanıcı seçin.'}); return; }
+
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/AdminTicket/Devret/' + assignTicketId;
+
+        [['__RequestVerificationToken', token], ['assignedToUserId', userId]]
+            .forEach(function(pair) {
+                var inp = document.createElement('input');
+                inp.name = pair[0]; inp.value = pair[1];
+                form.appendChild(inp);
+            });
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    var statusTicketId = null;
+    var currentElapsed = 0; // ← bunu ekle
+    function openStatusModal(btn) {
+        var id            = parseInt(btn.getAttribute('data-id'));
+        var title         = btn.getAttribute('data-title');
+        var currentStatus = btn.getAttribute('data-status');
+        var openedDate    = btn.getAttribute('data-opened');
+        var assignedTo    = btn.getAttribute('data-assigned');
+
+        var callerId = '@callerUserId';
+        var isSA     = @(isSuperAdmin ? "true" : "false");
+
+        if (!isSA) {
+            if (assignedTo && assignedTo !== callerId) {
+                Swal.fire({ icon:'warning', title:'Yetkisiz', text:'Bu ticket başka birine atanmış, müdahale edemezsiniz.' });
+                return;
+            }
+            if (!assignedTo && String(currentStatus) !== '1') {
+                Swal.fire({ icon:'warning', title:'Uyarı', text:'Önce ticketı üzerinize alın.' });
+                return;
+            }
+        }
+
+        statusTicketId = id;
+        document.getElementById('statusModalTitle').textContent = title;
+        document.getElementById('statusSelect').setAttribute('data-current', String(currentStatus));
+        document.getElementById('statusSelect').setAttribute('data-assigned', assignedTo || '');
+        document.getElementById('solutionNoteInput').value = '';
+        document.getElementById('cancelReasonInput').value = '';
+
+        var defaultStatus = (String(currentStatus) === '1') ? '2' : String(currentStatus);
+        document.getElementById('statusSelect').value = defaultStatus;
+
+        var elapsed = 0;
+        if (openedDate && openedDate !== '') {
+            var opened = new Date(openedDate);
+            var now    = new Date();
+            elapsed    = Math.floor((now - opened) / 60000);
+            if (elapsed < 0) elapsed = 0;
+        }
+        currentElapsed = elapsed;
+        document.getElementById('workingMinInput').value = elapsed;
+
+        onStatusChange();
+        document.getElementById('statusModal').style.display = 'flex';
+    }
+    function closeStatusModal() { document.getElementById('statusModal').style.display = 'none'; statusTicketId = null; }
+    function onStatusChange() {
+        var v = document.getElementById('statusSelect').value;
+        document.getElementById('solutionNoteGroup').style.display  = (v==='2'||v==='3') ? 'block' : 'none';
+        document.getElementById('cancelReasonGroup').style.display  = (v==='6')          ? 'block' : 'none';
+        var showWorking = (v==='2'||v==='3'||v==='6');
+        document.getElementById('workingMinGroup').style.display    = showWorking ? 'block' : 'none';
+        if (showWorking) {
+            document.getElementById('workingMinInput').value = currentElapsed;
+        }
+    }
+          function submitStatus() {
+        var status     = document.getElementById('statusSelect').value;
+        var note       = document.getElementById('solutionNoteInput')?.value.trim() ?? '';
+       var minutes = parseInt(document.getElementById('workingMinInput').value, 10);
+    if (isNaN(minutes) || minutes < 0) minutes = 0;
+        var currentSt  = parseInt(document.getElementById('statusSelect').getAttribute('data-current') || '0');
+        var assignedTo = document.getElementById('statusSelect').getAttribute('data-assigned') || '';
+        var callerId   = '@callerUserId';
+        var isSA       = @(isSuperAdmin ? "true" : "false");
+        var cancelReason = document.getElementById('cancelReasonInput')?.value.trim() ?? '';
+
+        // Admin kısıtlaması
+        if (!isSA) {
+            if (assignedTo && assignedTo !== callerId) {
+                Swal.fire({ icon:'warning', title:'Yetkisiz', text:'Bu ticket başka birine atanmış, müdahale edemezsiniz.' });
+                return;
+            }
+            if (!assignedTo && status !== '1') {
+                Swal.fire({ icon:'warning', title:'Uyarı', text:'Önce ticketı üzerinize alın.' });
+                return;
+            }
+        }
+
+        if (currentSt === 0 && status !== '0' && status !== '1') {
+            Swal.fire({ icon:'warning', title:'Önce İşleme Alın', text:'Ticket kapatılmadan önce "İşlemde" statüsüne alınmalıdır.' });
+            return;
+        }
+        if ((status === '2' || status === '3') && !note) {
+            Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Kapatma için çözüm notu zorunludur.' });
+            return;
+        }
+        if (status === '6' && !cancelReason) {
+            Swal.fire({ icon:'warning', title:'Eksik Alan', text:'İptal için neden zorunludur.' });
+            return;
+        }
+
+        var form = document.createElement('form');
+        form.method = 'POST';
+    form.action = '/AdminTicket/DurumGuncelle/' + statusTicketId;
+
+        [
+            ['__RequestVerificationToken', token],
+            ['Status',        status],
+            ['SolutionNote',  note],
+            ['WorkingMinute', minutes],
+            ['CancelReason',  cancelReason]
+        ].forEach(function(pair) {
+            var inp = document.createElement('input');
+            inp.name = pair[0]; inp.value = pair[1];
+            form.appendChild(inp);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+    document.addEventListener('keydown', function(e) {
+        if (e.key==='Escape') { closeAssignModal(); closeStatusModal(); }
+    });
+</script>

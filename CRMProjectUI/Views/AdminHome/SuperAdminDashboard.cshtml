@@ -1,0 +1,745 @@
+﻿@model CRMProjectUI.Models.SuperAdminDashboardDto
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+
+    var stats = Model?.Stats;
+    var urgent = Model?.UrgentTickets ?? new List<CRMProjectUI.Models.TicketListDto>();
+    var expiring = Model?.ExpiringContracts ?? new List<CRMProjectUI.Models.ExpiringContractDto>();
+    int lowTicket = Model?.LowTicketCount ?? 0;
+
+    string fullName = User.FindFirst("FullName")?.Value ?? "Süper Admin";
+    string tarih = DateTime.Now.ToString("dddd, dd MMMM yyyy",
+                          new System.Globalization.CultureInfo("tr-TR"));
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --ink: #0f1117;
+        --ink-soft: #4a4f5e;
+        --surface: #f7f8fc;
+        --white: #fff;
+        --accent: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --purple: #7c3aed;
+        --border: #e2e8f0;
+        --radius: 12px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.10);
+    }
+
+    .db-page {
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .db-banner {
+        background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+        border-radius: 16px;
+        padding: 22px 28px;
+        color: #fff;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px rgba(37,99,235,.2);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+        .db-banner h5 {
+            font-family: 'Syne',sans-serif;
+            font-weight: 800;
+            margin: 0;
+            font-size: 1.15rem;
+        }
+
+        .db-banner p {
+            opacity: .8;
+            margin: 0;
+            font-size: .83rem;
+            margin-top: 3px;
+        }
+
+    .db-banner-stats {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .db-banner-stat {
+        text-align: center;
+    }
+
+    .db-banner-stat-val {
+        font-family: 'Syne',sans-serif;
+        font-size: 1.6rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .db-banner-stat-lbl {
+        font-size: .7rem;
+        opacity: .75;
+        margin-top: 2px;
+    }
+
+    .db-stats {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+
+    .db-stat {
+        flex: 1;
+        min-width: 120px;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: box-shadow .2s, transform .2s;
+    }
+
+        .db-stat:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+    .db-stat-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .88rem;
+        flex-shrink: 0;
+    }
+
+        .db-stat-icon.blue {
+            background: #eff6ff;
+            color: var(--accent);
+        }
+
+        .db-stat-icon.gray {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .db-stat-icon.indigo {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .db-stat-icon.green {
+            background: #f0fdf4;
+            color: var(--success);
+        }
+
+        .db-stat-icon.red {
+            background: #fef2f2;
+            color: var(--danger);
+        }
+
+        .db-stat-icon.amber {
+            background: #fffbeb;
+            color: var(--warning);
+        }
+
+        .db-stat-icon.purple {
+            background: #f5f3ff;
+            color: var(--purple);
+        }
+
+    .db-stat-label {
+        font-size: .67rem;
+        color: var(--ink-soft);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 2px;
+    }
+
+    .db-stat-value {
+        font-family: 'Syne',sans-serif;
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--ink);
+        line-height: 1;
+    }
+
+    .db-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 18px;
+        overflow: hidden;
+    }
+
+    .db-card-header {
+        padding: 13px 18px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+        .db-card-header h6 {
+            margin: 0;
+            font-weight: 700;
+            font-size: .88rem;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+    .db-card-body {
+        padding: 16px 18px;
+    }
+
+    .db-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .db-table thead th {
+            font-size: .67rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--ink-soft);
+            padding: 9px 12px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .db-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .15s;
+            cursor: pointer;
+        }
+
+            .db-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .db-table tbody tr:hover {
+                background: #f8fafd;
+            }
+
+        .db-table tbody td {
+            padding: 9px 12px;
+            vertical-align: middle;
+            font-size: .82rem;
+        }
+
+    .b-status {
+        font-size: .68rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        white-space: nowrap;
+    }
+
+        .b-status::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+    .bs-0 {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+        .bs-0::before {
+            background: #94a3b8;
+        }
+
+    .bs-1 {
+        background: #eef2ff;
+        color: #3730a3;
+    }
+
+        .bs-1::before {
+            background: #4f46e5;
+        }
+
+    .bs-2 {
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+        .bs-2::before {
+            background: var(--success);
+        }
+
+    .bs-3 {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+        .bs-3::before {
+            background: var(--danger);
+        }
+
+    .bs-4 {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+        .bs-4::before {
+            background: var(--warning);
+        }
+
+    .bs-5 {
+        background: #f5f3ff;
+        color: #5b21b6;
+    }
+
+        .bs-5::before {
+            background: var(--purple);
+        }
+
+    .b-priority {
+        font-size: .67rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 6px;
+        white-space: nowrap;
+    }
+
+    .bp-1 {
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+    .bp-2 {
+        background: #eff6ff;
+        color: #1e40af;
+    }
+
+    .bp-3 {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .bp-4 {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+    .db-contract-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .db-contract-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+    .db-contract-name {
+        font-size: .83rem;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    .db-contract-date {
+        font-size: .73rem;
+        color: var(--ink-soft);
+        margin-top: 1px;
+    }
+
+    .db-days-pill {
+        font-size: .72rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .db-empty {
+        text-align: center;
+        padding: 28px;
+        color: var(--ink-soft);
+    }
+
+        .db-empty i {
+            font-size: 2rem;
+            opacity: .2;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+    .db-alert-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px 18px;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 14px;
+    }
+
+    .db-alert-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+</style>
+
+<div class="db-page">
+
+    <!-- BANNER -->
+    <div class="db-banner">
+        <div>
+            <h5><i class="fas fa-tachometer-alt mr-2"></i>Hoşgeldiniz, @fullName!</h5>
+            <p>@tarih — Genel sistem özeti</p>
+        </div>
+        <div class="db-banner-stats">
+            <div class="db-banner-stat">
+                <div class="db-banner-stat-val">@(stats?.Total ?? 0)</div>
+                <div class="db-banner-stat-lbl">Toplam Ticket</div>
+            </div>
+            <div class="db-banner-stat">
+                <div class="db-banner-stat-val">@(stats?.TodayOpened ?? 0)</div>
+                <div class="db-banner-stat-lbl">Bugün Açılan</div>
+            </div>
+            <div class="db-banner-stat">
+                <div class="db-banner-stat-val">@(stats?.TodayResolved ?? 0)</div>
+                <div class="db-banner-stat-lbl">Bugün Çözülen</div>
+            </div>
+            <div class="db-banner-stat">
+                <div class="db-banner-stat-val">@(stats?.AvgWorkingDisplay ?? "-")</div>
+                <div class="db-banner-stat-lbl">Ort. Süre</div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model == null)
+    {
+        <div class="alert alert-warning" style="border-radius:var(--radius);">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Dashboard verileri yüklenemedi. Lütfen sayfayı yenileyin.
+        </div>
+    }
+    else
+    {
+        <!-- UYARI KARTLARI -->
+        <div class="row mb-2">
+            @if (expiring.Any())
+            {
+                <div class="col-md-6 mb-2">
+                    <div class="db-alert-card" style="border-color:#fcd34d;">
+                        <div class="db-alert-icon" style="background:#fffbeb; color:var(--warning);">
+                            <i class="fas fa-calendar-times"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:700; font-size:.88rem; color:var(--ink);">
+                                @expiring.Count() müşterinin sözleşmesi bitiyor
+                            </div>
+                            <div style="font-size:.75rem; color:var(--ink-soft);">10 gün içinde sona erecek sözleşmeler var</div>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (lowTicket > 0)
+            {
+                <div class="col-md-6 mb-2">
+                    <div class="db-alert-card" style="border-color:#fca5a5;">
+                        <div class="db-alert-icon" style="background:#fef2f2; color:var(--danger);">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:700; font-size:.88rem; color:var(--ink);">
+                                @lowTicket müşterinin ticket hakkı azaldı
+                            </div>
+                            <div style="font-size:.75rem; color:var(--ink-soft);">10'dan az ticket hakkı kalan müşteriler</div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- STAT CARDS — Satır 1 -->
+        <div class="db-stats">
+            <div class="db-stat">
+                <div class="db-stat-icon blue"><i class="fas fa-ticket-alt"></i></div>
+                <div><div class="db-stat-label">Toplam</div><div class="db-stat-value">@(stats?.Total ?? 0)</div></div>
+            </div>
+            <div class="db-stat">
+                <div class="db-stat-icon red"><i class="fas fa-folder-open"></i></div>
+                <div><div class="db-stat-label">Açık</div><div class="db-stat-value" style="color:var(--danger);">@(stats?.OpenCount ?? 0)</div></div>
+            </div>
+            <div class="db-stat">
+                <div class="db-stat-icon gray"><i class="fas fa-clock"></i></div>
+                <div><div class="db-stat-label">Beklemede</div><div class="db-stat-value" style="color:#64748b;">@(stats?.Waiting ?? 0)</div></div>
+            </div>
+            <div class="db-stat">
+                <div class="db-stat-icon indigo"><i class="fas fa-spinner"></i></div>
+                <div><div class="db-stat-label">İşlemde</div><div class="db-stat-value" style="color:#4f46e5;">@(stats?.InProgress ?? 0)</div></div>
+            </div>
+            <div class="db-stat">
+                <div class="db-stat-icon green"><i class="fas fa-check-circle"></i></div>
+                <div><div class="db-stat-label">Çözüldü</div><div class="db-stat-value" style="color:var(--success);">@(stats?.Resolved ?? 0)</div></div>
+            </div>
+            <div class="db-stat">
+                <div class="db-stat-icon red"><i class="fas fa-times-circle"></i></div>
+                <div><div class="db-stat-label">Çözülemedi</div><div class="db-stat-value" style="color:var(--danger);">@(stats?.Failed ?? 0)</div></div>
+            </div>
+        </div>
+
+        <!-- STAT CARDS — Satır 2 -->
+        <div class="db-stats">
+            <div class="db-stat">
+                <div class="db-stat-icon amber"><i class="fas fa-hourglass-half"></i></div>
+                <div><div class="db-stat-label">Bekliyor</div><div class="db-stat-value" style="color:var(--warning);">@(stats?.WaitingCustomer ?? 0)</div></div>
+            </div>
+            <div class="db-stat">
+                <div class="db-stat-icon red"><i class="fas fa-fire"></i></div>
+                <div><div class="db-stat-label">Kritik Açık</div><div class="db-stat-value" style="color:var(--danger);">@(stats?.CriticalOpen ?? 0)</div></div>
+            </div>
+            <div class="db-stat">
+                <div class="db-stat-icon blue"><i class="fas fa-calendar-day"></i></div>
+                <div><div class="db-stat-label">Bugün Açılan</div><div class="db-stat-value" style="color:var(--accent);">@(stats?.TodayOpened ?? 0)</div></div>
+            </div>
+            <div class="db-stat">
+                <div class="db-stat-icon green"><i class="fas fa-calendar-check"></i></div>
+                <div><div class="db-stat-label">Bugün Çözülen</div><div class="db-stat-value" style="color:var(--success);">@(stats?.TodayResolved ?? 0)</div></div>
+            </div>
+            <div class="db-stat">
+                <div class="db-stat-icon indigo"><i class="fas fa-calendar-alt"></i></div>
+                <div><div class="db-stat-label">Bu Ay Açılan</div><div class="db-stat-value" style="color:#4f46e5;">@(stats?.ThisMonthOpened ?? 0)</div></div>
+            </div>
+            <div class="db-stat">
+                <div class="db-stat-icon purple"><i class="fas fa-chart-line"></i></div>
+                <div><div class="db-stat-label">Bu Ay Çözülen</div><div class="db-stat-value" style="color:var(--purple);">@(stats?.ThisMonthResolved ?? 0)</div></div>
+            </div>
+        </div>
+
+        <!-- GRAFİKLER -->
+        <div class="row">
+            <div class="col-md-5 mb-3">
+                <div class="db-card h-100">
+                    <div class="db-card-header">
+                        <h6><i class="fas fa-chart-pie" style="color:var(--accent);"></i> Durum Dağılımı</h6>
+                    </div>
+                    <div class="db-card-body d-flex align-items-center justify-content-center">
+                        <canvas id="statusPieChart" style="max-height:220px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7 mb-3">
+                <div class="db-card h-100">
+                    <div class="db-card-header">
+                        <h6><i class="fas fa-chart-bar" style="color:var(--accent);"></i> Son 7 Günde Açılan Ticketlar</h6>
+                    </div>
+                    <div class="db-card-body">
+                        <canvas id="dailyBarChart" style="max-height:220px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KRİTİK TICKETLAR + SÖZLEŞME -->
+        <div class="row">
+            <div class="col-md-7 mb-3">
+                <div class="db-card">
+                    <div class="db-card-header">
+                        <h6><i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i> Kritik / Yüksek Öncelikli Ticketlar</h6>
+                        <a asp-action="Liste" asp-controller="AdminTicket"
+                           style="font-size:.76rem; color:var(--accent); text-decoration:none; font-weight:600;">
+                            Tümünü Gör <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    @if (!urgent.Any())
+                    {
+                        <div class="db-empty">
+                            <i class="fas fa-check-circle" style="color:var(--success); opacity:1;"></i>
+                            Kritik ticket yok 🎉
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="db-table">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Başlık</th>
+                                        <th>Müşteri</th>
+                                        <th>Öncelik</th>
+                                        <th>Durum</th>
+                                        <th>Geçen Süre</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var t in urgent)
+                                    {
+                                        string pClass = $"bp-{t.Priority}";
+                                        string sClass = $"bs-{t.Status}";
+                                        <tr onclick="window.location='/AdminTicket/Detay/@t.ID'">
+                                            <td style="font-family:monospace; font-size:.76rem; color:var(--ink-soft);">@t.TicketNo</td>
+                                            <td style="max-width:180px;">
+                                                <span style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; max-width:170px;" title="@t.Title">
+                                                    @(t.Title.Length > 32 ? t.Title.Substring(0, 32) + "…" : t.Title)
+                                                </span>
+                                            </td>
+                                            <td style="font-size:.78rem;">@t.CustomerName</td>
+                                            <td><span class="b-priority @pClass">@t.PriorityText</span></td>
+                                            <td><span class="b-status @sClass">@t.StatusText</span></td>
+                                            <td style="font-size:.75rem; color:var(--ink-soft);">@t.ElapsedText</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="col-md-5 mb-3">
+                <div class="db-card">
+                    <div class="db-card-header">
+                        <h6><i class="fas fa-calendar-times" style="color:var(--warning);"></i> Sözleşmesi Yaklaşanlar (10 Gün)</h6>
+                    </div>
+                    <div class="db-card-body" style="padding:8px 18px;">
+                        @if (!expiring.Any())
+                        {
+                            <div class="db-empty">
+                                <i class="fas fa-calendar-check" style="color:var(--success); opacity:1;"></i>
+                                10 gün içinde biten sözleşme yok
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var c in expiring)
+                            {
+                                string bgColor = c.DaysLeft <= 3 ? "#fef2f2" : c.DaysLeft <= 7 ? "#fffbeb" : "#eff6ff";
+                                string textColor = c.DaysLeft <= 3 ? "#991b1b" : c.DaysLeft <= 7 ? "#92400e" : "#1d4ed8";
+                                <div class="db-contract-item">
+                                    <div>
+                                        <div class="db-contract-name">@(c.ShortName ?? c.CustomerName)</div>
+                                        <div class="db-contract-date">
+                                            <i class="fas fa-calendar mr-1"></i>@c.ContractEndDate?.ToString("dd.MM.yyyy")
+                                        </div>
+                                    </div>
+                                    <span class="db-days-pill" style="background:@bgColor; color:@textColor;">
+                                        @c.DaysLeft gün
+                                    </span>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // ── PASTA — Durum Dağılımı ──
+            @if (Model?.StatusDistribution?.Any() == true)
+            {
+                    var labels = Model.StatusDistribution.Select(s => s.StatusText).ToArray();
+                    var data = Model.StatusDistribution.Select(s => s.Count).ToArray();
+                    var colors = Model.StatusDistribution.Select(s => s.Color).ToArray();
+                    <text>
+                    new Chart(document.getElementById('statusPieChart'), {
+                        type: 'doughnut',
+                        data: {
+                            labels:   @Html.Raw(System.Text.Json.JsonSerializer.Serialize(labels)),
+                            datasets: [{
+                                data:            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(data)),
+                                backgroundColor: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(colors)),
+                                borderWidth: 2, borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { position:'bottom', labels:{ font:{ size:11 }, padding:12 } } },
+                            cutout: '62%'
+                        }
+                    });
+                    </text>
+            }
+            else
+            {
+                    <text>
+                    document.getElementById('statusPieChart').parentElement.innerHTML =
+                        '<p style="color:#94a3b8;text-align:center;padding:32px 0;font-size:.83rem;">Henüz veri yok</p>';
+                    </text>
+            }
+
+            // ── BAR — Son 7 Gün ──
+            @if (Model?.DailyCounts?.Any() == true)
+            {
+                    var dates = Model.DailyCounts.Select(d => d.Date.ToString("dd MMM", new System.Globalization.CultureInfo("tr-TR"))).ToArray();
+                    var counts = Model.DailyCounts.Select(d => d.Count).ToArray();
+                    <text>
+                    new Chart(document.getElementById('dailyBarChart'), {
+                        type: 'bar',
+                        data: {
+                            labels:   @Html.Raw(System.Text.Json.JsonSerializer.Serialize(dates)),
+                            datasets: [{
+                                label: 'Açılan Ticket',
+                                data:  @Html.Raw(System.Text.Json.JsonSerializer.Serialize(counts)),
+                                backgroundColor: 'rgba(37,99,235,.7)',
+                                borderColor:     'rgba(37,99,235,1)',
+                                borderWidth: 1, borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend:{ display:false } },
+                            scales: {
+                                y: { beginAtZero:true, ticks:{ stepSize:1, font:{ size:11 } }, grid:{ color:'rgba(0,0,0,.04)' } },
+                                x: { ticks:{ font:{ size:11 } }, grid:{ display:false } }
+                            }
+                        }
+                    });
+                    </text>
+            }
+            else
+            {
+                    <text>
+                    document.getElementById('dailyBarChart').parentElement.innerHTML =
+                        '<p style="color:#94a3b8;text-align:center;padding:32px 0;font-size:.83rem;">Son 7 günde ticket açılmamış</p>';
+                    </text>
+            }
+        });
+    </script>
+}

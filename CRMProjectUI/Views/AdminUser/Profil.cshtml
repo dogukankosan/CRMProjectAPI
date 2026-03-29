@@ -1,0 +1,1051 @@
+﻿@model CRMProjectUI.Models.ProfilUpdateDto
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    ViewData["Title"] = "Profilim";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
+    string? currentPic = ViewBag.CurrentPic as string;
+    string fullName = Model?.FullName ?? Model?.Username ?? "?";
+    string initials = string.Join("", fullName
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Take(2)
+        .Select(w => w[0].ToString().ToUpper()));
+}
+<style>
+    .profil-wrap {
+        max-width: 780px;
+        margin: 0 auto;
+    }
+
+    .profil-hero {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        border-radius: 20px;
+        padding: 40px;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        gap: 32px;
+    }
+
+        .profil-hero::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(255,107,0,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+    .avatar-zone {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    /* Resim VARSA: mor halkali ring */
+    .avatar-ring {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        padding: 3px;
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        box-shadow: 0 8px 32px rgba(124,58,237,0.45);
+    }
+
+        /* Resim YOKSA: halka yok, sade mor daire */
+        .avatar-ring.no-image {
+            padding: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+    .avatar-inner {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        overflow: hidden;
+        background: #7c3aed;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .avatar-inner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .avatar-placeholder {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: 1px;
+        user-select: none;
+        line-height: 1;
+    }
+
+    .avatar-edit-btn {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        width: 30px;
+        height: 30px;
+        background: #7c3aed;
+        border: 2px solid #1a1a2e;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+        .avatar-edit-btn:hover {
+            transform: scale(1.15);
+        }
+
+        .avatar-edit-btn i {
+            color: #fff;
+            font-size: 0.7rem;
+        }
+
+    .hero-info h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 4px;
+    }
+
+    .hero-info .hero-meta {
+        font-size: 0.85rem;
+        color: rgba(255,255,255,0.5);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .hero-info .hero-meta i {
+            color: #ff9500;
+        }
+
+    .profil-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.07);
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .profil-card-header {
+        padding: 16px 28px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #333;
+    }
+
+        .profil-card-header i {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #fff;
+        }
+
+        .profil-card-header .icon-orange {
+            background: linear-gradient(135deg, #ff6b00, #ff9500);
+        }
+
+        .profil-card-header .icon-blue {
+            background: linear-gradient(135deg, #0066ff, #0099ff);
+        }
+
+        .profil-card-header .icon-green {
+            background: linear-gradient(135deg, #00c853, #69f0ae);
+        }
+
+    .profil-card-body {
+        padding: 24px 28px;
+    }
+
+    .form-row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .field-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .field-input {
+        padding: 11px 14px;
+        border: 1.5px solid #e8e8e8;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        color: #222;
+        transition: all 0.2s;
+        background: #fafafa;
+        outline: none;
+    }
+
+        .field-input:focus {
+            border-color: #ff6b00;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(255,107,0,0.08);
+        }
+
+        .field-input.input-error {
+            border-color: #ff4757;
+            background: #fff5f5;
+        }
+
+    .pass-wrap {
+        position: relative;
+    }
+
+        .pass-wrap .field-input {
+            padding-right: 42px;
+        }
+
+    .pass-eye {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #bbb;
+        cursor: pointer;
+        padding: 4px;
+        font-size: 0.9rem;
+    }
+
+        .pass-eye:hover {
+            color: #ff6b00;
+        }
+
+    .strength-bar {
+        height: 3px;
+        border-radius: 2px;
+        background: #eee;
+        margin-top: 6px;
+        overflow: hidden;
+    }
+
+    .strength-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.3s, background 0.3s;
+        width: 0%;
+    }
+
+    .strength-text {
+        font-size: 0.72rem;
+        margin-top: 3px;
+    }
+
+    .pic-preview-area {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: #f8f8f8;
+        border-radius: 10px;
+        border: 1.5px dashed #e0e0e0;
+        cursor: pointer;
+        transition: border-color 0.2s;
+    }
+
+        .pic-preview-area:hover {
+            border-color: #7c3aed;
+        }
+
+    .pic-thumb {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #a855f7;
+        flex-shrink: 0;
+    }
+
+    /* Kart placeholder da mor+baş harf */
+    .pic-thumb-placeholder {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 800;
+        flex-shrink: 0;
+        letter-spacing: 1px;
+        user-select: none;
+    }
+
+    .pic-upload-info strong {
+        font-size: 0.85rem;
+        color: #333;
+        display: block;
+    }
+
+    .pic-upload-info span {
+        font-size: 0.75rem;
+        color: #aaa;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #ff6b00, #ff9500);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 13px 36px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 6px 20px rgba(255,107,0,0.3);
+        transition: all 0.25s;
+    }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 28px rgba(255,107,0,0.4);
+            filter: brightness(1.05);
+        }
+
+        .btn-save:disabled {
+            opacity: 0.7;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+    .btn-cancel {
+        background: #f5f5f5;
+        color: #666;
+        border: none;
+        border-radius: 12px;
+        padding: 13px 28px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s;
+    }
+
+        .btn-cancel:hover {
+            background: #ebebeb;
+            color: #333;
+        }
+
+    .alert-box {
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        font-size: 0.9rem;
+    }
+
+    .alert-success {
+        background: rgba(0,200,83,0.1);
+        border: 1px solid rgba(0,200,83,0.3);
+        color: #00873a;
+    }
+
+    .alert-error {
+        background: rgba(255,71,87,0.08);
+        border: 1px solid rgba(255,71,87,0.25);
+        color: #c0392b;
+    }
+
+    .val-error {
+        font-size: 0.78rem;
+        color: #ff4757;
+        margin-top: 3px;
+    }
+
+    @@media (max-width: 600px) {
+        .profil-hero {
+            flex-direction: column;
+            text-align: center;
+            padding: 28px 20px;
+        }
+
+        .form-row-2 {
+            grid-template-columns: 1fr;
+        }
+
+        .profil-card-body {
+            padding: 18px;
+        }
+    }
+</style>
+
+<div class="section-body">
+    <div class="profil-wrap">
+
+        @* Mesajlar *@
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert-box alert-success">
+                <i class="fas fa-check-circle mt-1"></i>
+                <span>@TempData["Success"]</span>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert-box alert-error">
+                <i class="fas fa-exclamation-circle mt-1"></i>
+                <span>@TempData["Error"]</span>
+            </div>
+        }
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert-box alert-error">
+                <i class="fas fa-exclamation-triangle mt-1"></i>
+                <div>
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <div>@error.ErrorMessage</div>
+                    }
+                </div>
+            </div>
+        }
+
+        <form asp-action="Profil" asp-controller="AdminKullanici" method="post"
+              enctype="multipart/form-data" id="profilForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Picture" id="hiddenPicture" />
+
+            @* HERO *@
+            <div class="profil-hero">
+                <div class="avatar-zone">
+                    <div class="avatar-ring @(string.IsNullOrEmpty(currentPic) ? "no-image" : "")">
+                        <div class="avatar-inner" id="avatarInner">
+                            @if (!string.IsNullOrEmpty(currentPic))
+                            {
+                                <img src="@($"{apiBase}{currentPic}")" id="avatarImg" alt="Profil" />
+                            }
+                            else
+                            {
+                                <span class="avatar-placeholder" id="avatarPlaceholder">@initials</span>
+                            }
+                        </div>
+                    </div>
+                    <label for="PictureFile" class="avatar-edit-btn" title="Fotoğraf değiştir">
+                        <i class="fas fa-camera"></i>
+                    </label>
+                    <input type="file" name="PictureFile" id="PictureFile"
+                           accept=".png,.jpg,.jpeg,.webp" style="display:none;" />
+                </div>
+                <div class="hero-info">
+                    <h2 id="heroName">@fullName</h2>
+                    <div class="hero-meta">
+                        <i class="fas fa-envelope"></i>
+                        <span id="heroEmail">@Model?.EMailAddress</span>
+                    </div>
+                    <div class="hero-meta mt-1">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Profil Ayarları</span>
+                    </div>
+                </div>
+            </div>
+
+            @* KİŞİSEL BİLGİLER *@
+            <div class="profil-card">
+                <div class="profil-card-header">
+                    <i class="fas fa-user icon-orange"></i>
+                    Kişisel Bilgiler
+                </div>
+                <div class="profil-card-body">
+                    <div class="form-row-2">
+                        <div class="field-group">
+                            <label class="field-label">Ad Soyad <span style="color:#ff4757">*</span></label>
+                            <input asp-for="FullName" class="field-input" id="inputFullName"
+                                   placeholder="Ad Soyad" maxlength="100" />
+                            <span asp-validation-for="FullName" class="val-error"></span>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Kullanıcı Adı <span style="color:#ff4757">*</span></label>
+                            <input asp-for="Username" class="field-input" id="inputUsername"
+                                   placeholder="kullanici_adi" maxlength="50" />
+                            <span asp-validation-for="Username" class="val-error"></span>
+                        </div>
+                    </div>
+                    <div class="form-row-2 mt-3">
+                        <div class="field-group">
+                            <label class="field-label">E-posta <span style="color:#ff4757">*</span></label>
+                            <input asp-for="EMailAddress" type="email" class="field-input" id="inputEmail"
+                                   placeholder="ornek@mail.com" maxlength="100" />
+                            <span asp-validation-for="EMailAddress" class="val-error"></span>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Telefon<span style="color:#ff4757"> *</span></label>
+                            <div style="display:flex; gap:8px;">
+                                <select  id="phoneCountryCode" style="
+            width: 160px;
+            flex-shrink: 0;
+            padding: 11px 10px;
+            border: 1.5px solid #e8e8e8;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #222;
+            background: #fafafa;
+            outline: none;
+            cursor: pointer;">
+                                    <option value="+90" selected>🇹🇷 +90</option>
+                                    <option value="+1">🇺🇸 +1</option>
+                                    <option value="+44">🇬🇧 +44</option>
+                                    <option value="+49">🇩🇪 +49</option>
+                                    <option value="+33">🇫🇷 +33</option>
+                                    <option value="+39">🇮🇹 +39</option>
+                                    <option value="+34">🇪🇸 +34</option>
+                                    <option value="+31">🇳🇱 +31</option>
+                                    <option value="+32">🇧🇪 +32</option>
+                                    <option value="+41">🇨🇭 +41</option>
+                                    <option value="+43">🇦🇹 +43</option>
+                                    <option value="+46">🇸🇪 +46</option>
+                                    <option value="+47">🇳🇴 +47</option>
+                                    <option value="+45">🇩🇰 +45</option>
+                                    <option value="+358">🇫🇮 +358</option>
+                                    <option value="+48">🇵🇱 +48</option>
+                                    <option value="+7">🇷🇺 +7</option>
+                                    <option value="+380">🇺🇦 +380</option>
+                                    <option value="+40">🇷🇴 +40</option>
+                                    <option value="+359">🇧🇬 +359</option>
+                                    <option value="+30">🇬🇷 +30</option>
+                                    <option value="+36">🇭🇺 +36</option>
+                                    <option value="+420">🇨🇿 +420</option>
+                                    <option value="+351">🇵🇹 +351</option>
+                                    <option value="+353">🇮🇪 +353</option>
+                                    <option value="+86">🇨🇳 +86</option>
+                                    <option value="+81">🇯🇵 +81</option>
+                                    <option value="+82">🇰🇷 +82</option>
+                                    <option value="+91">🇮🇳 +91</option>
+                                    <option value="+92">🇵🇰 +92</option>
+                                    <option value="+93">🇦🇫 +93</option>
+                                    <option value="+62">🇮🇩 +62</option>
+                                    <option value="+60">🇲🇾 +60</option>
+                                    <option value="+65">🇸🇬 +65</option>
+                                    <option value="+66">🇹🇭 +66</option>
+                                    <option value="+84">🇻🇳 +84</option>
+                                    <option value="+63">🇵🇭 +63</option>
+                                    <option value="+880">🇧🇩 +880</option>
+                                    <option value="+94">🇱🇰 +94</option>
+                                    <option value="+98">🇮🇷 +98</option>
+                                    <option value="+964">🇮🇶 +964</option>
+                                    <option value="+966">🇸🇦 +966</option>
+                                    <option value="+971">🇦🇪 +971</option>
+                                    <option value="+972">🇮🇱 +972</option>
+                                    <option value="+961">🇱🇧 +961</option>
+                                    <option value="+962">🇯🇴 +962</option>
+                                    <option value="+974">🇶🇦 +974</option>
+                                    <option value="+965">🇰🇼 +965</option>
+                                    <option value="+973">🇧🇭 +973</option>
+                                    <option value="+20">🇪🇬 +20</option>
+                                    <option value="+27">🇿🇦 +27</option>
+                                    <option value="+234">🇳🇬 +234</option>
+                                    <option value="+254">🇰🇪 +254</option>
+                                    <option value="+212">🇲🇦 +212</option>
+                                    <option value="+213">🇩🇿 +213</option>
+                                    <option value="+55">🇧🇷 +55</option>
+                                    <option value="+52">🇲🇽 +52</option>
+                                    <option value="+54">🇦🇷 +54</option>
+                                    <option value="+56">🇨🇱 +56</option>
+                                    <option value="+57">🇨🇴 +57</option>
+                                    <option value="+51">🇵🇪 +51</option>
+                                    <option value="+58">🇻🇪 +58</option>
+                                    <option value="+61">🇦🇺 +61</option>
+                                    <option value="+64">🇳🇿 +64</option>
+                                    <option value="+994">🇦🇿 +994</option>
+                                    <option value="+374">🇦🇲 +374</option>
+                                    <option value="+995">🇬🇪 +995</option>
+                                    <option value="+7">🇰🇿 +7</option>
+                                    <option value="+998">🇺🇿 +998</option>
+                                    <option value="+993">🇹🇲 +993</option>
+                                    <option value="+992">🇹🇯 +992</option>
+                                    <option value="+996">🇰🇬 +996</option>
+                                    <option value="+976">🇲🇳 +976</option>
+                                    <option value="+886">🇹🇼 +886</option>
+                                    <option value="+852">🇭🇰 +852</option>
+                                    <option value="+853">🇲🇴 +853</option>
+                                </select>
+                                <input asp-for="PhoneNumber" required class="field-input" id="inputPhone"
+                                       placeholder="5xx xxx xx xx" maxlength="20"
+                                       style="flex:1;" />
+                            </div>
+                            <span asp-validation-for="PhoneNumber" class="val-error"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* FOTOĞRAF *@
+            <div class="profil-card">
+                <div class="profil-card-header">
+                    <i class="fas fa-image icon-blue"></i>
+                    Profil Fotoğrafı
+                </div>
+                <div class="profil-card-body">
+                    <label for="PictureFile" class="pic-preview-area" id="picDropArea">
+                        @if (!string.IsNullOrEmpty(currentPic))
+                        {
+                            <img src="@($"{apiBase}{currentPic}")" class="pic-thumb" id="picThumb" alt="Profil" />
+                        }
+                        else
+                        {
+                            <div class="pic-thumb-placeholder" id="picThumbPlaceholder">@initials</div>
+                        }
+                        <div class="pic-upload-info">
+                            <strong id="picFileName">Fotoğraf seç veya sürükle</strong>
+                            <span>PNG, JPG, WEBP — Maks 5MB</span>
+                        </div>
+                        <i class="fas fa-cloud-upload-alt ml-auto" style="color:#ddd; font-size:1.4rem;"></i>
+                    </label>
+
+                    @if (!string.IsNullOrEmpty(currentPic))
+                    {
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-sm btn-danger" id="btnResimSil" onclick="resimSil()">
+                                <i class="fas fa-trash"></i> Mevcut Fotoğrafı Sil
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* ŞİFRE *@
+            <div class="profil-card">
+                <div class="profil-card-header">
+                    <i class="fas fa-lock icon-green"></i>
+                    Şifre Değiştir
+                    <span style="font-size:0.78rem;color:#aaa;font-weight:400;margin-left:6px;">(boş bırakırsanız değişmez)</span>
+                </div>
+                <div class="profil-card-body">
+                    <div class="form-row-2">
+                        <div class="field-group">
+                            <label class="field-label">Yeni Şifre</label>
+                            <div class="pass-wrap">
+                                <input asp-for="NewPassword" type="password" class="field-input"
+                                       id="newPass" placeholder="••••••••" maxlength="100" autocomplete="new-password" />
+                                <button type="button" class="pass-eye" onclick="togglePass('newPass','eyeNew')">
+                                    <i class="fas fa-eye" id="eyeNew"></i>
+                                </button>
+                            </div>
+                            <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+                            <div class="strength-text" id="strengthText"></div>
+                            <span asp-validation-for="NewPassword" class="val-error"></span>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Şifre Tekrar</label>
+                            <div class="pass-wrap">
+                                <input asp-for="NewPasswordConfirm" type="password" class="field-input"
+                                       id="confirmPass" placeholder="••••••••" maxlength="100" autocomplete="new-password" />
+                                <button type="button" class="pass-eye" onclick="togglePass('confirmPass','eyeConfirm')">
+                                    <i class="fas fa-eye" id="eyeConfirm"></i>
+                                </button>
+                            </div>
+                            <div class="val-error" id="passMatchError" style="display:none;">Şifreler eşleşmiyor</div>
+                            <span asp-validation-for="NewPasswordConfirm" class="val-error"></span>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
+            @* BUTONLAR *@
+            <div class="d-flex align-items-center justify-content-end mb-4" style="gap:12px;">
+                <a href="/" class="btn-cancel">
+                    <i class="fas fa-times"></i> İptal
+                </a>
+                <button type="submit" class="btn-save" id="submitBtn">
+                    <i class="fas fa-save"></i>
+                    <span id="btnText">Değişiklikleri Kaydet</span>
+                    <span id="btnSpinner" style="display:none;">
+                        <i class="fas fa-spinner fa-spin"></i> Kaydediliyor...
+                    </span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    // ── Telefon Formatları ──
+    var phoneFormats = {
+        "+90":  { max: 10, pattern: [3,3,2,2] },
+        "+1":   { max: 10, pattern: [3,3,4] },
+        "+44":  { max: 10, pattern: [4,3,3] },
+        "+49":  { max: 11, pattern: [3,3,2,3] },
+        "+33":  { max: 9,  pattern: [1,2,2,2,2] },
+        "+39":  { max: 10, pattern: [3,3,4] },
+        "+7":   { max: 10, pattern: [3,2,2,3] },
+        "+86":  { max: 11, pattern: [3,4,4] },
+        "+91":  { max: 10, pattern: [4,3,3] },
+        "+81":  { max: 10, pattern: [3,4,3] },
+        "+82":  { max: 10, pattern: [3,3,4] },
+        "+966": { max: 9,  pattern: [2,3,4] },
+        "+971": { max: 9,  pattern: [2,3,4] },
+        "+20":  { max: 10, pattern: [2,3,3,2] },
+        "+27":  { max: 9,  pattern: [2,3,4] },
+        "+55":  { max: 11, pattern: [2,5,4] },
+        "+52":  { max: 10, pattern: [2,4,4] },
+        "+34":  { max: 9,  pattern: [3,3,3] },
+        "+46":  { max: 10, pattern: [3,3,4] },
+        "+41":  { max: 9,  pattern: [2,3,4] },
+        "+31":  { max: 9,  pattern: [3,3,3] },
+        "+32":  { max: 9,  pattern: [3,3,3] },
+        "+43":  { max: 10, pattern: [3,3,4] },
+        "+47":  { max: 8,  pattern: [2,2,2,2] },
+        "+45":  { max: 8,  pattern: [2,2,2,2] },
+        "+48":  { max: 9,  pattern: [3,3,3] },
+        "+351": { max: 9,  pattern: [3,3,3] },
+        "+353": { max: 9,  pattern: [3,3,3] },
+        "+358": { max: 10, pattern: [3,3,4] },
+        "+380": { max: 9,  pattern: [2,3,4] },
+        "+40":  { max: 10, pattern: [3,3,4] },
+        "+359": { max: 9,  pattern: [3,3,3] },
+        "+30":  { max: 10, pattern: [3,3,4] },
+        "+36":  { max: 9,  pattern: [2,3,4] },
+        "+420": { max: 9,  pattern: [3,3,3] },
+        "+60":  { max: 10, pattern: [3,3,4] },
+        "+65":  { max: 8,  pattern: [4,4] },
+        "+62":  { max: 11, pattern: [3,4,4] },
+        "+66":  { max: 9,  pattern: [3,3,3] },
+        "+92":  { max: 10, pattern: [3,3,4] },
+        "+93":  { max: 9,  pattern: [3,3,3] },
+        "+98":  { max: 10, pattern: [3,3,4] },
+        "+964": { max: 10, pattern: [3,3,4] },
+        "+961": { max: 8,  pattern: [3,3,2] },
+        "+962": { max: 9,  pattern: [2,3,4] },
+        "+974": { max: 8,  pattern: [4,4] },
+        "+965": { max: 8,  pattern: [4,4] },
+        "+973": { max: 8,  pattern: [4,4] },
+        "+972": { max: 9,  pattern: [2,3,4] },
+        "+994": { max: 9,  pattern: [2,3,4] },
+        "+374": { max: 8,  pattern: [2,3,3] },
+        "+61":  { max: 9,  pattern: [3,3,3] },
+        "+64":  { max: 9,  pattern: [3,3,3] },
+        "+84":  { max: 10, pattern: [3,3,4] },
+        "+63":  { max: 10, pattern: [3,3,4] },
+        "+880": { max: 10, pattern: [3,3,4] },
+        "+94":  { max: 9,  pattern: [2,3,4] },
+        "+234": { max: 10, pattern: [3,3,4] },
+        "+254": { max: 9,  pattern: [3,3,3] },
+        "+212": { max: 9,  pattern: [3,3,3] },
+        "+213": { max: 9,  pattern: [3,3,3] },
+        "+54":  { max: 10, pattern: [3,3,4] },
+        "+56":  { max: 9,  pattern: [1,4,4] },
+        "+57":  { max: 10, pattern: [3,3,4] },
+        "+51":  { max: 9,  pattern: [3,3,3] },
+        "+58":  { max: 10, pattern: [3,3,4] },
+        "+995": { max: 9,  pattern: [3,3,3] },
+        "+998": { max: 9,  pattern: [2,3,4] },
+        "+993": { max: 8,  pattern: [2,3,3] },
+        "+992": { max: 9,  pattern: [2,3,4] },
+        "+996": { max: 9,  pattern: [3,3,3] },
+        "+976": { max: 8,  pattern: [4,4] },
+        "+886": { max: 9,  pattern: [3,3,3] },
+        "+852": { max: 8,  pattern: [4,4] },
+        "+853": { max: 8,  pattern: [4,4] },
+        "_default": { max: 15, pattern: [3,3,3,3,3] }
+    };
+
+    function formatPhoneNumber(digits, code) {
+        var cfg = phoneFormats[code] || phoneFormats["_default"];
+        var clean = digits.replace(/\D/g, '').substring(0, cfg.max);
+        var result = '';
+        var pos = 0;
+        for (var i = 0; i < cfg.pattern.length; i++) {
+            if (pos >= clean.length) break;
+            var part = clean.substr(pos, cfg.pattern[i]);
+            if (part) result += part + ' ';
+            pos += cfg.pattern[i];
+        }
+        return result.trim();
+    }
+
+    // ── Telefon Init ──
+    document.addEventListener('DOMContentLoaded', function () {
+        var select = document.getElementById('phoneCountryCode');
+        var input  = document.getElementById('inputPhone');
+        if (!select || !input) return;
+
+        var current = input.value.trim();
+        if (current) {
+            // Uzundan kısaya sırala — +964 ile +9 çakışmasın
+            var codes = Object.keys(phoneFormats)
+                .filter(function (k) { return k !== '_default'; })
+                .sort(function (a, b) { return b.length - a.length; });
+            for (var i = 0; i < codes.length; i++) {
+                if (current.startsWith(codes[i])) {
+                    select.value = codes[i];
+                    var digits = current.substring(codes[i].length).replace(/\D/g, '');
+                    input.value = formatPhoneNumber(digits, codes[i]);
+                    break;
+                }
+            }
+        }
+
+        select.addEventListener('change', function () {
+            input.value = '';
+            input.focus();
+        });
+
+        input.addEventListener('input', function (e) {
+            var code = select.value;
+            var cfg  = phoneFormats[code] || phoneFormats["_default"];
+            if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward') return;
+            var digits = this.value.replace(/\D/g, '').substring(0, cfg.max);
+            this.value = formatPhoneNumber(digits, code);
+        });
+    });
+
+    // ── Fotoğraf Önizleme ──
+    document.getElementById('PictureFile').addEventListener('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            Swal.fire({ icon: 'error', title: 'Hata!', text: 'Dosya 5MB\'dan büyük olamaz' });
+            this.value = '';
+            return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var src = e.target.result;
+            var ring = document.querySelector('.avatar-ring');
+            ring.classList.remove('no-image');
+            document.getElementById('avatarInner').innerHTML =
+                '<img src="' + src + '" style="width:100%;height:100%;object-fit:cover;" />';
+
+            var thumb = document.getElementById('picThumb');
+            var ph    = document.getElementById('picThumbPlaceholder');
+            if (thumb) {
+                thumb.src = src;
+            } else if (ph) {
+                ph.outerHTML = '<img src="' + src + '" class="pic-thumb" id="picThumb" alt="Profil" />';
+            }
+
+            document.getElementById('picFileName').textContent = file.name;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // ── Hero isim / baş harf canlı güncelle ──
+    document.getElementById('inputFullName').addEventListener('input', function () {
+        var val = this.value.trim();
+        document.getElementById('heroName').textContent = val || 'Kullanıcı';
+
+        var avatarImg = document.querySelector('#avatarInner img');
+        if (!avatarImg) {
+            var ini = val.split(' ').filter(Boolean).slice(0, 2)
+                .map(function (w) { return w[0].toUpperCase(); }).join('') || '?';
+            var ph     = document.getElementById('avatarPlaceholder');
+            var cardPh = document.getElementById('picThumbPlaceholder');
+            if (ph)     ph.textContent     = ini;
+            if (cardPh) cardPh.textContent = ini;
+        }
+    });
+
+    document.getElementById('inputEmail').addEventListener('input', function () {
+        document.getElementById('heroEmail').textContent = this.value;
+    });
+
+    // ── Şifre göster/gizle ──
+    function togglePass(inputId, iconId) {
+        var inp = document.getElementById(inputId);
+        var ico = document.getElementById(iconId);
+        if (inp.type === 'password') {
+            inp.type = 'text';
+            ico.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            inp.type = 'password';
+            ico.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+
+    // ── Şifre güç göstergesi ──
+    document.getElementById('newPass').addEventListener('input', function () {
+        var val  = this.value;
+        var fill = document.getElementById('strengthFill');
+        var text = document.getElementById('strengthText');
+        if (!val) { fill.style.width = '0%'; text.textContent = ''; return; }
+
+        var score = 0;
+        if (val.length >= 6)              score++;
+        if (val.length >= 10)             score++;
+        if (/[A-Z]/.test(val))            score++;
+        if (/[0-9]/.test(val))            score++;
+        if (/[^A-Za-z0-9]/.test(val))     score++;
+
+        var configs = [
+            { w: '20%',  bg: '#ff4757', label: 'Çok zayıf', color: '#ff4757' },
+            { w: '40%',  bg: '#ff6b00', label: 'Zayıf',     color: '#ff6b00' },
+            { w: '60%',  bg: '#ffa502', label: 'Orta',       color: '#ffa502' },
+            { w: '80%',  bg: '#2ed573', label: 'Güçlü',      color: '#2ed573' },
+            { w: '100%', bg: '#1e90ff', label: 'Çok güçlü',  color: '#1e90ff' }
+        ];
+        var c = configs[score - 1] || configs[0];
+        fill.style.width      = c.w;
+        fill.style.background = c.bg;
+        text.textContent      = c.label;
+        text.style.color      = c.color;
+    });
+
+    // ── Şifre eşleşme ──
+    function checkMatch() {
+        var p1 = document.getElementById('newPass').value;
+        var p2 = document.getElementById('confirmPass').value;
+        document.getElementById('passMatchError').style.display = (p2 && p1 !== p2) ? 'block' : 'none';
+    }
+    document.getElementById('confirmPass').addEventListener('input', checkMatch);
+    document.getElementById('newPass').addEventListener('input', checkMatch);
+
+    // ── Form Submit ──
+    document.getElementById('profilForm').addEventListener('submit', function (e) {
+        var p1     = document.getElementById('newPass').value;
+        var p2     = document.getElementById('confirmPass').value;
+        var select = document.getElementById('phoneCountryCode');
+        var input  = document.getElementById('inputPhone');
+            var digits = input.value.replace(/\D/g, '');
+
+    // ── Telefon zorunlu kontrol ──
+    if (digits.length === 0) {
+        e.preventDefault();
+        input.focus();
+        Swal.fire({
+            icon: 'warning',
+            title: 'Eksik Alan!',
+            text: 'Lütfen telefon numaranızı giriniz.'
+        });
+        return false;
+    }
+
+    // ── Minimum rakam sayısı ──
+    var cfg = phoneFormats[select.value] || phoneFormats['_default'];
+    if (digits.length < cfg.max) {
+        e.preventDefault();
+        input.focus();
+        Swal.fire({
+            icon: 'warning',
+            title: 'Geçersiz Numara!',
+            text: 'Telefon numarası eksik görünüyor. Lütfen kontrol ediniz.'
+        });
+        return false;
+    }
+
+        if (p1 && p1 !== p2) {
+            e.preventDefault();
+            document.getElementById('passMatchError').style.display = 'block';
+            document.getElementById('confirmPass').focus();
+            return false;
+        }
+
+        // Telefonu birleştir — boşsa temizle
+        if (select && input) {
+            var digits = input.value.replace(/\D/g, '');
+            if (digits.length > 0) {
+                input.value = select.value + ' ' + input.value.trim();
+            } else {
+                input.value = '';
+            }
+        }
+
+        document.getElementById('submitBtn').disabled          = true;
+        document.getElementById('btnText').style.display       = 'none';
+        document.getElementById('btnSpinner').style.display    = 'inline';
+    });
+
+    // ── Resim Sil ──
+    function resimSil() {
+        Swal.fire({
+            title: 'Emin misiniz?',
+            text: 'Profil fotoğrafınız silinecek!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-trash"></i> Evet, Sil',
+            cancelButtonText: 'İptal'
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+
+            fetch('/AdminKullanici/ResimSilProfil', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    var ini = document.getElementById('heroName').textContent.trim()
+                        .split(' ').filter(Boolean).slice(0, 2)
+                        .map(function (w) { return w[0].toUpperCase(); }).join('') || '?';
+
+                    var ring = document.querySelector('.avatar-ring');
+                    ring.classList.add('no-image');
+                    document.getElementById('avatarInner').innerHTML =
+                        '<span class="avatar-placeholder" id="avatarPlaceholder">' + ini + '</span>';
+
+                    var thumb = document.getElementById('picThumb');
+                    if (thumb) {
+                        thumb.outerHTML =
+                            '<div class="pic-thumb-placeholder" id="picThumbPlaceholder">' + ini + '</div>';
+                    }
+
+                    var btn = document.getElementById('btnResimSil');
+                    if (btn) btn.style.display = 'none';
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Silindi!',
+                        text: 'Profil fotoğrafınız silindi.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Hata!', text: data.message });
+                }
+            })
+            .catch(function () {
+                Swal.fire({ icon: 'error', title: 'Bağlantı Hatası', text: 'Sunucuya ulaşılamadı.' });
+            });
+        });
+    }
+</script>
