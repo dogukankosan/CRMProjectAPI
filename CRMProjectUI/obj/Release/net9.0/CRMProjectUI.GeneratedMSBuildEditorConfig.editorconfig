@@ -28,6 +28,18 @@ build_property._RazorSourceGeneratorDebug =
 build_property.EffectiveAnalysisLevelStyle = 9.0
 build_property.EnableCodeStyleSeverity = 
 
+[C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/AdminAnnouncement/Duzenle.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5Bbm5vdW5jZW1lbnRcRHV6ZW5sZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/AdminAnnouncement/Ekle.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5Bbm5vdW5jZW1lbnRcRWtsZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/AdminAnnouncement/Liste.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5Bbm5vdW5jZW1lbnRcTGlzdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/AdminBilgiBankasi/Detay.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5CaWxnaUJhbmthc2lcRGV0YXkuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -62,6 +74,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/AdminCustomer/Liste.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5DdXN0b21lclxMaXN0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/AdminHataLog/Liste.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5IYXRhTG9nXExpc3RlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/AdminHome/AdminDashboard.cshtml]
@@ -112,6 +128,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5UaWNrZXRcVXNlclJlcG9ydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/AdminTicket/_TicketFiles.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5UaWNrZXRcX1RpY2tldEZpbGVzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/AdminTicket/_TicketTableRows.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5UaWNrZXRcX1RpY2tldFRhYmxlUm93cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/AdminUser/Liste.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5Vc2VyXExpc3RlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
@@ -134,6 +158,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/Shared/Error404.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yNDA0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/Shared/_AnnouncementForm.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9Bbm5vdW5jZW1lbnRGb3JtLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/DOGUKAN/source/repos/CRMProject/CRMProjectUI/Views/_ViewImports.cshtml]

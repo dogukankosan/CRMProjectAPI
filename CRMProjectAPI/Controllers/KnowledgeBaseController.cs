@@ -54,7 +54,7 @@ namespace CRMProjectAPI.Controllers
                         kb.ID, kb.Title, kb.Description, kb.CodeLanguage,
                         kb.Category, kb.IsPublic, kb.IsActive,
                         ISNULL(u.FullName, u.Username) AS CreatedByName,
-                        kb.CreatedBy,
+                        kb.CreatedBy,  VideoLink ,
                         kb.CreatedDate,
                         (SELECT COUNT(*) FROM KnowledgeBaseFiles f
                          WHERE f.KnowledgeBaseID = kb.ID AND f.IsDeleted = 0) AS FileCount,
@@ -92,7 +92,7 @@ namespace CRMProjectAPI.Controllers
                     SELECT DISTINCT
                         kb.ID, kb.Title, kb.Description, kb.CodeLanguage,
                         kb.Category, kb.IsPublic, kb.IsActive,  kb.CreatedBy,  
-                        ISNULL(u.FullName, u.Username) AS CreatedByName,
+                        ISNULL(u.FullName, u.Username) AS CreatedByName, VideoLink ,
                         kb.CreatedDate,
                         (SELECT COUNT(*) FROM KnowledgeBaseFiles f
                          WHERE f.KnowledgeBaseID = kb.ID AND f.IsDeleted = 0) AS FileCount,
@@ -202,15 +202,15 @@ namespace CRMProjectAPI.Controllers
             try
             {
                 const string sql = @"
-                    INSERT INTO KnowledgeBase (
-                        Title, Description, CodeBlock, CodeLanguage,
-                        Category, IsPublic, IsActive, CreatedBy, CreatedDate
-                    ) VALUES (
-                        @Title, @Description, @CodeBlock, @CodeLanguage,
-                        @Category, @IsPublic, @IsActive, @CreatedBy, GETDATE()
-                    );
-                    SELECT CAST(SCOPE_IDENTITY() AS INT);
-                ";
+    INSERT INTO KnowledgeBase (
+        Title, Description, CodeBlock, CodeLanguage,
+        Category, VideoLink, IsPublic, IsActive, CreatedBy, CreatedDate
+    ) VALUES (
+        @Title, @Description, @CodeBlock, @CodeLanguage,
+        @Category, @VideoLink, @IsPublic, @IsActive, @CreatedBy, GETDATE()
+    );
+    SELECT CAST(SCOPE_IDENTITY() AS INT);
+";
                 int newId = await connection.QuerySingleAsync<int>(sql, new
                 {
                     dto.Title,
@@ -218,6 +218,7 @@ namespace CRMProjectAPI.Controllers
                     dto.CodeBlock,
                     dto.CodeLanguage,
                     dto.Category,
+                    dto.VideoLink,       // ✅ YENİ
                     dto.IsPublic,
                     dto.IsActive,
                     CreatedBy = GetUserId()
@@ -262,18 +263,19 @@ namespace CRMProjectAPI.Controllers
             try
             {
                 const string sql = @"
-                    UPDATE KnowledgeBase SET
-                        Title        = @Title,
-                        Description  = @Description,
-                        CodeBlock    = @CodeBlock,
-                        CodeLanguage = @CodeLanguage,
-                        Category     = @Category,
-                        IsPublic     = @IsPublic,
-                        IsActive     = @IsActive,
-                        UpdatedBy    = @UpdatedBy,
-                        UpdatedDate  = GETDATE()
-                    WHERE ID = @ID
-                ";
+    UPDATE KnowledgeBase SET
+        Title        = @Title,
+        Description  = @Description,
+        CodeBlock    = @CodeBlock,
+        CodeLanguage = @CodeLanguage,
+        Category     = @Category,
+        VideoLink    = @VideoLink,
+        IsPublic     = @IsPublic,
+        IsActive     = @IsActive,
+        UpdatedBy    = @UpdatedBy,
+        UpdatedDate  = GETDATE()
+    WHERE ID = @ID
+";
                 int affected = await connection.ExecuteAsync(sql, new
                 {
                     dto.Title,
@@ -281,6 +283,7 @@ namespace CRMProjectAPI.Controllers
                     dto.CodeBlock,
                     dto.CodeLanguage,
                     dto.Category,
+                    dto.VideoLink,       // ✅ YENİ
                     dto.IsPublic,
                     dto.IsActive,
                     UpdatedBy = GetUserId(),

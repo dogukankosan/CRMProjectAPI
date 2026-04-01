@@ -1,0 +1,629 @@
+﻿@{
+    ViewData["Title"] = "Hata Logları";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+        --ink: #0f1117; --ink-soft: #4a4f5e; --surface: #f7f8fc;
+        --white: #fff; --accent: #2563eb; --success: #10b981;
+        --warning: #f59e0b; --danger: #ef4444; --purple: #7c3aed;
+        --border: #e2e8f0; --radius: 12px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.10);
+    }
+
+    body { font-family: 'DM Sans', sans-serif; }
+
+    .hl-header {
+        background: linear-gradient(135deg, #0f1117 0%, #1e2433 50%, #0f1117 100%);
+        border-radius: 16px; padding: 22px 28px; margin-bottom: 20px;
+        display: flex; align-items: center; justify-content: space-between;
+        position: relative; overflow: hidden;
+    }
+    .hl-header::before {
+        content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px;
+        background:radial-gradient(circle,rgba(239,68,68,.3) 0%,transparent 70%); border-radius:50%;
+    }
+    .hl-header h4 { color:#fff; font-weight:800; margin:0; font-size:1.2rem; position:relative; z-index:1; }
+    .hl-header p  { color:rgba(255,255,255,.55); margin:0; font-size:.82rem; position:relative; z-index:1; }
+
+    .hl-stats { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+    .hl-stat {
+        flex:1; min-width:110px; background:var(--white); border:1px solid var(--border);
+        border-radius:var(--radius); padding:13px 16px; box-shadow:var(--shadow-sm);
+        display:flex; align-items:center; gap:10px;
+    }
+    .hl-stat-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:.85rem; flex-shrink:0; }
+    .hl-stat-icon.red    { background:#fef2f2; color:var(--danger); }
+    .hl-stat-icon.blue   { background:#eff6ff; color:var(--accent); }
+    .hl-stat-icon.purple { background:#f5f3ff; color:var(--purple); }
+    .hl-stat-icon.orange { background:#fff7ed; color:#ea580c; }
+    .hl-stat-label { font-size:.66rem; color:var(--ink-soft); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+    .hl-stat-value { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; color:var(--ink); line-height:1; }
+
+    .hl-tabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+    .hl-tab {
+        padding:7px 18px; border-radius:20px; font-size:.8rem; font-weight:600;
+        cursor:pointer; border:1.5px solid var(--border); background:var(--white);
+        color:var(--ink-soft); transition:all .18s;
+    }
+    .hl-tab:hover { border-color:var(--accent); color:var(--accent); }
+    .hl-tab.active          { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .hl-tab.active.ui-tab   { background:#7c3aed; border-color:#7c3aed; }
+    .hl-tab.active.api-tab  { background:#0891b2; border-color:#0891b2; }
+
+    .hl-filter {
+        background:var(--white); border:1px solid var(--border); border-radius:var(--radius);
+        padding:14px 16px; margin-bottom:14px; box-shadow:var(--shadow-sm);
+        display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;
+    }
+    .hl-filter-group { display:flex; flex-direction:column; gap:4px; }
+    .hl-filter-label { font-size:.74rem; font-weight:600; color:var(--ink-soft); }
+    .hl-filter-input, .hl-filter-select {
+        padding:6px 11px; border:1.5px solid var(--border); border-radius:8px;
+        font-size:.82rem; color:var(--ink); background:var(--white); outline:none;
+        transition:border-color .2s; min-width:140px;
+    }
+    .hl-filter-input:focus, .hl-filter-select:focus { border-color:var(--accent); }
+    .hl-filter-btn {
+        padding:7px 16px; border-radius:8px; background:var(--accent); color:#fff;
+        border:none; font-size:.82rem; font-weight:600; cursor:pointer;
+        display:inline-flex; align-items:center; gap:5px; transition:background .15s;
+    }
+    .hl-filter-btn:hover { background:#1d4ed8; }
+    .hl-filter-btn.danger { background:var(--danger); }
+    .hl-filter-btn.danger:hover { background:#dc2626; }
+    .hl-filter-btn.gray { background:#64748b; }
+    .hl-filter-btn.gray:hover { background:#475569; }
+
+    .hl-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
+    .hl-table { width:100%; border-collapse:collapse; }
+    .hl-table thead th {
+        font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+        color:var(--ink-soft); padding:9px 12px; background:var(--surface);
+        border-bottom:1px solid var(--border); white-space:nowrap;
+    }
+    .hl-table tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
+    .hl-table tbody tr:last-child { border-bottom:none; }
+    .hl-table tbody tr:hover { background:#f8fafd; }
+    .hl-table tbody td { padding:8px 12px; vertical-align:middle; font-size:.82rem; }
+
+    .hl-badge {
+        font-size:.68rem; font-weight:700; padding:2px 8px; border-radius:20px;
+        display:inline-flex; align-items:center; gap:3px; white-space:nowrap;
+    }
+    .hl-badge::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+    .hl-badge.error   { background:#fef2f2; color:#991b1b; }
+    .hl-badge.error::before   { background:var(--danger); }
+    .hl-badge.success { background:#f0fdf4; color:#166534; }
+    .hl-badge.success::before { background:var(--success); }
+    .hl-badge.ui      { background:#f5f3ff; color:#5b21b6; }
+    .hl-badge.ui::before      { background:var(--purple); }
+    .hl-badge.api     { background:#ecfeff; color:#0e7490; }
+    .hl-badge.api::before     { background:#0891b2; }
+
+    .hl-btn {
+        width:28px; height:28px; border-radius:7px; border:1px solid var(--border);
+        background:var(--surface); display:inline-flex; align-items:center;
+        justify-content:center; font-size:.72rem; cursor:pointer;
+        color:var(--ink-soft); transition:all .15s;
+    }
+    .hl-btn:hover { transform:translateY(-1px); }
+    .hl-btn.info:hover   { background:#eff6ff; border-color:var(--accent); color:var(--accent); }
+    .hl-btn.delete:hover { background:#fef2f2; border-color:var(--danger); color:var(--danger); }
+
+    .hl-pagination {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:10px 14px; border-top:1px solid var(--border);
+        font-size:.77rem; color:var(--ink-soft); flex-wrap:wrap; gap:7px;
+    }
+    .hl-page-btns { display:flex; gap:3px; }
+    .hl-page-btn {
+        width:27px; height:27px; border-radius:7px; border:1px solid var(--border);
+        background:var(--surface); display:flex; align-items:center; justify-content:center;
+        cursor:pointer; font-size:.77rem; transition:all .15s;
+    }
+    .hl-page-btn:hover  { background:#eff6ff; border-color:var(--accent); color:var(--accent); }
+    .hl-page-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .hl-page-btn.disabled { opacity:.4; cursor:not-allowed; pointer-events:none; }
+
+    .hl-modal-overlay {
+        display:none; position:fixed; inset:0; z-index:9999;
+        background:rgba(0,0,0,.75); align-items:center; justify-content:center;
+    }
+    .hl-modal-overlay.open { display:flex; }
+    .hl-modal {
+        background:var(--white); border-radius:16px; width:90vw; max-width:800px;
+        max-height:88vh; display:flex; flex-direction:column;
+        box-shadow:0 24px 80px rgba(0,0,0,.3);
+        animation: hlIn .2s ease;
+    }
+    @@keyframes hlIn {
+        from { opacity:0; transform:scale(.96) translateY(8px); }
+        to   { opacity:1; transform:scale(1) translateY(0); }
+    }
+    .hl-modal-header {
+        padding:14px 20px; border-bottom:1px solid var(--border);
+        display:flex; align-items:center; justify-content:space-between;
+        background:var(--surface); border-radius:16px 16px 0 0;
+    }
+    .hl-modal-header h6 { margin:0; font-weight:700; font-size:.92rem; color:var(--ink); }
+    .hl-modal-close {
+        border:none; background:none; font-size:1.1rem; color:var(--ink-soft);
+        cursor:pointer; padding:4px; border-radius:6px; transition:background .15s;
+    }
+    .hl-modal-close:hover { background:#fef2f2; color:var(--danger); }
+    .hl-modal-body { padding:20px; overflow-y:auto; flex:1; }
+
+    .hl-detail-row {
+        display:flex; gap:12px; align-items:flex-start;
+        padding:8px 0; border-bottom:1px solid var(--border); font-size:.83rem;
+    }
+    .hl-detail-row:last-child { border-bottom:none; }
+    .hl-detail-label { min-width:130px; font-weight:600; color:var(--ink-soft); font-size:.76rem; flex-shrink:0; }
+    .hl-detail-value { color:var(--ink); flex:1; word-break:break-all; }
+
+    .hl-stack-pre {
+        background:#1e1e2e; color:#cdd6f4; border-radius:9px;
+        padding:14px; font-size:.75rem; line-height:1.6;
+        overflow:auto; max-height:260px; margin-top:8px;
+        white-space:pre-wrap; word-break:break-all; font-family:'Courier New',monospace;
+    }
+
+    .hl-loading { display:flex; align-items:center; justify-content:center; padding:48px; color:var(--ink-soft); gap:10px; }
+    .hl-empty   { text-align:center; padding:48px; color:var(--ink-soft); }
+    .hl-empty i { font-size:2.5rem; opacity:.15; display:block; margin-bottom:12px; }
+
+    @@media (max-width: 768px) {
+        .hl-stats { display:grid; grid-template-columns:1fr 1fr; }
+        .hl-filter { flex-direction:column; }
+        .hl-filter-input, .hl-filter-select { min-width:100%; }
+        .hl-modal { width:98vw; max-height:94vh; }
+        .hl-detail-row { flex-direction:column; gap:4px; }
+        .hl-detail-label { min-width:unset; }
+        .hl-pagination { flex-direction:column; text-align:center; }
+    }
+</style>
+
+@Html.AntiForgeryToken()
+
+<!-- HEADER -->
+<div class="hl-header">
+    <div>
+        <h4><i class="fas fa-bug mr-2"></i>Hata Logları</h4>
+        <p id="hlSubtitle">Veriler yükleniyor...</p>
+    </div>
+    <div style="position:relative;z-index:1;">
+        <i class="fas fa-shield-alt" style="font-size:2.5rem;color:rgba(239,68,68,.3);"></i>
+    </div>
+</div>
+
+<!-- STAT KARTLARI -->
+<div class="hl-stats">
+    <div class="hl-stat">
+        <div class="hl-stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+        <div><div class="hl-stat-label">Toplam Hata</div><div class="hl-stat-value" id="statTotal">—</div></div>
+    </div>
+    <div class="hl-stat">
+        <div class="hl-stat-icon purple"><i class="fas fa-desktop"></i></div>
+        <div><div class="hl-stat-label">UI Hatası</div><div class="hl-stat-value" id="statUI">—</div></div>
+    </div>
+    <div class="hl-stat">
+        <div class="hl-stat-icon blue"><i class="fas fa-server"></i></div>
+        <div><div class="hl-stat-label">API Hatası</div><div class="hl-stat-value" id="statAPI">—</div></div>
+    </div>
+    <div class="hl-stat">
+        <div class="hl-stat-icon orange"><i class="fas fa-clock"></i></div>
+        <div><div class="hl-stat-label">Son 24 Saat</div><div class="hl-stat-value" id="statToday">—</div></div>
+    </div>
+</div>
+
+<!-- TABS -->
+<div class="hl-tabs">
+    <div class="hl-tab active"    onclick="setTab('', this)">    <i class="fas fa-list mr-1"></i> Tümü</div>
+    <div class="hl-tab ui-tab"   onclick="setTab('UI', this)">  <i class="fas fa-desktop mr-1"></i> UI Hataları</div>
+    <div class="hl-tab api-tab"  onclick="setTab('API', this)"> <i class="fas fa-server mr-1"></i> API Hataları</div>
+</div>
+
+<!-- FİLTRE -->
+<div class="hl-filter">
+    <div class="hl-filter-group">
+        <label class="hl-filter-label">Başlangıç Tarihi</label>
+        <input type="date" id="filterStart" class="hl-filter-input" />
+    </div>
+    <div class="hl-filter-group">
+        <label class="hl-filter-label">Bitiş Tarihi</label>
+        <input type="date" id="filterEnd" class="hl-filter-input" />
+    </div>
+    <div class="hl-filter-group">
+        <label class="hl-filter-label">Durum</label>
+        <select id="filterError" class="hl-filter-select">
+            <option value="">Tümü</option>
+            <option value="true">Sadece Hatalar</option>
+        </select>
+    </div>
+    <div class="hl-filter-group">
+        <label class="hl-filter-label">Sayfa Başına</label>
+        <select id="filterPageSize" class="hl-filter-select" style="min-width:80px;">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+        </select>
+    </div>
+    <button class="hl-filter-btn"        onclick="loadLogs(1)">    <i class="fas fa-search"></i> Filtrele</button>
+    <button class="hl-filter-btn gray"   onclick="resetFilters()"> <i class="fas fa-times"></i> Temizle</button>
+    <button class="hl-filter-btn danger" onclick="openClearModal()"><i class="fas fa-trash"></i> Logları Temizle</button>
+</div>
+
+<!-- TABLO -->
+<div class="hl-card">
+    <div id="hlTableWrap">
+        <div class="hl-loading"><i class="fas fa-spinner fa-spin"></i> Yükleniyor...</div>
+    </div>
+    <div class="hl-pagination" id="hlPagination" style="display:none;">
+        <span id="hlPagInfo"></span>
+        <div class="hl-page-btns" id="hlPagBtns"></div>
+    </div>
+</div>
+
+<!-- DETAY MODAL -->
+<div class="hl-modal-overlay" id="detailModal" onclick="closeDetailIfOverlay(event)">
+    <div class="hl-modal">
+        <div class="hl-modal-header">
+            <h6><i class="fas fa-info-circle mr-2" style="color:var(--accent);"></i>Log Detayı</h6>
+            <button class="hl-modal-close" onclick="closeDetail()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="hl-modal-body" id="detailBody">
+            <div class="hl-loading"><i class="fas fa-spinner fa-spin"></i> Yükleniyor...</div>
+        </div>
+    </div>
+</div>
+
+<!-- TEMİZLE MODAL -->
+<div class="hl-modal-overlay" id="clearModal" onclick="closeClearIfOverlay(event)">
+    <div class="hl-modal" style="max-width:460px;">
+        <div class="hl-modal-header">
+            <h6><i class="fas fa-trash mr-2" style="color:var(--danger);"></i>Logları Temizle</h6>
+            <button class="hl-modal-close" onclick="closeClearModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="hl-modal-body">
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <div class="hl-filter-group" style="width:100%;">
+                    <label class="hl-filter-label">Log Tipi</label>
+                    <select id="clearType" class="hl-filter-select" style="width:100%;">
+                        <option value="">Tümü</option>
+                        <option value="UI">Sadece UI</option>
+                        <option value="API">Sadece API</option>
+                    </select>
+                </div>
+                <div class="hl-filter-group" style="width:100%;">
+                    <label class="hl-filter-label">Bu tarihten öncekiler</label>
+                    <input type="date" id="clearBefore" class="hl-filter-input" style="width:100%;" />
+                </div>
+                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:9px;padding:12px 14px;font-size:.82rem;color:#991b1b;">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Bu işlem geri alınamaz. Seçilen kriterlere uyan tüm loglar kalıcı olarak silinir.
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button class="hl-filter-btn gray"   onclick="closeClearModal()">İptal</button>
+                    <button class="hl-filter-btn danger" onclick="submitClear()"><i class="fas fa-trash"></i> Sil</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var token       = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        var currentTab  = '';
+        var currentPage = 1;
+
+        // ── STAT KARTLARI ──
+        function todayStr() { return new Date().toISOString().slice(0,10); }
+
+        Promise.all([
+            fetch('/AdminHataLog/Data?onlyErrors=true&pageSize=1').then(function(r){ return r.json(); }),
+            fetch('/AdminHataLog/Data?type=UI&onlyErrors=true&pageSize=1').then(function(r){ return r.json(); }),
+            fetch('/AdminHataLog/Data?type=API&onlyErrors=true&pageSize=1').then(function(r){ return r.json(); }),
+            fetch('/AdminHataLog/Data?onlyErrors=true&startDate=' + todayStr() + '&pageSize=1').then(function(r){ return r.json(); })
+        ]).then(function(r) {
+            document.getElementById('statTotal').textContent = r[0].total ?? 0;
+            document.getElementById('statUI').textContent    = r[1].total ?? 0;
+            document.getElementById('statAPI').textContent   = r[2].total ?? 0;
+            document.getElementById('statToday').textContent = r[3].total ?? 0;
+            document.getElementById('hlSubtitle').textContent = 'Son güncelleme: ' + new Date().toLocaleString('tr-TR');
+        }).catch(function(){});
+
+        loadLogs(1);
+
+        function setTab(type, el) {
+            currentTab = type;
+            document.querySelectorAll('.hl-tab').forEach(function(t){ t.classList.remove('active'); });
+            el.classList.add('active');
+            loadLogs(1);
+        }
+
+        function resetFilters() {
+            document.getElementById('filterStart').value    = '';
+            document.getElementById('filterEnd').value      = '';
+            document.getElementById('filterError').value    = '';
+            document.getElementById('filterPageSize').value = '50';
+            loadLogs(1);
+        }
+
+        function loadLogs(page) {
+            currentPage = page;
+            var qs = [];
+            if (currentTab)                                         qs.push('type='       + currentTab);
+            if (document.getElementById('filterError').value)      qs.push('onlyErrors=' + document.getElementById('filterError').value);
+            if (document.getElementById('filterStart').value)      qs.push('startDate='  + document.getElementById('filterStart').value);
+            if (document.getElementById('filterEnd').value)        qs.push('endDate='    + document.getElementById('filterEnd').value);
+            qs.push('page='     + page);
+            qs.push('pageSize=' + document.getElementById('filterPageSize').value);
+
+            document.getElementById('hlTableWrap').innerHTML =
+                '<div class="hl-loading"><i class="fas fa-spinner fa-spin"></i> Yükleniyor...</div>';
+            document.getElementById('hlPagination').style.display = 'none';
+
+            fetch('/AdminHataLog/Data?' + qs.join('&'))
+                .then(function(r){ return r.json(); })
+                .then(function(res) {
+                    renderTable(res);
+                    renderPagination(res.total, res.pages, page,
+                        parseInt(document.getElementById('filterPageSize').value));
+                })
+                .catch(function() {
+                    document.getElementById('hlTableWrap').innerHTML =
+                        '<div class="hl-empty"><i class="fas fa-exclamation-circle"></i>Veri yüklenemedi.</div>';
+                });
+        }
+
+        function renderTable(res) {
+            if (!res.data || res.data.length === 0) {
+                document.getElementById('hlTableWrap').innerHTML =
+                    '<div class="hl-empty"><i class="fas fa-check-circle"></i>Kayıt bulunamadı.</div>';
+                return;
+            }
+
+            var html =
+                '<div class="table-responsive"><table class="hl-table"><thead><tr>' +
+                '<th>ID</th><th>Tip</th><th>Endpoint / Sayfa</th><th>Durum</th>' +
+                '<th>Hata Mesajı</th><th>IP</th><th>Tarih</th><th>İşlem</th>' +
+                '</tr></thead><tbody>';
+
+            res.data.forEach(function(row) {
+                var id          = row.ID          || row.id;
+                var isUI        = (row.HttpMethod || row.httpMethod) === 'UI';
+                var isError     = row.IsError     ?? row.isError;
+                var endpoint    = row.Endpoint    || row.endpoint    || '-';
+                var queryString = row.QueryString || row.queryString;
+                var statusCode  = row.StatusCode  || row.statusCode;
+                var errorMsg    = row.ErrorMessage|| row.errorMessage;
+                var ipAddress   = row.IpAddress   || row.ipAddress;
+                var createdDate = row.CreatedDate || row.createdDate;
+
+                var typeBadge = isUI
+                    ? '<span class="hl-badge ui"><i class="fas fa-desktop" style="font-size:.55rem;margin-right:3px;"></i>UI</span>'
+                    : '<span class="hl-badge api"><i class="fas fa-server" style="font-size:.55rem;margin-right:3px;"></i>API</span>';
+                var statusBadge = isError
+                    ? '<span class="hl-badge error">Hata</span>'
+                    : '<span class="hl-badge success">OK</span>';
+
+                var ep  = endpoint;
+                if (ep.length > 42) ep = ep.substring(0, 42) + '…';
+                var err = errorMsg ? errorMsg : '-';
+                if (err.length > 60) err = err.substring(0, 60) + '…';
+
+                var dateStr = createdDate
+                    ? new Date(createdDate).toLocaleString('tr-TR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+                    : '-';
+
+                html +=
+                    '<tr>' +
+                    '<td><span style="font-family:monospace;font-size:.72rem;color:var(--ink-soft);">#' + id + '</span></td>' +
+                    '<td>' + typeBadge + '</td>' +
+                    '<td style="max-width:200px;" title="' + escHtml(endpoint) + '">' +
+                        '<span style="font-size:.79rem;font-weight:600;">' + escHtml(ep) + '</span>' +
+                        (queryString ? '<div style="font-size:.68rem;color:var(--ink-soft);">' +
+                            escHtml(queryString.length > 32 ? queryString.substring(0,32)+'…' : queryString) + '</div>' : '') +
+                    '</td>' +
+                    '<td>' + statusBadge + (statusCode > 0 ? ' <small style="color:var(--ink-soft);">' + statusCode + '</small>' : '') + '</td>' +
+                    '<td style="max-width:220px;"><span style="font-size:.78rem;color:' +
+                        (isError ? 'var(--danger)' : 'var(--ink-soft)') + ';" title="' + escHtml(errorMsg || '') + '">' +
+                        escHtml(err) + '</span></td>' +
+                    '<td><small style="color:var(--ink-soft);">' + escHtml(ipAddress || '-') + '</small></td>' +
+                    '<td><small style="color:var(--ink-soft);white-space:nowrap;">' + dateStr + '</small></td>' +
+                    '<td><div style="display:flex;gap:4px;">' +
+                        '<button class="hl-btn info"   title="Detay" onclick="openDetail(' + id + ')"><i class="fas fa-eye"></i></button>' +
+                        '<button class="hl-btn delete" title="Sil"   onclick="deleteLog(' + id + ', this)"><i class="fas fa-trash"></i></button>' +
+                    '</div></td>' +
+                    '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            document.getElementById('hlTableWrap').innerHTML = html;
+        }
+
+        function renderPagination(total, pages, current, pageSize) {
+            document.getElementById('hlPagination').style.display = 'flex';
+            var start = (current - 1) * pageSize + 1;
+            var end   = Math.min(current * pageSize, total);
+            document.getElementById('hlPagInfo').textContent =
+                total === 0 ? 'Kayıt yok' : start + ' – ' + end + ' / ' + total + ' kayıt';
+
+            var btns = document.getElementById('hlPagBtns');
+            btns.innerHTML = '';
+
+            function addBtn(lbl, page, disabled, active) {
+                var btn = document.createElement('div');
+                btn.className = 'hl-page-btn' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+                btn.innerHTML = lbl;
+                if (!disabled && !active) btn.onclick = function(){ loadLogs(page); };
+                btns.appendChild(btn);
+            }
+
+            addBtn('<i class="fas fa-chevron-left"></i>', current - 1, current === 1, false);
+            var from = Math.max(1, current - 2), to = Math.min(pages, current + 2);
+            if (from > 1) { addBtn('1', 1, false, false); if (from > 2) addBtn('…', -1, true, false); }
+            for (var p = from; p <= to; p++) addBtn(String(p), p, false, p === current);
+            if (to < pages) { if (to < pages - 1) addBtn('…', -1, true, false); addBtn(String(pages), pages, false, false); }
+            addBtn('<i class="fas fa-chevron-right"></i>', current + 1, current === pages, false);
+        }
+
+        // ── DETAY MODAL ──
+        function openDetail(id) {
+            document.getElementById('detailModal').classList.add('open');
+            document.getElementById('detailBody').innerHTML =
+                '<div class="hl-loading"><i class="fas fa-spinner fa-spin"></i> Yükleniyor...</div>';
+
+            fetch('/AdminHataLog/Detay/' + id)
+                .then(function(r){ return r.json(); })
+                .then(function(res) {
+                    var d    = res.data || res;
+                    var isUI = (d.HttpMethod || d.httpMethod) === 'UI';
+                    var isError     = d.IsError     ?? d.isError;
+                    var endpoint    = d.Endpoint    || d.endpoint    || '-';
+                    var queryString = d.QueryString || d.queryString || '-';
+                    var statusCode  = d.StatusCode  || d.statusCode;
+                    var errorType   = d.ErrorType   || d.errorType   || '-';
+                    var ipAddress   = d.IpAddress   || d.ipAddress   || '-';
+                    var userAgent   = d.UserAgent   || d.userAgent   || '-';
+                    var responseTime= d.ResponseTime|| d.responseTime;
+                    var createdDate = d.CreatedDate || d.createdDate;
+                    var errorMsg    = d.ErrorMessage|| d.errorMessage;
+                    var stackTrace  = d.ErrorStackTrace || d.errorStackTrace;
+                    var requestBody = d.RequestBody || d.requestBody;
+                    var responseBody= d.ResponseBody|| d.responseBody;
+                    var responseTrimmed = d.ResponseTrimmed || d.responseTrimmed;
+
+                    var rows = [
+                        { label:'ID',           val:'#' + (d.ID || d.id) },
+                        { label:'Tip',          val: isUI ? '<span class="hl-badge ui">UI</span>' : '<span class="hl-badge api">API</span>' },
+                        { label:'Durum',        val: isError ? '<span class="hl-badge error">Hata</span>' : '<span class="hl-badge success">Başarılı</span>' },
+                        { label:'Endpoint',     val: escHtml(endpoint) },
+                        { label:'Query String', val: escHtml(queryString) },
+                        { label:'Status Code',  val: statusCode > 0 ? statusCode : '-' },
+                        { label:'Hata Tipi',    val: escHtml(errorType) },
+                        { label:'IP Adresi',    val: escHtml(ipAddress) },
+                        { label:'User Agent',   val: escHtml(userAgent) },
+                        { label:'Yanıt Süresi', val: responseTime ? responseTime + ' ms' : '-' },
+                        { label:'Tarih',        val: createdDate ? new Date(createdDate).toLocaleString('tr-TR') : '-' },
+                    ];
+
+                    var html = '';
+                    rows.forEach(function(r) {
+                        html += '<div class="hl-detail-row"><span class="hl-detail-label">' + r.label +
+                            '</span><span class="hl-detail-value">' + r.val + '</span></div>';
+                    });
+
+                    if (errorMsg) {
+                        html += '<div class="hl-detail-row"><span class="hl-detail-label">Hata Mesajı</span>' +
+                            '<span class="hl-detail-value" style="color:var(--danger);font-weight:600;">' +
+                            escHtml(errorMsg) + '</span></div>';
+                    }
+                    if (stackTrace) {
+                        html += '<div style="margin-top:14px;">' +
+                            '<div style="font-size:.75rem;font-weight:700;color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Stack Trace</div>' +
+                            '<pre class="hl-stack-pre">' + escHtml(stackTrace) + '</pre></div>';
+                    }
+                    if (requestBody) {
+                        html += '<div style="margin-top:14px;">' +
+                            '<div style="font-size:.75rem;font-weight:700;color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Request Body</div>' +
+                            '<pre class="hl-stack-pre" style="max-height:150px;">' + escHtml(requestBody) + '</pre></div>';
+                    }
+                    if (responseBody) {
+                        html += '<div style="margin-top:14px;">' +
+                            '<div style="font-size:.75rem;font-weight:700;color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Response Body' +
+                            (responseTrimmed ? ' <span style="color:var(--warning);font-size:.7rem;font-weight:400;">(kırpılmış)</span>' : '') +
+                            '</div><pre class="hl-stack-pre" style="max-height:150px;">' + escHtml(responseBody) + '</pre></div>';
+                    }
+
+                    document.getElementById('detailBody').innerHTML = html;
+                })
+                .catch(function() {
+                    document.getElementById('detailBody').innerHTML =
+                        '<div class="hl-empty"><i class="fas fa-exclamation-circle"></i>Detay yüklenemedi.</div>';
+                });
+        }
+
+        function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
+        function closeDetailIfOverlay(e) { if (e.target === document.getElementById('detailModal')) closeDetail(); }
+
+        // ── TEK SİL ──
+        function deleteLog(id, btn) {
+            Swal.fire({
+                title:'Log Silinsin mi?', text:'#' + id + ' numaralı log kalıcı olarak silinecek.',
+                icon:'warning', showCancelButton:true,
+                confirmButtonColor:'#ef4444', cancelButtonColor:'#64748b',
+                confirmButtonText:'Evet, Sil', cancelButtonText:'İptal'
+            }).then(function(result) {
+                if (!result.isConfirmed) return;
+                fetch('/AdminHataLog/Sil/' + id, {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
+                    body:'__RequestVerificationToken=' + encodeURIComponent(token)
+                })
+                .then(function(r){ return r.json(); })
+                .then(function(res) {
+                    if (res.success) {
+                        var row = btn.closest('tr');
+                        if (row) row.remove();
+                        Swal.fire({ icon:'success', title:'Silindi', timer:1500, showConfirmButton:false });
+                    } else {
+                        Swal.fire({ icon:'error', title:'Hata', text:res.message });
+                    }
+                });
+            });
+        }
+
+        // ── TOPLU TEMİZLE ──
+        function openClearModal()  { document.getElementById('clearModal').classList.add('open'); }
+        function closeClearModal() { document.getElementById('clearModal').classList.remove('open'); }
+        function closeClearIfOverlay(e) { if (e.target === document.getElementById('clearModal')) closeClearModal(); }
+
+        function submitClear() {
+            Swal.fire({
+                title:'Emin misiniz?', text:'Seçilen loglar kalıcı olarak silinecek.',
+                icon:'warning', showCancelButton:true,
+                confirmButtonColor:'#ef4444', cancelButtonColor:'#64748b',
+                confirmButtonText:'Evet, Temizle', cancelButtonText:'İptal'
+            }).then(function(result) {
+                if (!result.isConfirmed) return;
+                var type   = document.getElementById('clearType').value;
+                var before = document.getElementById('clearBefore').value;
+                var body   = '__RequestVerificationToken=' + encodeURIComponent(token);
+                if (type)   body += '&type='       + encodeURIComponent(type);
+                if (before) body += '&beforeDate=' + encodeURIComponent(before);
+
+                fetch('/AdminHataLog/Temizle', {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
+                    body: body
+                })
+                .then(function(r){ return r.json(); })
+                .then(function(res) {
+                    closeClearModal();
+                    if (res.success) {
+                        Swal.fire({ icon:'success', title:'Temizlendi', text:res.message, timer:2000, showConfirmButton:false });
+                        loadLogs(1);
+                    } else {
+                        Swal.fire({ icon:'error', title:'Hata', text:res.message });
+                    }
+                });
+            });
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') { closeDetail(); closeClearModal(); }
+        });
+    </script>
+}

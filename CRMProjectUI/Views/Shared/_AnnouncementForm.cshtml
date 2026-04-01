@@ -1,0 +1,534 @@
+﻿@model CRMProjectUI.Models.AnnouncementFormViewModel
+@{
+    string? apiBase = ViewBag.ApiBase as string ?? "";
+}
+
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet" />
+
+<style>
+    .ann-form-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(15,17,23,.06);
+        padding: 24px;
+        max-width: 860px;
+    }
+
+    .ann-form-label {
+        font-size: .8rem;
+        font-weight: 600;
+        color: #4a4f5e;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .ann-form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 9px;
+        font-size: .85rem;
+        color: #0f1117;
+        transition: border-color .2s;
+        background: #fff;
+    }
+
+        .ann-form-input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+    /* Quill editor */
+    .ann-editor-wrap {
+        border: 1.5px solid #e2e8f0;
+        border-radius: 9px;
+        overflow: hidden;
+        transition: border-color .2s;
+    }
+
+        .ann-editor-wrap:focus-within {
+            border-color: #2563eb;
+        }
+
+        .ann-editor-wrap .ql-toolbar {
+            border: none;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafd;
+        }
+
+        .ann-editor-wrap .ql-container {
+            border: none;
+            font-size: .87rem;
+            min-height: 160px;
+        }
+
+        .ann-editor-wrap .ql-editor {
+            min-height: 160px;
+        }
+
+    /* Öncelik */
+    .ann-prio-group {
+        display: flex;
+        gap: 8px;
+    }
+
+    .ann-prio-btn {
+        flex: 1;
+        padding: 8px;
+        border-radius: 9px;
+        border: 2px solid #e2e8f0;
+        background: #f8fafd;
+        font-size: .8rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+        transition: all .18s;
+    }
+
+        .ann-prio-btn.active-1 {
+            background: #f0fdf4;
+            border-color: #16a34a;
+            color: #16a34a;
+        }
+
+        .ann-prio-btn.active-2 {
+            background: #fffbeb;
+            border-color: #d97706;
+            color: #d97706;
+        }
+
+        .ann-prio-btn.active-3 {
+            background: #fef2f2;
+            border-color: #dc2626;
+            color: #dc2626;
+        }
+
+    /* Dosya zone */
+    .ann-file-zone {
+        border: 2px dashed #e2e8f0;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        color: #94a3b8;
+        font-size: .82rem;
+        cursor: pointer;
+        transition: border-color .2s, background .2s;
+    }
+
+        .ann-file-zone:hover {
+            border-color: #2563eb;
+            background: #f0f7ff;
+        }
+
+    /* Dosya satırı */
+    .ann-file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 12px;
+        background: #f8fafd;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 5px;
+        font-size: .78rem;
+    }
+
+    .ann-existing-file {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 12px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        margin-bottom: 5px;
+        font-size: .78rem;
+        color: #166534;
+    }
+
+    .ann-file-action {
+        border: none;
+        background: none;
+        cursor: pointer;
+        padding: 0 5px;
+        font-size: .75rem;
+        transition: color .15s;
+    }
+
+        .ann-file-action.view {
+            color: #2563eb;
+        }
+
+            .ann-file-action.view:hover {
+                color: #1d4ed8;
+            }
+
+        .ann-file-action.del {
+            color: #dc2626;
+        }
+
+            .ann-file-action.del:hover {
+                color: #b91c1c;
+            }
+
+    /* Preview modal */
+    #previewModal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0,0,0,.7);
+        align-items: center;
+        justify-content: center;
+    }
+
+        #previewModal.open {
+            display: flex;
+        }
+
+    .preview-box {
+        background: #fff;
+        border-radius: 14px;
+        width: 90vw;
+        max-width: 900px;
+        max-height: 90vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    }
+
+    .preview-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 700;
+        font-size: .9rem;
+    }
+
+    .preview-body {
+        flex: 1;
+        overflow: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        background: #f8fafd;
+    }
+
+        .preview-body img {
+            max-width: 100%;
+            max-height: 75vh;
+            border-radius: 6px;
+        }
+
+        .preview-body iframe {
+            width: 100%;
+            height: 75vh;
+            border: none;
+            border-radius: 6px;
+        }
+
+        .preview-body .no-preview {
+            text-align: center;
+            color: #94a3b8;
+            padding: 40px;
+        }
+</style>
+
+<div class="ann-form-card">
+    <form method="post" action="@Model.FormAction" enctype="multipart/form-data" id="annForm">
+        @Html.AntiForgeryToken()
+
+        <!-- Başlık -->
+        <div style="margin-bottom:16px;">
+            <label class="ann-form-label">Başlık <span style="color:#dc2626;">*</span></label>
+            <input type="text" name="Title" id="titleInput"
+                   value="@Model.CreateDto.Title"
+                   class="ann-form-input"
+                   placeholder="Duyuru başlığı..."
+                   maxlength="200" required />
+        </div>
+
+        <!-- İçerik — Quill -->
+        <div style="margin-bottom:16px;">
+            <label class="ann-form-label">İçerik <span style="color:#dc2626;">*</span></label>
+            <div class="ann-editor-wrap">
+                <div id="quillEditor"></div>
+            </div>
+            <input type="hidden" name="Content" id="contentInput" />
+        </div>
+
+        <!-- Öncelik -->
+        <div style="margin-bottom:16px;">
+            <label class="ann-form-label">Öncelik</label>
+            <input type="hidden" name="Priority" id="priorityInput"
+                   value="@(Model.CreateDto.Priority == 0 ? 1 : Model.CreateDto.Priority)" />
+            <div class="ann-prio-group">
+                <div class="ann-prio-btn" data-val="1" onclick="setPriority(1,this)">
+                    <i class="fas fa-minus mr-1"></i> Normal
+                </div>
+                <div class="ann-prio-btn" data-val="2" onclick="setPriority(2,this)">
+                    <i class="fas fa-arrow-up mr-1"></i> Önemli
+                </div>
+                <div class="ann-prio-btn" data-val="3" onclick="setPriority(3,this)">
+                    <i class="fas fa-fire mr-1"></i> Kritik
+                </div>
+            </div>
+        </div>
+
+        <!-- Mevcut Dosyalar -->
+        @if (Model.IsEdit && Model.ExistingFiles.Any())
+        {
+            <div style="margin-bottom:16px;">
+                <label class="ann-form-label">Mevcut Dosyalar</label>
+                @foreach (var file in Model.ExistingFiles)
+                {
+                    string ext = file.FileExtension.ToLower();
+                    bool isImage = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" }.Contains(ext);
+                    bool isPdf = ext == ".pdf";
+                    bool canPreview = isImage || isPdf;
+                    string previewUrl = $"/AdminDuyuru/Dosya/{file.ID}";
+
+                    <div class="ann-existing-file" id="efile-@file.ID">
+                        <span>
+                            <i class="fas @(isImage ? "fa-image" : isPdf ? "fa-file-pdf" : "fa-file") mr-1"></i>
+                            @file.OriginalFileName
+                            <span style="color:#94a3b8;margin-left:6px;">
+                                (@((file.FileSizeBytes / 1024).ToString("N0")) KB)
+                            </span>
+                        </span>
+                        <div style="display:flex;gap:4px;align-items:center;">
+                            @if (canPreview)
+                            {
+                                <button type="button" class="ann-file-action view"
+                                        title="Önizle"
+                                        onclick="previewFile('@previewUrl', '@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(file.OriginalFileName)', '@(isImage ? "image" : "pdf")')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            }
+                            <a href="@previewUrl" download
+                               class="ann-file-action view" title="İndir">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            <button type="button" class="ann-file-action del"
+                                    title="Sil"
+                                    onclick="deleteFile(@file.ID, @Model.AnnouncementId, '@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(file.OriginalFileName)')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Yeni Dosya -->
+        <div style="margin-bottom:20px;">
+            <label class="ann-form-label">@(Model.IsEdit ? "Yeni Dosya Ekle" : "Dosya Ekle")</label>
+            <div class="ann-file-zone" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-cloud-upload-alt" style="font-size:1.4rem;display:block;margin-bottom:6px;"></i>
+                Tıkla veya sürükle — birden fazla dosya seçebilirsin
+            </div>
+            <input type="file" id="fileInput" name="files" multiple style="display:none;"
+                   onchange="showSelectedFiles(this)" />
+            <div id="fileList" style="margin-top:8px;"></div>
+        </div>
+
+        <!-- Butonlar -->
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <a href="/AdminDuyuru/Liste"
+               style="padding:8px 18px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.83rem;font-weight:600;color:#64748b;text-decoration:none;">
+                İptal
+            </a>
+            <button type="submit" onclick="return prepareSubmit()"
+                    style="padding:8px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:.83rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                <i class="fas fa-save"></i> @(Model.IsEdit ? "Güncelle" : "Kaydet")
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Dosya Sil Formu -->
+<form id="deleteFileForm" method="post" action="/AdminDuyuru/DosyaSil" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="fileId" id="deleteFileId" />
+    <input type="hidden" name="announcementId" id="deleteAnnId" />
+</form>
+
+<!-- Preview Modal -->
+<div id="previewModal">
+    <div class="preview-box">
+        <div class="preview-header">
+            <span id="previewFileName"></span>
+            <button onclick="closePreview()"
+                    style="border:none;background:none;font-size:1.1rem;color:#64748b;cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="preview-body" id="previewBody"></div>
+    </div>
+</div>
+
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script>
+    // ── Quill init
+    var quill = new Quill('#quillEditor', {
+        theme: 'snow',
+        placeholder: 'Duyuru içeriğini yazın...',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                [{ 'align': [] }],
+                ['link'],
+                ['clean']
+            ]
+        }
+    });
+
+    // Düzenleme modunda mevcut içeriği yükle
+    var existingContent = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CreateDto.Content ?? ""));
+    if (existingContent && existingContent.trim() !== '') {
+        quill.root.innerHTML = existingContent;
+    }
+
+    // ── Submit öncesi Quill içeriğini hidden input'a yaz
+    var __submitting = false;
+
+    function prepareSubmit() {
+        if (__submitting) return; // spam koruması
+
+        var content = quill.root.innerHTML;
+        if (quill.getText().trim() === '') {
+            Swal.fire({ icon: 'warning', title: 'Eksik Alan', text: 'İçerik zorunludur.' });
+            return;
+        }
+
+        document.getElementById('contentInput').value = content;
+
+        __submitting = true;
+        var btn = document.querySelector('button[onclick="prepareSubmit()"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+        }
+
+        document.getElementById('annForm').submit();
+    }
+    // ── Öncelik seç
+    function setPriority(val, el) {
+        document.getElementById('priorityInput').value = val;
+        document.querySelectorAll('.ann-prio-btn').forEach(function (b) {
+            b.classList.remove('active-1', 'active-2', 'active-3');
+        });
+        el.classList.add('active-' + val);
+    }
+
+    // ── Öncelik init
+    document.addEventListener('DOMContentLoaded', function () {
+        var prio = parseInt(document.getElementById('priorityInput').value) || 1;
+        var btns = document.querySelectorAll('.ann-prio-btn');
+        btns.forEach(function (b) {
+            if (parseInt(b.getAttribute('data-val')) === prio)
+                b.classList.add('active-' + prio);
+        });
+    });
+
+    // ── Seçilen yeni dosyaları göster
+    function showSelectedFiles(input) {
+        var list = document.getElementById('fileList');
+        list.innerHTML = '';
+        Array.from(input.files).forEach(function (f) {
+            var ext  = f.name.split('.').pop().toLowerCase();
+            var isImg = ['jpg','jpeg','png','gif','webp'].includes(ext);
+            var div  = document.createElement('div');
+            div.className = 'ann-file-item';
+
+            var leftSpan = '<span><i class="fas ' + (isImg ? 'fa-image' : 'fa-file') +
+                ' mr-1" style="color:#2563eb;"></i>' + f.name +
+                ' <span style="color:#94a3b8;">(' + (f.size / 1024).toFixed(0) + ' KB)</span></span>';
+
+            var rightSpan = '';
+            if (isImg) {
+                rightSpan = '<button type="button" class="ann-file-action view" title="Önizle" ' +
+                    'onclick="previewLocalFile(this, \'' + f.name + '\')"><i class="fas fa-eye"></i></button>';
+            }
+
+            div.innerHTML = leftSpan + '<div style="display:flex;gap:4px;">' + rightSpan + '</div>';
+
+            // Lokal önizleme için file referansı
+            div._file = f;
+            list.appendChild(div);
+        });
+
+        // Lokal preview için file map
+        window._selectedFiles = Array.from(input.files);
+    }
+
+    function previewLocalFile(btn, fileName) {
+        var files = window._selectedFiles || [];
+        var file  = files.find(function(f){ return f.name === fileName; });
+        if (!file) return;
+        var url = URL.createObjectURL(file);
+        previewFile(url, fileName, 'image');
+    }
+
+    // ── Preview modal
+    function previewFile(url, name, type) {
+        document.getElementById('previewFileName').textContent = name;
+        var body = document.getElementById('previewBody');
+        body.innerHTML = '';
+
+        if (type === 'image') {
+            var img = document.createElement('img');
+            img.src = url;
+            body.appendChild(img);
+        } else if (type === 'pdf') {
+            var iframe = document.createElement('iframe');
+            iframe.src = url;
+            body.appendChild(iframe);
+        } else {
+            body.innerHTML = '<div class="no-preview"><i class="fas fa-file" style="font-size:2rem;opacity:.2;display:block;margin-bottom:10px;"></i>Bu dosya önizlenemiyor.</div>';
+        }
+
+        document.getElementById('previewModal').classList.add('open');
+    }
+
+    function closePreview() {
+        document.getElementById('previewModal').classList.remove('open');
+        document.getElementById('previewBody').innerHTML = '';
+    }
+
+    document.getElementById('previewModal').addEventListener('click', function (e) {
+        if (e.target === this) closePreview();
+    });
+
+    // ── Mevcut dosya sil
+    function deleteFile(fileId, annId, fileName) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Dosyayı Sil',
+            html: '<b>' + fileName + '</b> dosyasını silmek istediğinize emin misiniz?',
+            showCancelButton: true,
+            confirmButtonText: 'Evet, Sil',
+            cancelButtonText: 'İptal',
+            confirmButtonColor: '#dc2626'
+        }).then(function (r) {
+            if (r.isConfirmed) {
+                document.getElementById('deleteFileId').value = fileId;
+                document.getElementById('deleteAnnId').value  = annId;
+                document.getElementById('deleteFileForm').submit();
+            }
+        });
+    }
+
+    // ── Escape ile modal kapat
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closePreview();
+    });
+</script>

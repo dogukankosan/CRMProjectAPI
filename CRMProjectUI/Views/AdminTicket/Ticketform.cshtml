@@ -19,9 +19,9 @@
     // Kontrol bilgilerini ViewBag'den al
     int remainingTickets = ViewBag.RemainingTickets as int? ?? -1;
     DateTime? contractEnd = ViewBag.ContractEndDate as DateTime?;
-    bool contractExpired  = contractEnd.HasValue && contractEnd.Value < DateTime.Today;
-    int daysLeft          = contractEnd.HasValue
-                            ? (contractEnd.Value - DateTime.Today).Days : 999;
+    bool contractExpired = contractEnd.HasValue && contractEnd.Value < DateTimeHelper.NowTurkey.Date;
+    int daysLeft = contractEnd.HasValue
+                   ? (contractEnd.Value - DateTimeHelper.NowTurkey.Date).Days : 999;
 }
 
 <style>
@@ -626,9 +626,8 @@
                                     (geçmişe yönelik giriş yapılabilir)
                                 </small>
                             </label>
-                            <input type="date" name="OpenedDate" class="tf-input"
-                                   max="@DateTime.Today.ToString("yyyy-MM-dd")"
-                                   value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                            <input type="datetime-local" name="OpenedDate" class="tf-input"
+                                   value="@DateTimeHelper.NowTurkey.ToString("yyyy-MM-ddTHH:mm")" />
                         </div>
                     </div>
                 }
@@ -775,7 +774,8 @@
                             }
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <span style="color:var(--ink-soft);">Tarih</span>
-                                <strong>@DateTime.Now.ToString("dd.MM.yyyy HH:mm")</strong>
+                                <strong>@DateTimeHelper.NowTurkey.ToString("dd.MM.yyyy HH:mm")</strong>
+
                             </div>
                             <hr style="margin:4px 0; border-color:var(--border);" />
                             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1083,63 +1083,54 @@ function updateCounter(fieldId, counterId, max) {
         });
 }
 
-document.getElementById('ticketForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+    document.getElementById('ticketForm').addEventListener('submit', function(e) {
+        e.preventDefault();
 
-    var title = document.getElementById('Title')?.value.trim();
-    if (!title) {
-        Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Başlık zorunludur.' });
-        return;
-    }
-
-    var desc = document.getElementById('Description')?.value.trim();
-    if (!desc) {
-        Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Açıklama zorunludur.' });
-        return;
-    }
-
-    var isAdminOrSuper = @((isAdmin || isSuperAdmin) ? "true" : "false");
-    if (isAdminOrSuper) {
-        var custSelect = document.getElementById('customerSelect');
-        if (!custSelect || !custSelect.value) {
-            Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Lütfen bir müşteri seçiniz.' });
+        var title = document.getElementById('Title')?.value.trim();
+        if (!title) {
+            Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Başlık zorunludur.' });
             return;
         }
-        document.getElementById('customerIdHidden').value = custSelect.value;
 
-        // Tarih kontrolü
-        var dateInput = document.querySelector('input[name="OpenedDate"]');
-        if (dateInput && dateInput.value) {
-            var selectedDate = new Date(dateInput.value);
-            var today = new Date();
-            today.setHours(23, 59, 59, 999);
-            if (selectedDate > today) {
-                Swal.fire({ icon:'warning', title:'Geçersiz Tarih', text:'Gelecek tarih seçilemez.' });
+        var desc = document.getElementById('Description')?.value.trim();
+        if (!desc) {
+            Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Açıklama zorunludur.' });
+            return;
+        }
+
+        var isAdminOrSuper = @((isAdmin || isSuperAdmin) ? "true" : "false");
+        if (isAdminOrSuper) {
+            var custSelect = document.getElementById('customerSelect');
+            if (!custSelect || !custSelect.value) {
+                Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Lütfen bir müşteri seçiniz.' });
                 return;
             }
+            document.getElementById('customerIdHidden').value = custSelect.value;
+
+        
         }
-    }
 
-    var productChecked = document.querySelector('.tf-product-radio:checked');
-    if (!productChecked) {
-        var grid = document.getElementById('productGrid');
-        grid.style.border = '2px solid #ef4444';
-        grid.style.borderRadius = '9px';
-        grid.style.padding = '10px';
-        setTimeout(function() {
-            grid.style.border = '';
-            grid.style.borderRadius = '';
-            grid.style.padding = '';
-        }, 3000);
-        Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Lütfen bir Müşteri ürünü seçiniz.' });
-        return;
-    }
+        var productChecked = document.querySelector('.tf-product-radio:checked');
+        if (!productChecked) {
+            var grid = document.getElementById('productGrid');
+            grid.style.border = '2px solid #ef4444';
+            grid.style.borderRadius = '9px';
+            grid.style.padding = '10px';
+            setTimeout(function() {
+                grid.style.border = '';
+                grid.style.borderRadius = '';
+                grid.style.padding = '';
+            }, 3000);
+            Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Lütfen bir Müşteri ürünü seçiniz.' });
+            return;
+        }
 
-    var btn = document.getElementById('submitBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
-    this.submit();
-});
+        var btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
+        this.submit();
+    });
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
         updateCounter('Title',       'titleCounter', 200);

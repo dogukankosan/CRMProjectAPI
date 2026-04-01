@@ -681,7 +681,7 @@ else
                                 <span class="cd-info-label">Sözleşme Bitiş</span>
                                 <span class="cd-info-value">
                                     @{
-                                        int daysLeft = (int)(customer.ContractEndDate.Value - DateTime.Today).TotalDays;
+                                        int daysLeft = (int)(customer.ContractEndDate.Value - DateTimeHelper.NowTurkey.Date).TotalDays;
                                         string dateColor = daysLeft <= 7 ? "var(--danger)" : daysLeft <= 30 ? "var(--warning)" : "var(--ink)";
                                     }
                                     <span style="color:@dateColor; font-weight:600;">

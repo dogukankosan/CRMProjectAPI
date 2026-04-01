@@ -1,4 +1,5 @@
 ﻿using CRMProjectUI.APIService;
+using CRMProjectUI.Helpers;
 using CRMProjectUI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,6 +35,36 @@ namespace CRMProjectUI.Controllers
             _userService = userService;
             _configuration = configuration;
             _logger = logger;
+        }
+        [HttpGet("ListePartial")]
+        public async Task<IActionResult> ListePartial()
+        {
+            try
+            {
+                List<TicketListDto> tickets = await _ticketService.GetTicketsAsync(Token);
+                if (IsSuperAdmin || IsAdmin)
+                    ViewBag.AdminUsers = await _userService.GetAdminUsersAsync(Token);
+
+                string apiBase = _configuration["ApiSettings:BaseUrl"] ?? "";
+                ViewBag.ApiBase = apiBase;
+
+                var filtered = tickets
+                    .Where(x => x.Status != 2 && x.Status != 3 && x.Status != 6)
+                    .ToList();
+
+                return PartialView("_TicketTableRows", filtered);
+            }
+            catch
+            {
+                return PartialView("_TicketTableRows", new List<TicketListDto>());
+            }
+        }
+        [HttpGet("DetayDosyalar/{id:int}")]
+        public async Task<IActionResult> DetayDosyalar(int id)
+        {
+            var ticket = await _ticketService.GetTicketByIdAsync(id, Token);
+            if (ticket == null) return NotFound();
+            return PartialView("_TicketFiles", ticket.Files);
         }
         [HttpGet("CheckEligibility")]
         [Authorize(Roles = "Admin,SuperAdmin")]
@@ -303,7 +334,13 @@ namespace CRMProjectUI.Controllers
             try
             {
                 dto.CreatedByUserID = CallerUserId;
-
+                // Tarih server-side kontrolü
+                if (dto.OpenedDate.HasValue && dto.OpenedDate.Value > DateTimeHelper.NowTurkey.AddMinutes(1))
+                {
+                    ModelState.AddModelError("OpenedDate", "Gelecek tarih/saat girilemez.");
+                    await LoadTicketFormDropdownsAsync();
+                    return View("TicketForm", dto);
+                }
                 // User kendi firması için ticket açabilir
                 if (IsUser)
                     dto.CustomerID = CallerCompanyId;

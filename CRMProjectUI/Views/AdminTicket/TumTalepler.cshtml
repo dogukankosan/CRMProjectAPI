@@ -501,7 +501,8 @@
     }
 
     function renderPage() {
-        var tbody      = document.getElementById('ttBody');
+            var tbody      = document.getElementById('ttBody'); 
+            if (!tbody) return;
         var total      = filteredRows.length;
         var totalPages = Math.max(1, Math.ceil(total / pageSize));
         if (currentPage > totalPages) currentPage = totalPages;

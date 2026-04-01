@@ -1,0 +1,41 @@
+﻿@model List<CRMProjectUI.Models.TicketFileDto>
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
+    var previewExts = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".pdf" };
+}
+
+@if (!Model.Any())
+{
+    <div style="text-align:center; padding:20px; color:var(--ink-soft);">
+        <i class="fas fa-folder-open" style="font-size:1.8rem; opacity:.2; display:block; margin-bottom:8px;"></i>
+        <small>Henüz dosya eklenmemiş</small>
+    </div>
+}
+else
+{
+    <div style="display:flex; flex-direction:column; gap:7px;" id="fileListInner">
+        @foreach (var f in Model)
+        {
+            var fExt = System.IO.Path.GetExtension(f.OriginalFileName)?.ToLower() ?? "";
+            bool canPreview = previewExts.Contains(fExt);
+            bool isImgPreview = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" }.Contains(fExt);
+            <div class="td-file-item">
+                <i class="fas @f.FileIconClass" style="font-size:1.2rem; color:@f.FileIconColor; flex-shrink:0; width:20px; text-align:center;"></i>
+                <span class="td-file-name" title="@f.OriginalFileName">@f.OriginalFileName</span>
+                <span class="td-file-size">@f.FileSizeDisplay</span>
+                <span style="font-size:.72rem; color:var(--ink-soft);">@f.UploadedDate.ToString("dd.MM.yyyy")</span>
+                @if (canPreview)
+                {
+                    <button type="button" class="td-file-btn" title="Ön İzleme"
+                            onclick="previewFile('@f.ID', '@Html.Raw(f.OriginalFileName.Replace("'", "\\'"))', '@(isImgPreview ? "image" : "pdf")')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                }
+                <a href="/AdminTicket/Dosya/@f.ID" class="td-file-btn" title="İndir">
+                    <i class="fas fa-download"></i>
+                </a>
+            </div>
+        }
+    </div>
+}

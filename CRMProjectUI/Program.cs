@@ -11,7 +11,7 @@ builder.Services.AddControllersWithViews();
 // ── HttpContext ───────────────────────────────────────────────────────────────
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
-
+var turkeyZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time");
 // ── Cookie Authentication ─────────────────────────────────────────────────────
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -43,7 +43,8 @@ builder.Services.AddHttpClient<CustomerApiService>();
 builder.Services.AddHttpClient<MailSettingsApiService>();
 builder.Services.AddHttpClient<TicketApiService>();
 builder.Services.AddHttpClient<KnowledgeBaseApiService>();
-
+builder.Services.AddHttpClient<LogApiService>();
+builder.Services.AddHttpClient<ErrorLogApiService>();
 // ── Pipeline ──────────────────────────────────────────────────────────────────
 WebApplication app = builder.Build();
 

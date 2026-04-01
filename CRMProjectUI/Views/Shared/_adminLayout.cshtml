@@ -14,18 +14,16 @@
     bool isUser = isAdminValue == 0;
     bool isAdmin = isAdminValue >= 1;
     bool isSuperAdmin = isAdminValue == 2;
-    bool isAdminOrSuperAdmin = isAdmin; // isAdmin zaten SuperAdmin'i kapsıyor
+    bool isAdminOrSuperAdmin = isAdmin;
 
     string roleBadgeClass = isSuperAdmin ? "superadmin" : isAdmin ? "admin" : "user";
     string roleText = isSuperAdmin ? "Süper Admin" : isAdmin ? "Admin" : "Kullanıcı";
 
-    // WhatsApp numaraları
     string whatsappPhone = !string.IsNullOrEmpty(company?.Phone)
         ? new string(company.Phone.Where(char.IsDigit).ToArray()) : "";
     string whatsappPhone2 = !string.IsNullOrEmpty(company?.Phone2)
         ? new string(company.Phone2.Where(char.IsDigit).ToArray()) : "";
 
-    // Dinamik URL
     string faviconUrl = string.IsNullOrEmpty(company?.FaviconPath)
         ? "/adminThema/assets/img/favicon.ico"
         : $"{apiBase}{company.FaviconPath}";
@@ -55,7 +53,6 @@
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index, follow">
 
-    @* Open Graph *@
     <meta property="og:locale" content="tr_TR">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="@company?.CompanyName">
@@ -71,7 +68,6 @@
     <meta property="og:image" content="@logoUrl">
     <meta property="og:image:alt" content="@company?.CompanyName Logo">
 
-    @* Twitter Card *@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="@(company?.MetaTitle ?? company?.WebSiteTitle ?? company?.CompanyName)">
     @if (!string.IsNullOrEmpty(company?.MetaDescription))
@@ -80,7 +76,6 @@
     }
     <meta name="twitter:image" content="@logoUrl">
 
-    @* Schema.org *@
     <script type="application/ld+json">
         {
             "@@context": "https://schema.org",
@@ -90,11 +85,11 @@
             "logo": "@logoUrl"
             @if (!string.IsNullOrEmpty(company?.MetaDescription))
             {
-                    @:,"description": "@company.MetaDescription"
+                        @:,"description": "@company.MetaDescription"
             }
             @if (company?.FoundedYear.HasValue == true)
             {
-                    @:,"foundingDate": "@company.FoundedYear"
+                        @:,"foundingDate": "@company.FoundedYear"
             }
             ,"contactPoint": {
                 "@@type": "ContactPoint",
@@ -109,14 +104,14 @@
                 "addressCountry": "TR"
             }
             @{
-                    var socialLinks = new List<string>();
-                    if (!string.IsNullOrEmpty(company?.InstagramLink)) socialLinks.Add($"\"{company.InstagramLink}\"");
-                    if (!string.IsNullOrEmpty(company?.LinkedinLink)) socialLinks.Add($"\"{company.LinkedinLink}\"");
-                    if (!string.IsNullOrEmpty(company?.YoutubeLink)) socialLinks.Add($"\"{company.YoutubeLink}\"");
+                        var socialLinks = new List<string>();
+                        if (!string.IsNullOrEmpty(company?.InstagramLink)) socialLinks.Add($"\"{company.InstagramLink}\"");
+                        if (!string.IsNullOrEmpty(company?.LinkedinLink)) socialLinks.Add($"\"{company.LinkedinLink}\"");
+                        if (!string.IsNullOrEmpty(company?.YoutubeLink)) socialLinks.Add($"\"{company.YoutubeLink}\"");
             }
             @if (socialLinks.Any())
             {
-                    @:,"sameAs": [@Html.Raw(string.Join(",", socialLinks))]
+                        @:,"sameAs": [@Html.Raw(string.Join(",", socialLinks))]
             }
         }
     </script>
@@ -141,10 +136,11 @@
         .navbar-nav .dropdown.dropdown-list-toggle {
             position: relative;
         }
-            .whatsapp-link:hover {
-                color: #128C7E;
-                transform: scale(1.1);
-            }
+
+        .whatsapp-link:hover {
+            color: #128C7E;
+            transform: scale(1.1);
+        }
 
         .dropdown-list-content a:hover,
         .dropdown-list-content a:hover *,
@@ -156,6 +152,7 @@
             background: #f8fafd !important;
             text-decoration: none !important;
         }
+
         .social-link {
             transition: all 0.3s ease;
             margin-left: 8px;
@@ -186,20 +183,21 @@
         }
 
         .user-avatar-nav {
-            width: 54px !important; /* biraz daha geniş */
+            width: 54px !important;
             height: 54px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid rgba(255, 255, 255, 0.85); /* belirgin border */
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* hafif gölge */
-            transition: transform 0.2s, box-shadow 0.2s; /* hover animasyonu */
+            border: 3px solid rgba(255,255,255,.85);
+            box-shadow: 0 3px 8px rgba(0,0,0,.3);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
             .user-avatar-nav:hover {
-                transform: scale(1.12); /* hover’da hafif büyüsün */
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); /* gölge artsın */
+                transform: scale(1.12);
+                box-shadow: 0 5px 15px rgba(0,0,0,.4);
                 cursor: pointer;
             }
+
         .role-badge {
             display: inline-block;
             font-size: .65rem;
@@ -223,6 +221,192 @@
             .role-badge.user {
                 background: #e2e8f0;
                 color: #4a5568;
+            }
+
+        @@media (max-width: 768px) {
+            .main-navbar.sticky {
+                top: 30px !important;
+            }
+        }
+        /* ── DUYURU POPUP ── */
+        #annPopupOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: rgba(0,0,0,.55);
+            align-items: center;
+            justify-content: center;
+        }
+
+            #annPopupOverlay.open {
+                display: flex;
+            }
+
+        .ann-popup {
+            background: #fff;
+            border-radius: 16px;
+            width: 520px;
+            max-width: 95vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,.25);
+            overflow: hidden;
+            animation: annSlideIn .3s ease;
+        }
+
+        @@keyframes annSlideIn {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .ann-popup-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ann-popup-badge {
+            font-size: .68rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 20px;
+            margin-left: 8px;
+        }
+
+            .ann-popup-badge.p1 {
+                background: #f0fdf4;
+                color: #16a34a;
+            }
+
+            .ann-popup-badge.p2 {
+                background: #fffbeb;
+                color: #d97706;
+            }
+
+            .ann-popup-badge.p3 {
+                background: #fef2f2;
+                color: #dc2626;
+            }
+
+        .ann-popup-body {
+            padding: 20px;
+            max-height: 55vh;
+            overflow-y: auto;
+            font-size: .87rem;
+            color: #4a4f5e;
+            line-height: 1.6;
+        }
+
+        .ann-popup-files {
+            padding: 10px 20px;
+            border-top: 1px solid #f1f5f9;
+            background: #f8fafd;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .ann-popup-file-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: .73rem;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 7px;
+            padding: 4px 10px;
+            color: #2563eb;
+            text-decoration: none;
+            transition: background .15s;
+        }
+
+            .ann-popup-file-link:hover {
+                background: #eff6ff;
+                text-decoration: none;
+            }
+
+        .ann-popup-footer {
+            padding: 14px 20px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ann-popup-nav {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .78rem;
+            color: #94a3b8;
+        }
+
+        .ann-popup-nav-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: .72rem;
+            transition: all .15s;
+        }
+
+            .ann-popup-nav-btn:hover {
+                background: #eff6ff;
+                border-color: #2563eb;
+                color: #2563eb;
+            }
+
+            .ann-popup-nav-btn:disabled {
+                opacity: .3;
+                cursor: not-allowed;
+            }
+
+        .ann-btn-dismiss {
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            font-size: .78rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+            .ann-btn-dismiss:hover {
+                border-color: #94a3b8;
+                color: #475569;
+            }
+
+        .ann-btn-ok {
+            padding: 7px 18px;
+            border-radius: 8px;
+            border: none;
+            background: #2563eb;
+            color: #fff;
+            font-size: .78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+            .ann-btn-ok:hover {
+                background: #1d4ed8;
             }
     </style>
 
@@ -280,51 +464,46 @@
                         </div>
                     </li>
                     <li class="dropdown dropdown-list-toggle">
-    <a href="#" data-toggle="dropdown" class="nav-link notification-toggle nav-link-lg">
-        <i data-feather="message-square"></i>
+                        <a href="#" data-toggle="dropdown" class="nav-link notification-toggle nav-link-lg">
+                            <i data-feather="message-square"></i>
                             <span id="companyNotifBadge" style="display:none; position:absolute; top:6px; right:2px; background:#7c3aed; color:#fff !important; font-size:.6rem; font-weight:700; min-width:16px; height:16px; padding:0 4px; border-radius:8px; display:flex; align-items:center; justify-content:center; line-height:1; z-index:10;"></span>
-    </a>
-    <div class="dropdown-menu dropdown-list dropdown-menu-right pullDown" style="width:360px;">
-        <div class="dropdown-header">
-            <i class="fas fa-comments mr-1"></i> Firma Yorumları & Dosyaları
-        </div>
-        <div class="dropdown-list-content dropdown-list-icons" id="companyNotifList">
-            <div class="text-center p-3" style="color:#94a3b8; font-size:.82rem;">
-                <i class="fas fa-spinner fa-spin mr-1"></i> Yükleniyor...
-            </div>
-        </div>
-        <div class="dropdown-footer text-center">
-            <a href="/AdminTicket/Liste">Tüm Ticketlar <i class="fas fa-chevron-right"></i></a>
-        </div>
-    </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-list dropdown-menu-right pullDown" style="width:360px;">
+                            <div class="dropdown-header">
+                                <i class="fas fa-comments mr-1"></i> Firma Yorumları & Dosyaları
+                            </div>
+                            <div class="dropdown-list-content dropdown-list-icons" id="companyNotifList">
+                                <div class="text-center p-3" style="color:#94a3b8; font-size:.82rem;">
+                                    <i class="fas fa-spinner fa-spin mr-1"></i> Yükleniyor...
+                                </div>
+                            </div>
+                            <div class="dropdown-footer text-center">
+                                <a href="/AdminTicket/Liste">Tüm Ticketlar <i class="fas fa-chevron-right"></i></a>
+                            </div>
+                        </div>
+                    </li>
                     @* Kullanıcı Menüsü *@
                     <li class="dropdown">
-                     <a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user">
-    @if (!string.IsNullOrEmpty(userPicture))
-    {
-        <img alt="@fullName" src="@avatarSrc" class="user-avatar-nav" />
-    }
-    else
-    {
-     
-            // Baş harfleri hesaplayan C# bloğu
-            string initials = string.Concat(
-                fullName.Split(' ')
-                .Where(w => w.Length > 0)
-                .Take(2)
-                .Select(w => w[0].ToString().ToUpper()));
+                        <a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user">
+                            @if (!string.IsNullOrEmpty(userPicture))
+                            {
+                                <img alt="@fullName" src="@avatarSrc" class="user-avatar-nav" />
+                            }
+                            else
+                            {
+                                string initials = string.Concat(
+                                fullName.Split(' ')
+                                .Where(w => w.Length > 0)
+                                .Take(2)
+                                .Select(w => w[0].ToString().ToUpper()));
+                                if (string.IsNullOrEmpty(initials))
+                                    initials = fullName.Length >= 1 ? fullName[0].ToString().ToUpper() : "?";
 
-            if (string.IsNullOrEmpty(initials))
-            {
-                initials = fullName.Length >= 1 ? fullName[0].ToString().ToUpper() : "?";
-            }
-       
-        
-        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff !important;font-weight:700;font-size:.85rem;border:2px solid rgba(255,255,255,.3);">
-            @initials
-        </div>
-    }
-</a>
+                                <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff !important;font-weight:700;font-size:.85rem;border:2px solid rgba(255,255,255,.3);">
+                                    @initials
+                                </div>
+                            }
+                        </a>
                         <div class="dropdown-menu dropdown-menu-right pullDown">
                             <div class="dropdown-title">
                                 Merhaba, @fullName
@@ -351,22 +530,11 @@
             <div class="main-sidebar sidebar-style-2">
                 <aside id="sidebar-wrapper">
                     <div class="sidebar-brand">
-
-
-
                         <a href="/">
-                            <img alt="@company?.CompanyName Logo" src="@logoUrl" class="header-logo"/>
+                            <img alt="@company?.CompanyName Logo" src="@logoUrl" class="header-logo" />
                             <br />
                             <span class="logo-name">@company?.ShortCompanyName</span>
                         </a>
-                  
-
-
-
-
-
-
-
                         @if (!string.IsNullOrEmpty(company?.Slogan))
                         {
                             <div style="font-size:9px;color:#888;margin-top:-15px;text-transform:none;">
@@ -387,8 +555,8 @@
                                 <i data-feather="life-buoy"></i><span>Destek Talepleri</span>
                             </a>
                             <ul class="dropdown-menu">
-                                    <li><a class="nav-link" href="/AdminTicket/Liste">Aktif Talepler</a></li>
-                                    <li><a class="nav-link" href="/AdminTicket/Ekle">Yeni Talep Oluştur</a></li>
+                                <li><a class="nav-link" href="/AdminTicket/Liste">Aktif Talepler</a></li>
+                                <li><a class="nav-link" href="/AdminTicket/Ekle">Yeni Talep Oluştur</a></li>
                             </ul>
                         </li>
 
@@ -416,7 +584,7 @@
                                 </ul>
                             </li>
                         }
-                    
+
                         <li class="dropdown">
                             <a href="#" class="menu-toggle nav-link has-dropdown">
                                 <i data-feather="bar-chart-2"></i><span>Raporlar</span>
@@ -449,9 +617,18 @@
                                 </li>
                             </ul>
                         </li>
-                            
-                         
-                  
+                        @if (isAdmin)
+                        {
+                            <li class="dropdown">
+                                <a href="#" class="menu-toggle nav-link has-dropdown">
+                                    <i data-feather="bell"></i><span>Duyurular</span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="nav-link" href="/AdminDuyuru/Liste">Duyuru Listesi</a></li>
+                                    <li><a class="nav-link" href="/AdminDuyuru/Ekle">Yeni Duyuru</a></li>
+                                </ul>
+                            </li>
+                        }
                         @if (isSuperAdmin)
                         {
                             <li class="dropdown">
@@ -468,6 +645,11 @@
                                 </a>
                                 <ul class="dropdown-menu">
                                     <li><a class="nav-link" href="/AdminMail/Ayarlar">Mail Ayarları</a></li>
+                                    <li>
+                                        <a class="nav-link" href="/AdminHataLog/Liste">
+                                            <i class="fas fa-bug mr-1" style="font-size:.75rem;color:#ef4444;"></i>Hata Logları
+                                        </a>
+                                    </li>
                                 </ul>
                             </li>
                         }
@@ -478,6 +660,40 @@
             @* ── ANA İÇERİK ── *@
             <div class="main-content">
                 <section class="section">
+                    <!-- ── DUYURU POPUP ── -->
+                    <div id="annPopupOverlay">
+                        <div class="ann-popup">
+                            <div class="ann-popup-header">
+                                <div style="display:flex;align-items:center;">
+                                    <i class="fas fa-bullhorn" style="color:#2563eb;margin-right:8px;"></i>
+                                    <span style="font-weight:700;font-size:.95rem;color:#0f1117;" id="annPopupTitle"></span>
+                                    <span class="ann-popup-badge" id="annPopupBadge"></span>
+                                </div>
+                                <span style="font-size:.72rem;color:#94a3b8;" id="annPopupMeta"></span>
+                            </div>
+                            <div class="ann-popup-body" id="annPopupBody"></div>
+                            <div class="ann-popup-files" id="annPopupFiles" style="display:none;"></div>
+                            <div class="ann-popup-footer">
+                                <div class="ann-popup-nav">
+                                    <button class="ann-popup-nav-btn" id="annPrevBtn" onclick="annNavigate(-1)">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <span id="annNavInfo"></span>
+                                    <button class="ann-popup-nav-btn" id="annNextBtn" onclick="annNavigate(1)">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <div style="display:flex;gap:8px;">
+                                    <button class="ann-btn-dismiss" onclick="annDismiss()">
+                                        <i class="fas fa-eye-slash mr-1"></i> Tekrar Gösterme
+                                    </button>
+                                    <button class="ann-btn-ok" onclick="annClose()">
+                                        Tamam
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     @RenderBody()
                 </section>
 
@@ -544,43 +760,32 @@
                         <span class="ml-1">| Kuruluş: @company.FoundedYear</span>
                     }
                 </div>
-
                 <div class="footer-right">
-
-                    @* TELEFON 1 *@
                     @if (!string.IsNullOrEmpty(company?.Phone))
                     {
                         <span class="mr-2" title="Telefon">
                             <a href="tel:@company.Phone" class="text-dark">@company.Phone</a>
-
                             @if (!string.IsNullOrEmpty(whatsappPhone))
                             {
-                                <a href="https://wa.me/@whatsappPhone" target="_blank"
-                                   class="whatsapp-link ml-1" title="WhatsApp ile Ara">
+                                <a href="https://wa.me/@whatsappPhone" target="_blank" class="whatsapp-link ml-1" title="WhatsApp ile Ara">
                                     <i class="fab fa-whatsapp"></i>
                                 </a>
                             }
                         </span>
                     }
-
-                    @* TELEFON 2 *@
                     @if (!string.IsNullOrEmpty(company?.Phone2))
                     {
                         <span class="footer-divider"></span>
                         <span class="mr-2" title="Telefon 2">
                             <a href="tel:@company.Phone2" class="text-dark">@company.Phone2</a>
-
                             @if (!string.IsNullOrEmpty(whatsappPhone2))
                             {
-                                <a href="https://wa.me/@whatsappPhone2" target="_blank"
-                                   class="whatsapp-link ml-1" title="WhatsApp ile Ara">
+                                <a href="https://wa.me/@whatsappPhone2" target="_blank" class="whatsapp-link ml-1" title="WhatsApp ile Ara">
                                     <i class="fab fa-whatsapp"></i>
                                 </a>
                             }
                         </span>
                     }
-
-                    @* EMAIL *@
                     @if (!string.IsNullOrEmpty(company?.Email))
                     {
                         <span class="footer-divider"></span>
@@ -590,8 +795,6 @@
                             </a>
                         </span>
                     }
-
-                    @* WEBSITE *@
                     @if (!string.IsNullOrEmpty(company?.WebSiteLink))
                     {
                         <span class="footer-divider"></span>
@@ -601,32 +804,24 @@
                             </a>
                         </span>
                     }
-
-                    @* INSTAGRAM *@
                     @if (!string.IsNullOrEmpty(company?.InstagramLink))
                     {
                         <a href="@company.InstagramLink" target="_blank" class="social-link instagram">
                             <i class="fab fa-instagram"></i>
                         </a>
                     }
-
-                    @* LINKEDIN *@
                     @if (!string.IsNullOrEmpty(company?.LinkedinLink))
                     {
                         <a href="@company.LinkedinLink" target="_blank" class="social-link linkedin">
                             <i class="fab fa-linkedin"></i>
                         </a>
                     }
-
-                    @* YOUTUBE *@
                     @if (!string.IsNullOrEmpty(company?.YoutubeLink))
                     {
                         <a href="@company.YoutubeLink" target="_blank" class="social-link youtube">
                             <i class="fab fa-youtube"></i>
                         </a>
                     }
-
-                    @* ÇALIŞMA SAATLERİ *@
                     @if (!string.IsNullOrEmpty(company?.WorkingHours))
                     {
                         <span class="footer-divider"></span>
@@ -634,11 +829,11 @@
                             <i class="far fa-clock"></i> @company.WorkingHours
                         </span>
                     }
-
                 </div>
             </footer>
         </div>
     </div>
+
     <script src="~/adminThema/assets/js/app.min.js"></script>
     <script src="~/adminThema/assets/bundles/apexcharts/apexcharts.min.js"></script>
     <script src="~/adminThema/assets/js/scripts.js"></script>
@@ -648,6 +843,32 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
+        // ── DEĞİŞKENLER ──
+        var __isSuperAdmin = @(isSuperAdmin ? "true" : "false");
+
+        // ── UI HATA LOG ──
+        function sendUiErrorLog(message, stack, page) {
+            try {
+                fetch('/UiLog/Error', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message, stack: stack, page: page })
+                }).catch(function() {});
+            } catch(ex) {}
+        }
+
+          window.addEventListener('error', function(e) {
+            sendUiErrorLog(e.message, e.error?.stack, window.location.pathname);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            sendUiErrorLog(
+                e.reason?.message || String(e.reason),
+                e.reason?.stack   || null,
+                window.location.pathname
+            );
+        });
+
         document.addEventListener('DOMContentLoaded', function () {
 
             // ── Tema modu radio (Açık/Koyu) ──
@@ -715,6 +936,7 @@
             }
 
             // ── KENDİ BİLDİRİMLERİM ──
+            setTimeout(function() {
             fetch('/Notification/MyNotifications')
                 .then(function(r){ return r.json(); })
                 .then(function(data) {
@@ -734,7 +956,7 @@
                     }
 
                     badge.textContent = data.count > 9 ? '9+' : data.count;
-                 badge.style.display = 'flex';  // 'inline' yerine
+                    badge.style.display = 'flex';
 
                     var prioMap = {
                         4: { color:'#ef4444', bg:'#fef2f2', icon:'fa-fire' },
@@ -773,8 +995,9 @@
                     var list = document.getElementById('myNotifList');
                     if (list) list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:.8rem;"><i class="fas fa-exclamation-circle mr-1"></i>Yüklenemedi</div>';
                 });
-
+                }, 500);
             // ── FİRMA BİLDİRİMLERİ ──
+            setTimeout(function() {
             fetch('/Notification/CompanyNotifications')
                 .then(function(r){ return r.json(); })
                 .then(function(data) {
@@ -794,10 +1017,9 @@
                     }
 
                     badge.textContent = data.totalCount > 9 ? '9+' : data.totalCount;
-        badge.style.display = 'flex';  // 'inline' yerine
+                    badge.style.display = 'flex';
 
                     var html = '';
-
                     (data.comments || []).forEach(function(c) {
                         html +=
                             '<a href="/AdminTicket/Detay/' + c.ticketID + '" style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;text-decoration:none;transition:background .15s;" onmouseover="this.style.background=\'#f8fafd\'" onmouseout="this.style.background=\'\'">'+
@@ -844,11 +1066,360 @@
                     var list = document.getElementById('companyNotifList');
                     if (list) list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:.8rem;"><i class="fas fa-exclamation-circle mr-1"></i>Yüklenemedi</div>';
                 });
-        });
+      
+        }, 1000);
+ 
+        
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script>
+        var __companyId = '@(User.FindFirst("CompanyId")?.Value ?? "0")';
+        var __userId    = '@(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0")';
+        var __isAdmin   = @(isAdminOrSuperAdmin ? "true" : "false");
+        var __apiBase   = '@(Config["ApiSettings:BaseUrl"] ?? "")';
 
+        function playNotifSound() {
+            try {
+                var ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+                function playTone(freq, startTime, duration, volume) {
+                    var osc = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.setValueAtTime(freq, startTime);
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(volume, startTime + 0.02);
+                    gain.gain.setValueAtTime(volume, startTime + duration - 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                }
+
+                playTone(1046, ctx.currentTime,        0.18, 1.0); // Do
+                playTone(1318, ctx.currentTime + 0.2,  0.18, 0.9); // Mi
+                playTone(1568, ctx.currentTime + 0.4,  0.28, 1.0); // Sol
+
+            } catch(e) {}
+        }
+
+        var ticketConnection = new signalR.HubConnectionBuilder()
+            .withUrl(__apiBase + '/hubs/ticket')
+            .withAutomaticReconnect()
+            .build();
+
+        ticketConnection.start().then(function() {
+            if (__isAdmin) {
+                ticketConnection.invoke('JoinGroup', 'admins');
+            }
+            if (__companyId && __companyId !== '0') {
+                ticketConnection.invoke('JoinGroup', 'customer_' + __companyId);
+            }
+        }).catch(function(err) {
+            console.error('SignalR bağlantı hatası:', err);
+        });
+
+             ticketConnection.on('TicketCreated', function(data) {
+            playNotifSound();
+            refreshMyNotifications();
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'info',
+                title: 'Yeni Ticket: ' + data.ticketNo,
+                text: data.title,
+                showConfirmButton: false, timer: 5000, timerProgressBar: true
+            });
+            // refreshTable sadece admin listesinde tanımlıysa çağır
+            if (typeof refreshTable === 'function') refreshTable();
+        });
+
+        ticketConnection.on('TicketUpdated', function(data) {
+            playNotifSound();
+            refreshMyNotifications();
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'info',
+                title: 'Ticket Güncellendi',
+                text: data.ticketNo ? ('#' + data.ticketNo) : '',
+                showConfirmButton: false, timer: 4000, timerProgressBar: true
+            });
+            if (typeof refreshTable === 'function') refreshTable();
+        });
+
+        ticketConnection.on('CommentAdded', function(data) {
+            playNotifSound();
+            refreshCompanyNotifications();
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'info',
+                title: 'Yeni Yorum',
+                showConfirmButton: false, timer: 4000, timerProgressBar: true
+            });
+        });
+
+        ticketConnection.on('FileAdded', function(data) {
+            playNotifSound();
+            refreshCompanyNotifications();
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'info',
+                title: 'Yeni Dosya Eklendi',
+                showConfirmButton: false, timer: 4000, timerProgressBar: true
+            });
+        });
+                // ── DUYURU POPUP ──
+        var __announcements  = [];
+        var __annIndex       = 0;
+        var __annApiBase     = '@(Config["ApiSettings:BaseUrl"] ?? "")';
+        var __annJwtToken    = '@(User.FindFirst("JwtToken")?.Value ?? "")';
+
+        function loadAnnouncements() {
+            fetch('/Notification/Announcements')
+                .then(function(r){ return r.json(); })
+                .then(function(data) {
+                    if (!data || !data.length) return;
+                    __announcements = data;
+                    __annIndex = 0;
+                    annRender();
+                    document.getElementById('annPopupOverlay').classList.add('open');
+                })
+                .catch(function(){});
+        }
+
+        function annRender() {
+            var ann  = __announcements[__annIndex];
+            if (!ann) return;
+
+            // Başlık
+            document.getElementById('annPopupTitle').textContent = ann.title;
+
+            // Öncelik badge
+            var badge = document.getElementById('annPopupBadge');
+            var pLabels = { 1:'Normal', 2:'Önemli', 3:'Kritik' };
+            badge.textContent  = pLabels[ann.priority] || 'Normal';
+            badge.className    = 'ann-popup-badge p' + ann.priority;
+
+            // Meta
+            document.getElementById('annPopupMeta').textContent =
+                new Date(ann.createdDate).toLocaleDateString('tr-TR');
+
+            // İçerik (HTML — Quill ile yazıldı)
+            document.getElementById('annPopupBody').innerHTML = ann.content || '';
+
+            // Dosyalar
+            var filesDiv = document.getElementById('annPopupFiles');
+            if (ann.files && ann.files.length > 0) {
+                filesDiv.style.display = 'flex';
+                filesDiv.innerHTML = '';
+                ann.files.forEach(function(f) {
+                    var a = document.createElement('a');
+                    a.href = '/AdminDuyuru/Dosya/' + f.id;
+                    a.target = '_blank';
+                    a.download = '';
+                    a.className = 'ann-popup-file-link';
+                    a.innerHTML = '<i class="fas fa-file" style="font-size:.65rem;"></i>' + f.originalFileName;
+                    filesDiv.appendChild(a);
+                });
+            } else {
+                filesDiv.style.display = 'none';
+            }
+
+            // Navigasyon
+            var total = __announcements.length;
+            document.getElementById('annNavInfo').textContent =
+                total > 1 ? (__annIndex + 1) + ' / ' + total : '';
+            document.getElementById('annPrevBtn').disabled = __annIndex === 0;
+            document.getElementById('annNextBtn').disabled = __annIndex === total - 1;
+        }
+
+        function annNavigate(dir) {
+            var newIdx = __annIndex + dir;
+            if (newIdx < 0 || newIdx >= __announcements.length) return;
+            __annIndex = newIdx;
+            annRender();
+        }
+
+        function annClose() {
+            document.getElementById('annPopupOverlay').classList.remove('open');
+        }
+
+        function annDismiss() {
+            var ann = __announcements[__annIndex];
+            if (!ann) return;
+
+            fetch('/Notification/DuyuruKapat/' + ann.id, { method: 'POST' })
+                .then(function(){})
+                .catch(function(){});
+
+            __announcements.splice(__annIndex, 1);
+
+            if (__announcements.length === 0) {
+                annClose();
+                return;
+            }
+            if (__annIndex >= __announcements.length)
+                __annIndex = __announcements.length - 1;
+            annRender();
+        }
+
+        // SignalR — yeni duyuru gelince popup'a ekle
+        ticketConnection.on('AnnouncementCreated', function(data) {
+            playNotifSound();
+            // Listeyi yenile
+            fetch('/Notification/Announcements')
+                .then(function(r){ return r.json(); })
+                .then(function(list) {
+                    if (!list || !list.length) return;
+                    __announcements = list;
+                    __annIndex = 0;
+                    annRender();
+                    document.getElementById('annPopupOverlay').classList.add('open');
+                })
+                .catch(function(){});
+
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'info',
+                title: 'Yeni Duyuru',
+                text: data.title,
+                showConfirmButton: false, timer: 4000, timerProgressBar: true
+            });
+        });
+
+        // Sayfa açılınca duyuruları yükle
+        // Sayfa açılınca duyuruları yükle
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                loadAnnouncements();
+            }, 2000);
+        });
+        function refreshMyNotifications() {
+            fetch('/Notification/MyNotifications')
+                .then(function(r){ return r.json(); })
+                .then(function(data) {
+                    var list  = document.getElementById('myNotifList');
+                    var badge = document.getElementById('myNotifBadge');
+                    if (!badge) return;
+
+                    if (!data || !data.tickets || data.tickets.length === 0) {
+                        badge.style.display = 'none';
+                        if (list) list.innerHTML =
+                            '<div style="padding:24px;text-align:center;">' +
+                            '<div style="width:44px;height:44px;border-radius:50%;background:#f0fdf4;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">' +
+                            '<i class="fas fa-check" style="color:#10b981;font-size:1.1rem;"></i></div>' +
+                            '<div style="font-size:.82rem;font-weight:600;color:#0f1117;">Harika!</div>' +
+                            '<div style="font-size:.75rem;color:#94a3b8;margin-top:3px;">Üzerinizde açık ticket yok</div>' +
+                            '</div>';
+                        return;
+                    }
+
+                    badge.textContent = data.count > 9 ? '9+' : data.count;
+                    badge.style.display = 'flex';
+
+                    if (!list) return;
+                    var prioMap = {
+                        4: { color:'#ef4444', bg:'#fef2f2', icon:'fa-fire' },
+                        3: { color:'#f59e0b', bg:'#fffbeb', icon:'fa-arrow-up' },
+                        2: { color:'#3b82f6', bg:'#eff6ff', icon:'fa-minus' },
+                        1: { color:'#94a3b8', bg:'#f1f5f9', icon:'fa-arrow-down' }
+                    };
+
+                    var html = '';
+                    data.tickets.forEach(function(t) {
+                        var p         = prioMap[t.priority] || prioMap[2];
+                        var waitH     = t.waitingHours || 0;
+                        var waitColor = waitH > 48 ? '#ef4444' : waitH > 24 ? '#f59e0b' : '#94a3b8';
+                        var waitTxt   = waitH > 0 ? waitH + ' sa önce' : 'Az önce';
+                        html +=
+                            '<a href="/AdminTicket/Detay/' + t.id + '" style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;text-decoration:none;transition:background .15s;" onmouseover="this.style.background=\'#f8fafd\'" onmouseout="this.style.background=\'\'">'+
+                                '<div style="width:36px;height:36px;border-radius:10px;background:' + p.bg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                                    '<i class="fas ' + p.icon + '" style="color:' + p.color + ';font-size:.8rem;"></i>' +
+                                '</div>' +
+                                '<div style="flex:1;min-width:0;">' +
+                                    '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+                                        '<span style="font-size:.75rem;font-family:monospace;font-weight:700;color:' + p.color + ';">' + t.ticketNo + '</span>' +
+                                        '<span style="font-size:.68rem;color:' + waitColor + ';white-space:nowrap;">' + waitTxt + '</span>' +
+                                    '</div>' +
+                                    '<div style="font-size:.78rem;font-weight:600;color:#0f1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">' + (t.title.length > 38 ? t.title.substring(0,38) + '…' : t.title) + '</div>' +
+                                    '<div style="font-size:.7rem;color:#94a3b8;margin-top:2px;">' +
+                                        '<i class="fas fa-building" style="font-size:.6rem;margin-right:3px;"></i>' + (t.customerName || '') +
+                                    '</div>' +
+                                '</div>' +
+                            '</a>';
+                    });
+                    list.innerHTML = html;
+                })
+                .catch(function(){});
+        }
+
+        function refreshCompanyNotifications() {
+            fetch('/Notification/CompanyNotifications')
+                .then(function(r){ return r.json(); })
+                .then(function(data) {
+                    var list  = document.getElementById('companyNotifList');
+                    var badge = document.getElementById('companyNotifBadge');
+                    if (!badge) return;
+
+                    if (!data || data.totalCount === 0) {
+                        badge.style.display = 'none';
+                        if (list) list.innerHTML =
+                            '<div style="padding:24px;text-align:center;">' +
+                            '<div style="width:44px;height:44px;border-radius:50%;background:#f0fdf4;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">' +
+                            '<i class="fas fa-check" style="color:#10b981;font-size:1.1rem;"></i></div>' +
+                            '<div style="font-size:.82rem;font-weight:600;color:#0f1117;">Yeni aktivite yok</div>' +
+                            '<div style="font-size:.75rem;color:#94a3b8;margin-top:3px;">Firma ticketlarında son aktivite bulunmuyor</div>' +
+                            '</div>';
+                        return;
+                    }
+
+                    badge.textContent = data.totalCount > 9 ? '9+' : data.totalCount;
+                    badge.style.display = 'flex';
+
+                    if (!list) return;
+                    var html = '';
+
+                    (data.comments || []).forEach(function(c) {
+                        html +=
+                            '<a href="/AdminTicket/Detay/' + c.ticketID + '" style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;text-decoration:none;transition:background .15s;" onmouseover="this.style.background=\'#f8fafd\'" onmouseout="this.style.background=\'\'">'+
+                                '<div style="width:36px;height:36px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                                    '<i class="fas fa-comment-alt" style="color:#2563eb;font-size:.8rem;"></i>' +
+                                '</div>' +
+                                '<div style="flex:1;min-width:0;">' +
+                                    '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+                                        '<span style="font-size:.75rem;font-family:monospace;font-weight:700;color:#2563eb;">' + c.ticketNo + '</span>' +
+                                        '<span style="font-size:.68rem;color:#94a3b8;white-space:nowrap;">' + (c.elapsedText || '') + '</span>' +
+                                    '</div>' +
+                                    '<div style="font-size:.78rem;font-weight:600;color:#0f1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">' + (c.title || '') + '</div>' +
+                                    '<div style="font-size:.7rem;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                                        '<i class="fas fa-user" style="font-size:.6rem;margin-right:3px;"></i>' + (c.userFullName || '') +
+                                        ' — ' + (c.shortComment || '') +
+                                    '</div>' +
+                                '</div>' +
+                            '</a>';
+                    });
+
+                    (data.files || []).forEach(function(f) {
+                        html +=
+                            '<a href="/AdminTicket/Detay/' + f.ticketID + '" style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid #f1f5f9;text-decoration:none;transition:background .15s;" onmouseover="this.style.background=\'#f8fafd\'" onmouseout="this.style.background=\'\'">'+
+                                '<div style="width:36px;height:36px;border-radius:10px;background:#fffbeb;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                                    '<i class="fas fa-paperclip" style="color:#f59e0b;font-size:.8rem;"></i>' +
+                                '</div>' +
+                                '<div style="flex:1;min-width:0;">' +
+                                    '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+                                        '<span style="font-size:.75rem;font-family:monospace;font-weight:700;color:#f59e0b;">' + f.ticketNo + '</span>' +
+                                        '<span style="font-size:.68rem;color:#94a3b8;white-space:nowrap;">' + (f.elapsedText || '') + '</span>' +
+                                    '</div>' +
+                                    '<div style="font-size:.78rem;font-weight:600;color:#0f1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">' + (f.title || '') + '</div>' +
+                                    '<div style="font-size:.7rem;color:#94a3b8;margin-top:2px;">' +
+                                        '<i class="fas fa-file" style="font-size:.6rem;margin-right:3px;"></i>' + (f.originalFileName || '') +
+                                        ' · ' + (f.uploadedByName || '') +
+                                    '</div>' +
+                                '</div>' +
+                            '</a>';
+                    });
+
+                    list.innerHTML = html;
+                })
+                .catch(function(){});
+        }
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 
 </body>
-
 </html>

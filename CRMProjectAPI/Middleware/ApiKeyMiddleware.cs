@@ -12,7 +12,7 @@ namespace CRMProjectAPI
         {
             "/api/auth/login"
         };
-        private static readonly string[] BypassPaths = { "/swagger", "/health", "/uploads" }; // ← /uploads ekle
+        private static readonly string[] BypassPaths = { "/swagger", "/health", "/uploads", "/hubs" };
         public ApiKeyMiddleware(
             RequestDelegate next,
             ILogger<ApiKeyMiddleware> logger,

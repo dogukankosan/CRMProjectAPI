@@ -1,4 +1,5 @@
 ﻿using CRMProjectAPI.Data;
+using CRMProjectAPI.Hubs;
 using CRMProjectAPI.Middleware;
 using CRMProjectAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -40,6 +41,7 @@ namespace CRMProjectAPI
                         Array.Empty<string>()
                     }
                 });
+
                 c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
                 {
                     Name = "X-API-Key",
@@ -57,6 +59,9 @@ namespace CRMProjectAPI
                         Array.Empty<string>()
                     }
                 });
+
+
+
             });
 
             builder.Services.AddSingleton<DapperContext>();
@@ -64,7 +69,8 @@ namespace CRMProjectAPI
             builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
             builder.Services.AddSingleton<IJwtService, JwtService>();
             builder.Services.AddScoped<IMailService, MailService>();
-
+            builder.Services.AddSignalR();
+      
             string jwtSecret = builder.Configuration["JwtSettings:SecretKey"]!;
             string jwtIssuer = builder.Configuration["JwtSettings:Issuer"]!;
             string jwtAudience = builder.Configuration["JwtSettings:Audience"]!;
@@ -91,12 +97,14 @@ namespace CRMProjectAPI
             {
                 options.AddPolicy("CRMPolicy", policy =>
                 {
-                    policy.AllowAnyOrigin()
+                    var origins = builder.Configuration["AllowedOrigins"]!
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    policy.WithOrigins(origins)
                           .AllowAnyMethod()
-                          .AllowAnyHeader();
+                          .AllowAnyHeader()
+                          .AllowCredentials();
                 });
             });
-
             WebApplication app = builder.Build();
 
             app.UseSwagger();
@@ -105,7 +113,7 @@ namespace CRMProjectAPI
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "CRM Project API v1");
                 c.DisplayRequestDuration();
             });
-
+        
             // app.UseHttpsRedirection(); // ← kapalı
             app.UseCors("CRMPolicy");
             app.UseStaticFiles();
@@ -114,7 +122,7 @@ namespace CRMProjectAPI
             app.UseMiddleware<ApiKeyMiddleware>();
             app.UseAuthentication();
             app.UseAuthorization();
-
+            app.MapHub<TicketHub>("/hubs/ticket");
             app.MapControllers();
             app.Run();
         }

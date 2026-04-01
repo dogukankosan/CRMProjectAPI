@@ -1103,3 +1103,8 @@ C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Release\net9.0\refint\
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Release\net9.0\CRMProjectUI.pdb
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Release\net9.0\CRMProjectUI.genruntimeconfig.cache
 C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\obj\Release\net9.0\ref\CRMProjectUI.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Release\net9.0\Microsoft.AspNetCore.Http.Connections.Client.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Release\net9.0\Microsoft.AspNetCore.SignalR.Client.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Release\net9.0\Microsoft.AspNetCore.SignalR.Client.Core.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Release\net9.0\System.Net.ServerSentEvents.dll
+C:\Users\DOGUKAN\source\repos\CRMProject\CRMProjectUI\bin\Release\net9.0\dotnet-tools.json

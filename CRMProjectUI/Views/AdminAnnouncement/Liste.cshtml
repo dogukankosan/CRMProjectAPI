@@ -1,0 +1,222 @@
+﻿@model List<CRMProjectUI.Models.AnnouncementDto>
+@{
+    ViewData["Title"] = "Duyurular";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+
+    string? successMsg = TempData["Success"] as string;
+    string? errorMsg = TempData["Error"] as string;
+
+    string PriorityText(byte p) => p switch { 3 => "Kritik", 2 => "Önemli", _ => "Normal" };
+    string PriorityClass(byte p) => p switch { 3 => "danger", 2 => "warning", _ => "success" };
+    string PriorityIcon(byte p) => p switch { 3 => "fa-fire", 2 => "fa-arrow-up", _ => "fa-minus" };
+}
+
+<style>
+    .ann-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(15,17,23,.06);
+        margin-bottom: 14px;
+        overflow: hidden;
+        transition: box-shadow .2s;
+    }
+    .ann-card:hover { box-shadow: 0 8px 32px rgba(15,17,23,.10); }
+    .ann-card-header {
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid #f1f5f9;
+        flex-wrap: wrap;
+    }
+    .ann-card-body { padding: 14px 18px; font-size: .87rem; color: #4a4f5e; }
+    .ann-card-footer {
+        padding: 10px 18px;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        background: #f8fafd;
+    }
+    .ann-title { font-weight: 700; font-size: .97rem; color: #0f1117; }
+    .ann-meta  { font-size: .72rem; color: #94a3b8; margin-top: 2px; }
+    .ann-badge {
+        font-size: .68rem; font-weight: 700;
+        padding: 3px 9px; border-radius: 20px;
+        white-space: nowrap;
+    }
+    .ann-badge.danger  { background: #fef2f2; color: #dc2626; }
+    .ann-badge.warning { background: #fffbeb; color: #d97706; }
+    .ann-badge.success { background: #f0fdf4; color: #16a34a; }
+    .ann-file-item {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: .73rem; background: #f1f5f9;
+        border-radius: 7px; padding: 3px 9px;
+        margin: 2px; color: #475569;
+    }
+    .ann-actions { display: flex; gap: 5px; }
+    .ann-btn {
+        width: 30px; height: 30px; border-radius: 7px;
+        border: 1px solid #e2e8f0; background: #f8fafd;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: .75rem; cursor: pointer; text-decoration: none;
+        color: #64748b; transition: all .15s;
+    }
+    .ann-btn:hover { transform: translateY(-1px); text-decoration: none; }
+    .ann-btn.edit:hover  { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
+    .ann-btn.del:hover   { background: #fef2f2; border-color: #dc2626; color: #dc2626; }
+    .ann-btn.tog:hover   { background: #f0fdf4; border-color: #16a34a; color: #16a34a; }
+    .passive-overlay { opacity: .55; }
+</style>
+
+@Html.AntiForgeryToken()
+
+<div id="tempData"
+     data-success='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(successMsg ?? ""))'
+     data-error='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(errorMsg ?? ""))'>
+</div>
+
+<div class="section-header">
+    <h1>Duyurular</h1>
+    <div class="section-header-breadcrumb">
+        <div class="breadcrumb-item"><a href="/">Anasayfa</a></div>
+        <div class="breadcrumb-item">Duyurular</div>
+    </div>
+</div>
+
+<div class="section-body">
+    <div style="display:flex; justify-content:flex-end; margin-bottom:14px;">
+        <a href="/AdminDuyuru/Ekle" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;background:#2563eb;color:#fff;font-size:.83rem;font-weight:600;text-decoration:none;box-shadow:0 3px 10px rgba(37,99,235,.3);">
+            <i class="fas fa-plus"></i> Yeni Duyuru
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div style="text-align:center;padding:60px;color:#94a3b8;">
+            <i class="fas fa-bullhorn" style="font-size:2.5rem;opacity:.2;display:block;margin-bottom:12px;"></i>
+            Henüz duyuru eklenmemiş.
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model)
+        {
+            bool passive = !item.IsActive;
+            <div class="ann-card @(passive ? "passive-overlay" : "")">
+                <div class="ann-card-header">
+                    <div>
+                        <div class="ann-title">
+                            @if (!item.IsActive)
+                            {
+                                <span style="font-size:.68rem;background:#f1f5f9;color:#64748b;padding:2px 7px;border-radius:10px;margin-right:5px;font-weight:600;">PASİF</span>
+                            }
+                            @item.Title
+                        </div>
+                        <div class="ann-meta">
+                            <i class="fas fa-user" style="font-size:.6rem;margin-right:3px;"></i>@item.CreatedByName
+                            &nbsp;·&nbsp;
+                            <i class="fas fa-clock" style="font-size:.6rem;margin-right:3px;"></i>@item.CreatedDate.ToString("dd.MM.yyyy HH:mm")
+                            @if (item.UpdatedDate.HasValue)
+                            {
+                                <span>&nbsp;· güncellendi: @item.UpdatedDate.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            }
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="ann-badge @PriorityClass(item.Priority)">
+                            <i class="fas @PriorityIcon(item.Priority) mr-1"></i>@PriorityText(item.Priority)
+                        </span>
+                        <div class="ann-actions">
+                            <a href="/AdminDuyuru/Duzenle/@item.ID" class="ann-btn edit" title="Düzenle">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="post" action="/AdminDuyuru/Toggle/@item.ID" style="margin:0;">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="ann-btn tog"
+                                        title="@(item.IsActive ? "Pasif Yap" : "Aktif Yap")">
+                                    <i class="fas @(item.IsActive ? "fa-eye-slash" : "fa-eye")"></i>
+                                </button>
+                            </form>
+                            <button type="button" class="ann-btn del" title="Sil"
+                                    onclick="confirmDelete(@item.ID, '@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Title)')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ann-card-body">
+                    @Html.Raw(item.Content.Replace("\n", "<br/>"))
+                </div>
+
+                @if (item.Files.Any())
+                {
+                    <div class="ann-card-footer">
+                        <div>
+                            <i class="fas fa-paperclip" style="font-size:.72rem;color:#94a3b8;margin-right:4px;"></i>
+                            @foreach (var file in item.Files)
+                            {
+                                <a href="@(ViewBag.ApiBase ?? "")/api/announcement/file/@file.ID/download"
+                                   class="ann-file-item" target="_blank" download>
+                                    <i class="fas fa-file" style="font-size:.65rem;"></i>
+                                    @file.OriginalFileName
+                                    <span style="color:#94a3b8;">(@((file.FileSizeBytes / 1024).ToString("N0")) KB)</span>
+                                </a>
+                            }
+                        </div>
+                        <span style="font-size:.72rem;color:#94a3b8;">@item.Files.Count dosya</span>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+<!-- Silme onay formu -->
+<form id="deleteForm" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+<script>
+    // TempData mesajları
+    (function () {
+        var td = document.getElementById('tempData');
+        if (!td) return;
+        var s = '', e = '';
+        try { s = JSON.parse(td.getAttribute('data-success') || '""'); } catch (ex) { s = ''; }
+        try { e = JSON.parse(td.getAttribute('data-error') || '""'); } catch (ex) { e = ''; }
+        if (s && s.trim()) {
+            setTimeout(function () {
+                Swal.fire({ icon: 'success', title: 'Başarılı!', text: s, timer: 2500, showConfirmButton: false });
+            }, 300);
+        }
+        if (e && e.trim()) {
+            setTimeout(function () {
+                Swal.fire({ icon: 'error', title: 'Hata!', text: e });
+            }, 300);
+        }
+    })();
+
+    function confirmDelete(id, title) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Duyuruyu Sil',
+            html: '<b>' + title + '</b> duyurusunu silmek istediğinize emin misiniz?',
+            showCancelButton: true,
+            confirmButtonText: 'Evet, Sil',
+            cancelButtonText: 'İptal',
+            confirmButtonColor: '#dc2626'
+        }).then(function (r) {
+            if (r.isConfirmed) {
+                var form = document.getElementById('deleteForm');
+                form.action = '/AdminDuyuru/Sil/' + id;
+                form.submit();
+            }
+        });
+    }
+</script>

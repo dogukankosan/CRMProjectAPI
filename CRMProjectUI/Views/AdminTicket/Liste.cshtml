@@ -701,24 +701,23 @@
     <div class="tl-stats">
         <div class="tl-stat" onclick="filterByStatus('all', this)">
             <div class="tl-stat-icon blue"><i class="fas fa-ticket-alt"></i></div>
-            <div><div class="tl-stat-label">Toplam</div><div class="tl-stat-value">@total</div></div>
+            <div><div class="tl-stat-label">Toplam</div><div class="tl-stat-value" data-card="total">@total</div></div>
         </div>
         <div class="tl-stat" onclick="filterByStatus('open', this)">
             <div class="tl-stat-icon indigo"><i class="fas fa-folder-open"></i></div>
-            <div><div class="tl-stat-label">Aktif</div><div class="tl-stat-value" style="color:#4f46e5;">@acik</div></div>
+            <div><div class="tl-stat-label">Aktif</div><div class="tl-stat-value" style="color:#4f46e5;" data-card="acik">@acik</div></div>
         </div>
         <div class="tl-stat" onclick="filterByStatus('0', this)">
             <div class="tl-stat-icon gray"><i class="fas fa-clock"></i></div>
-            <div><div class="tl-stat-label">Beklemede</div><div class="tl-stat-value" style="color:#64748b;">@beklemede</div></div>
+            <div><div class="tl-stat-label">Beklemede</div><div class="tl-stat-value" style="color:#64748b;" data-card="beklemede">@beklemede</div></div>
         </div>
         <div class="tl-stat" onclick="filterByStatus('1', this)">
             <div class="tl-stat-icon indigo"><i class="fas fa-spinner"></i></div>
-            <div><div class="tl-stat-label">İşlemde</div><div class="tl-stat-value" style="color:#4f46e5;">@islemde</div></div>
+            <div><div class="tl-stat-label">İşlemde</div><div class="tl-stat-value" style="color:#4f46e5;" data-card="islemde">@islemde</div></div>
         </div>
- 
         <div class="tl-stat" onclick="filterByStatus('45', this)">
             <div class="tl-stat-icon amber"><i class="fas fa-hourglass-half"></i></div>
-            <div><div class="tl-stat-label">Bekliyor</div><div class="tl-stat-value" style="color:var(--warning);">@(musteriBekle + bizDonecek)</div></div>
+            <div><div class="tl-stat-label">Bekliyor</div><div class="tl-stat-value" style="color:var(--warning);" data-card="bekliyor">@(musteriBekle + bizDonecek)</div></div>
         </div>
     </div>
 
@@ -759,268 +758,48 @@
     </div>
 
     <!-- TABLE -->
+    <!-- TABLE -->
     <div class="tl-card">
-        @if (!filtered.Any())
-        {
-            <div class="tl-empty">
-                <i class="fas fa-ticket-alt"></i>
-                Henüz kayıtlı destek talebi bulunmuyor.
-            </div>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="tl-table" id="ticketTable">
-                    <thead>
-                        <tr>
-                            <th class="sortable" onclick="sortTable(0)">No</th>
-                            <th>Başlık</th>
-                            @if (isStaff)
-                            {
-                                <th>Müşteri</th>
-                            }
-                            <th>Öncelik</th>
-                            <th>Durum</th>
-                            <th>Oluşturan</th>
-                            <th>Kaydı Karşılayan</th>
-                            <th>Süre</th>
-                            <th>İşlem</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                        @foreach (var item in filtered)
+        <div class="table-responsive">
+            <table class="tl-table" id="ticketTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" onclick="sortTable(0)">No</th>
+                        <th>Başlık</th>
+                        @if (isStaff)
                         {
-                            bool closed = item.Status == 2 || item.Status == 3 || item.Status == 6;
-                            string sClass = $"bs-{item.Status}";
-                            string pClass = $"bp-{item.Priority}";
-
-                            string statusText = item.Status switch
-                            {
-                                0 => "Beklemede",
-                                1 => "İşlemde",
-                                3 => "Çözülemedi",
-                                4 => "Müşteri Dönecek",
-                                5 => "Biz Döneceğiz",
-                                _ => "-"
-                            };
-
-                            string prioText = item.Priority switch { 1 => "Düşük", 2 => "Normal", 3 => "Yüksek", 4 => "Kritik", _ => "Normal" };
-                            string prioIcon = item.Priority switch { 4 => "fa-fire", 3 => "fa-arrow-up", 2 => "fa-minus", _ => "fa-arrow-down" };
-
-                            string cbInit = string.IsNullOrEmpty(item.CreatedByName) ? "?"
-                            : string.Concat(item.CreatedByName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
-
-                            string atInit = string.IsNullOrEmpty(item.AssignedToName) ? "?"
-                            : string.Concat(item.AssignedToName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
-
-                            // DB'deki değerlerle birebir eşleştir
-                            string impClass = item.CustomerImportance switch
-                            {
-                                "VIP" => "vip",
-                                "Önemli" => "onemli",
-                                "Düşük" => "dusuk",
-                                "Normal" => "normal",
-                                _ => ""
-                            };
-
-                            // Süre hesapla
-                            string durationStr = "-";
-                            string durationClass = "normal";
-                            if (item.Status == 1 && item.TakenInProgressDate.HasValue)
-                            {
-                                var diff = DateTime.Now - item.TakenInProgressDate.Value;
-                                durationStr = diff.TotalDays >= 1 ? $"{(int)diff.TotalDays}g {(int)diff.TotalHours % 24}sa"
-                                : diff.TotalHours >= 1 ? $"{(int)diff.TotalHours}sa {(int)diff.TotalMinutes % 60}dk"
-                                : $"{(int)diff.TotalMinutes}dk";
-                                durationClass = diff.TotalHours > 24 ? "late" : "active";
-                            }
-                            else if (item.Status == 0 && item.OpenedDate.HasValue)
-                            {
-                                var diff = DateTime.Now - item.OpenedDate.Value;
-                                durationStr = diff.TotalDays >= 1 ? $"{(int)diff.TotalDays}g bekliyor"
-                                : diff.TotalHours >= 1 ? $"{(int)diff.TotalHours}sa bekliyor"
-                                : $"{(int)diff.TotalMinutes}dk bekliyor";
-                                durationClass = diff.TotalHours > 48 ? "late" : "normal";
-                            }
-                            // ← BURAYA YAPISTIR
-                            else if ((item.Status == 4 || item.Status == 5) && item.OpenedDate.HasValue)
-                            {
-                                var diff = DateTime.Now - item.OpenedDate.Value;
-                                string label = item.Status == 4 ? "müşteri bekliyor" : "biz döneceğiz";
-                                durationStr = diff.TotalDays >= 1 ? $"{(int)diff.TotalDays}g {label}"
-                                : diff.TotalHours >= 1 ? $"{(int)diff.TotalHours}sa {label}"
-                                : $"{(int)diff.TotalMinutes}dk {label}";
-                                durationClass = diff.TotalHours > 72 ? "late" : "normal";
-                            }
-
-                            string safeSearch = $"{item.TicketNo} {item.Title} {item.CustomerName} {item.LogoProductName} {item.CreatedByName} {item.AssignedToName} {item.CustomerImportance}".ToLower();
-
-                            <tr data-status="@item.Status"
-                                data-search="@safeSearch"
-                                data-assigned="@(item.AssignedToUserID?.ToString() ?? "")">
-
-                                <!-- NO -->
-                                <td>
-                                    <span style="font-family:monospace; font-size:.75rem; color:var(--ink-soft); font-weight:600;">@item.TicketNo</span>
-                                </td>
-
-                                <!-- BAŞLIK / ÜRÜN / AÇIKLAMA -->
-                                <td>
-                                    <a asp-action="Detay" asp-controller="AdminTicket"
-                                       asp-route-id="@item.ID" class="tl-title-link" title="@item.Title">
-                                        @item.Title
-                                    </a>
-                                    @if (!string.IsNullOrEmpty(item.LogoProductName))
-                                    {
-                                        <span class="tl-sub">
-                                            <i class="fas fa-cube mr-1" style="font-size:.62rem;"></i>@item.LogoProductName
-                                        </span>
-                                    }
-                           
-                                    @if (!string.IsNullOrEmpty(item.Description))
-                                    {
-                                        <div class="tl-desc-preview" title="@item.Description">
-                                            @(item.Description.Length > 55 ? item.Description.Substring(0, 55) + "…" : item.Description)
-                                        </div>
-                                    }
-                                </td>
-                                @if (isStaff)
-                                {
-                                    <td>
-                                        <div style="font-weight:600; font-size:.81rem;">@item.CustomerName</div>
-                                        <div style="display:flex; align-items:center; gap:5px; margin-top:2px; flex-wrap:wrap;">
-                                            @if (item.CustomerImportance != null)
-                                            {
-                                                <span class="b-vip @impClass">@item.CustomerImportance</span>
-                                            }
-                                        </div>
-                                    </td>
-                                }
-
-                                <!-- ÖNCELİK -->
-                                <td>
-                                    <span class="b-priority @pClass">
-                                        <i class="fas @prioIcon mr-1"></i>@prioText
-                                    </span>
-                                </td>
-
-                                <!-- DURUM -->
-                                <td>
-                                    <span class="b-status @sClass">@statusText</span>
-                                </td>
-
-                                <!-- OLUŞTURAN -->
-                                <td>
-                                    <div class="tl-user">
-                                        <div class="tl-avatar blue">
-                                            @if (!string.IsNullOrEmpty(item.CreatedByPicture))
-                                            {
-                                                <img src="@(apiBase + item.CreatedByPicture)" alt="@cbInit"
-                                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-                                                <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@cbInit</span>
-                                            }
-                                            else
-                                            {
-
-                                                @cbInit
-                                            }
-                                        </div>
-                                        <div>
-                                            <div class="tl-user-name">@(item.CreatedByName ?? "-")</div>
-                                            <div class="tl-user-contact">
-                                                @if (!string.IsNullOrEmpty(item.CreatedByPhone))
-                                                {
-                                                    <a href="tel:@item.CreatedByPhone" onclick="event.stopPropagation()">
-                                                        <i class="fas fa-phone"></i>@item.CreatedByPhone
-                                                    </a>
-                                                }
-                                                @if (!string.IsNullOrEmpty(item.CreatedByEmail))
-                                                {
-                                                    <a href="mailto:@item.CreatedByEmail" onclick="event.stopPropagation()">
-                                                        <i class="fas fa-envelope"></i>@item.CreatedByEmail
-                                                    </a>
-                                                }
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <!-- ATANAN -->
-                                <td>
-                                    @if (!string.IsNullOrEmpty(item.AssignedToName))
-                                    {
-                                        <div class="tl-user">
-                                            <div class="tl-avatar green">
-                                                @if (!string.IsNullOrEmpty(item.AssignedToPicture))
-                                                {
-                                                    <img src="@(apiBase + item.AssignedToPicture)" alt="@atInit"
-                                                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-                                                    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@atInit</span>
-                                                }
-                                                else
-                                                {
-
-                                                    @atInit
-                                                }
-                                            </div>
-                                            <span style="font-size:.8rem; font-weight:600;">@item.AssignedToName</span>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <span class="tl-unassigned"><i class="fas fa-user-slash mr-1"></i>Atanmadı</span>
-                                    }
-                                </td>
-
-                                <!-- SÜRE -->
-                                <td>
-                                    <span class="tl-duration @durationClass">
-                                        <i class="fas @(item.Status == 1 ? "fa-spinner fa-spin" : "fa-clock")" style="font-size:.65rem;"></i>
-                                        @durationStr
-                                    </span>
-                                </td>
-
-                                <!-- İŞLEM -->
-                                <td>
-                                    <div class="tl-actions">
-                                        <a asp-action="Detay" asp-controller="AdminTicket"
-                                           asp-route-id="@item.ID" class="tl-btn info" title="Detay">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        @if (isStaff && !closed)
-                                        {
-                                            <button type="button" class="tl-btn assign" title="Devret / Ata"
-                                                    onclick="openAssignModal(@item.ID,
-                        '@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Title ?? "")',
-                        @(item.AssignedToUserID?.ToString() ?? "null"),
-                        '@(item.AssignedToUserID?.ToString() ?? "")')">
-                                                <i class="fas fa-user-check"></i>
-                                            </button>
-                                            <button type="button" class="tl-btn status" title="Durum Değiştir"
-                                                    data-id="@item.ID"
-                                                    data-title="@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Title ?? "")"
-                                                    data-status="@item.Status"
-                                                    data-opened="@((item.TakenInProgressDate ?? item.OpenedDate)?.ToString("o") ?? "")"
-                                                    data-assigned="@(item.AssignedToUserID?.ToString() ?? "")"
-                                                    onclick="openStatusModal(this)">
-                                                <i class="fas fa-exchange-alt"></i>
-                                            </button>
-                                        }
-                                    </div>
-                                </td>
-
-                            </tr>
+                            <th>Müşteri</th>
                         }
-                    </tbody>
-                </table>
-            </div>
-            <div class="tl-pagination" id="paginationBar">
-                <span id="paginationInfo"></span>
-                <div class="tl-page-btns" id="paginationBtns"></div>
-            </div>
-        }
+                        <th>Öncelik</th>
+                        <th>Durum</th>
+                        <th>Oluşturan</th>
+                        <th>Kaydı Karşılayan</th>
+                        <th>Süre</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    @if (!filtered.Any())
+                    {
+                        <tr id="emptyRow">
+                            <td colspan="@(isStaff ? 9 : 8)" style="text-align:center; padding:48px 24px; color:var(--ink-soft);">
+                                <i class="fas fa-ticket-alt" style="font-size:2.5rem; opacity:.2; display:block; margin-bottom:12px;"></i>
+                                Henüz kayıtlı destek talebi bulunmuyor.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @await Html.PartialAsync("_TicketTableRows", filtered)
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="tl-pagination" id="paginationBar">
+            <span id="paginationInfo"></span>
+            <div class="tl-page-btns" id="paginationBtns"></div>
+        </div>
     </div>
-</div>
 
 <!-- ══ DEVİR MODAL ══ -->
 @if (isStaff)
@@ -1100,7 +879,10 @@
                     <label style="font-size:.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:5px;">
                         Çalışma Süresi <small style="font-weight:400;">(dakika)</small>
                     </label>
-                    <input type="number" id="workingMinInput" min="0" value="0"
+                    <input type="number" id="workingMinInput" min="1" value="1"
+                           oninput="this.value = Math.max(1, parseInt(this.value) || 1);"
+                           onchange="this.value = Math.max(1, parseInt(this.value) || 1);"
+                           onblur="this.value = Math.max(1, parseInt(this.value) || 1);"
                            style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.85rem;" />
                 </div>
             </div>
@@ -1129,11 +911,14 @@
     var sortCol      = -1;
     var sortAsc      = true;
 
-      document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function () {
         token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-        allRows = Array.from(document.querySelectorAll('#tableBody tr'));
+        allRows = document.getElementById('tableBody')
+                  ? Array.from(document.querySelectorAll('#tableBody tr'))
+                  : [];  // ← BUNU EKLE
         applyFilters();
     });
+
 
     // TempData mesajları — DOMContentLoaded dışında, direkt çalıştır
     (function() {
@@ -1199,6 +984,7 @@
 
     function renderPage() {
         var tbody      = document.getElementById('tableBody');
+            if (!tbody) return; // ← BUNU EKLE
         var total      = filteredRows.length;
         var totalPages = Math.max(1, Math.ceil(total / pageSize));
         if (currentPage > totalPages) currentPage = totalPages;
@@ -1245,7 +1031,6 @@
         var callerId = '@callerUserId';
         var isSA     = @(isSuperAdmin ? "true" : "false");
 
-        // Admin kısıtlaması
         if (!isSA) {
             if (assignedTo && assignedTo !== callerId) {
                 Swal.fire({ icon:'warning', title:'Yetkisiz', text:'Bu ticket başka birine atanmış, devredemezsiniz.' });
@@ -1256,12 +1041,20 @@
         assignTicketId = id;
         document.getElementById('assignModalTitle').textContent = title;
         document.getElementById('assignUserSelect').value = currentUserId || '';
+        document.getElementById('assignUserSelect').setAttribute('data-current-assigned', currentUserId ? String(currentUserId) : '');  // ← BURAYA
         document.getElementById('assignModal').style.display = 'flex';
     }
     function closeAssignModal() { document.getElementById('assignModal').style.display = 'none'; assignTicketId = null; }
     function submitAssign() {
         var userId = document.getElementById('assignUserSelect').value;
         if (!userId) { Swal.fire({icon:'warning', title:'Uyarı', text:'Lütfen bir kullanıcı seçin.'}); return; }
+
+        // Zaten üzerinde olan kişiye tekrar devretmeyi engelle
+        var currentAssigned = document.getElementById('assignUserSelect').getAttribute('data-current-assigned');
+        if (currentAssigned && userId === currentAssigned) {
+            Swal.fire({ icon:'info', title:'Değişiklik Yok', text:'Bu ticket zaten bu kişide.' });
+            return;
+        }
 
         var form = document.createElement('form');
         form.method = 'POST';
@@ -1277,16 +1070,15 @@
         document.body.appendChild(form);
         form.submit();
     }
-
     var statusTicketId = null;
     var currentElapsed = 0; // ← bunu ekle
-    function openStatusModal(btn) {
+       function openStatusModal(btn) {
         var id            = parseInt(btn.getAttribute('data-id'));
         var title         = btn.getAttribute('data-title');
         var currentStatus = btn.getAttribute('data-status');
         var openedDate    = btn.getAttribute('data-opened');
+        var takenDate     = btn.getAttribute('data-taken');
         var assignedTo    = btn.getAttribute('data-assigned');
-
         var callerId = '@callerUserId';
         var isSA     = @(isSuperAdmin ? "true" : "false");
 
@@ -1311,13 +1103,15 @@
         var defaultStatus = (String(currentStatus) === '1') ? '2' : String(currentStatus);
         document.getElementById('statusSelect').value = defaultStatus;
 
-        var elapsed = 0;
-        if (openedDate && openedDate !== '') {
-            var opened = new Date(openedDate);
-            var now    = new Date();
-            elapsed    = Math.floor((now - opened) / 60000);
-            if (elapsed < 0) elapsed = 0;
-        }
+        // ── Türkiye saati ile elapsed hesapla (sunucuya bağımlı değil) ──
+          var baseDate = (takenDate && takenDate !== '') ? takenDate : openedDate;
+    var elapsed  = 0;
+    if (baseDate && baseDate !== '') {
+        var base   = new Date(baseDate); // ISO string timezone'u zaten içeriyor
+        var nowUTC = Date.now();         // UTC milisaniye
+        elapsed    = Math.floor((nowUTC - base.getTime()) / 60000); // ikisi de UTC bazlı
+        if (elapsed < 1) elapsed = 1;
+    }
         currentElapsed = elapsed;
         document.getElementById('workingMinInput').value = elapsed;
 
@@ -1335,18 +1129,19 @@
             document.getElementById('workingMinInput').value = currentElapsed;
         }
     }
-          function submitStatus() {
+             function submitStatus() {
         var status     = document.getElementById('statusSelect').value;
         var note       = document.getElementById('solutionNoteInput')?.value.trim() ?? '';
-       var minutes = parseInt(document.getElementById('workingMinInput').value, 10);
-    if (isNaN(minutes) || minutes < 0) minutes = 0;
+        var minutes    = parseInt(document.getElementById('workingMinInput').value, 10);
+        if (isNaN(minutes) || minutes < 1) minutes = 1; // ← EN AZ 1
+        document.getElementById('workingMinInput').value = minutes;
+
         var currentSt  = parseInt(document.getElementById('statusSelect').getAttribute('data-current') || '0');
         var assignedTo = document.getElementById('statusSelect').getAttribute('data-assigned') || '';
         var callerId   = '@callerUserId';
         var isSA       = @(isSuperAdmin ? "true" : "false");
         var cancelReason = document.getElementById('cancelReasonInput')?.value.trim() ?? '';
 
-        // Admin kısıtlaması
         if (!isSA) {
             if (assignedTo && assignedTo !== callerId) {
                 Swal.fire({ icon:'warning', title:'Yetkisiz', text:'Bu ticket başka birine atanmış, müdahale edemezsiniz.' });
@@ -1358,22 +1153,36 @@
             }
         }
 
+        if (String(currentSt) === String(status)) {
+            Swal.fire({ icon:'info', title:'Değişiklik Yok', text:'Ticket zaten bu durumda.' });
+            return;
+        }
+
         if (currentSt === 0 && status !== '0' && status !== '1') {
             Swal.fire({ icon:'warning', title:'Önce İşleme Alın', text:'Ticket kapatılmadan önce "İşlemde" statüsüne alınmalıdır.' });
             return;
         }
+
         if ((status === '2' || status === '3') && !note) {
             Swal.fire({ icon:'warning', title:'Eksik Alan', text:'Kapatma için çözüm notu zorunludur.' });
             return;
         }
+
         if (status === '6' && !cancelReason) {
             Swal.fire({ icon:'warning', title:'Eksik Alan', text:'İptal için neden zorunludur.' });
             return;
         }
 
+        // ← SPAM KORUMASI
+        var submitBtn = document.querySelector('#statusModal button[onclick="submitStatus()"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
+        }
+
         var form = document.createElement('form');
         form.method = 'POST';
-    form.action = '/AdminTicket/DurumGuncelle/' + statusTicketId;
+        form.action = '/AdminTicket/DurumGuncelle/' + statusTicketId;
 
         [
             ['__RequestVerificationToken', token],
@@ -1393,4 +1202,40 @@
     document.addEventListener('keydown', function(e) {
         if (e.key==='Escape') { closeAssignModal(); closeStatusModal(); }
     });
+           function refreshTable() {
+            fetch('/AdminTicket/ListePartial')
+                .then(function(r) { return r.text(); })
+                .then(function(html) {
+                    var tbody = document.getElementById('tableBody');
+                    if (!tbody) return;
+                    tbody.innerHTML = html;
+                    setTimeout(function() {
+                        allRows = Array.from(document.querySelectorAll('#tableBody tr[data-status]'));
+
+                        // ── CARD GÜNCELLE ──
+                        var total      = allRows.length;
+                        var beklemede  = allRows.filter(r => r.getAttribute('data-status') === '0').length;
+                        var islemde    = allRows.filter(r => r.getAttribute('data-status') === '1').length;
+                        var musteriBekle = allRows.filter(r => r.getAttribute('data-status') === '4').length;
+                        var bizDonecek = allRows.filter(r => r.getAttribute('data-status') === '5').length;
+                        var acik       = beklemede + islemde;
+
+                        document.querySelector('[data-card="total"]').textContent   = total;
+                        document.querySelector('[data-card="acik"]').textContent    = acik;
+                        document.querySelector('[data-card="beklemede"]').textContent = beklemede;
+                        document.querySelector('[data-card="islemde"]').textContent = islemde;
+                        document.querySelector('[data-card="bekliyor"]').textContent = musteriBekle + bizDonecek;
+
+                        // Filter buton sayılarını da güncelle
+                        document.querySelector('.tl-filter-btn[onclick*="all"] .tl-filter-count').textContent    = total;
+                        document.querySelector('.tl-filter-btn[onclick*="open"] .tl-filter-count').textContent   = acik;
+                        document.querySelector('.tl-filter-btn[onclick*="\'0\'"] .tl-filter-count').textContent  = beklemede;
+                        document.querySelector('.tl-filter-btn[onclick*="\'1\'"] .tl-filter-count').textContent  = islemde;
+                        document.querySelector('.tl-filter-btn[onclick*="\'45\'"] .tl-filter-count').textContent = musteriBekle + bizDonecek;
+
+                        applyFilters();
+                    }, 50);
+                })
+                .catch(function(err) { console.error(err); });
+        }
 </script>

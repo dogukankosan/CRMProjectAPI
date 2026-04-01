@@ -1,0 +1,225 @@
+﻿@model List<CRMProjectUI.Models.TicketListDto>
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
+    bool isSuperAdmin = User.IsInRole("SuperAdmin");
+    bool isAdmin = User.IsInRole("Admin");
+    bool isStaff = isSuperAdmin || isAdmin;
+}
+
+@foreach (var item in Model)
+{
+    bool closed = item.Status == 2 || item.Status == 3 || item.Status == 6;
+    string sClass = $"bs-{item.Status}";
+    string pClass = $"bp-{item.Priority}";
+
+    string statusText = item.Status switch
+    {
+        0 => "Beklemede",
+        1 => "İşlemde",
+        3 => "Çözülemedi",
+        4 => "Müşteri Dönecek",
+        5 => "Biz Döneceğiz",
+        _ => "-"
+    };
+
+    string prioText = item.Priority switch { 1 => "Düşük", 2 => "Normal", 3 => "Yüksek", 4 => "Kritik", _ => "Normal" };
+    string prioIcon = item.Priority switch { 4 => "fa-fire", 3 => "fa-arrow-up", 2 => "fa-minus", _ => "fa-arrow-down" };
+
+    string cbInit = string.IsNullOrEmpty(item.CreatedByName) ? "?"
+        : string.Concat(item.CreatedByName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+
+    string atInit = string.IsNullOrEmpty(item.AssignedToName) ? "?"
+        : string.Concat(item.AssignedToName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+
+    string impClass = item.CustomerImportance switch
+    {
+        "VIP" => "vip",
+        "Önemli" => "onemli",
+        "Düşük" => "dusuk",
+        "Normal" => "normal",
+        _ => ""
+    };
+
+    var now = CRMProjectUI.Helpers.DateTimeHelper.NowTurkey;
+    string durationStr = "-";
+    string durationClass = "normal";
+
+    if (item.Status == 1)
+    {
+        var baseDate = item.TakenInProgressDate ?? item.OpenedDate;
+        if (baseDate.HasValue)
+        {
+            var diff = now - baseDate.Value;
+            durationStr = diff.TotalDays >= 1
+                ? $"{(int)diff.TotalDays}g {(int)(diff.TotalHours % 24)}sa"
+                : diff.TotalHours >= 1
+                ? $"{(int)diff.TotalHours}sa {(int)(diff.TotalMinutes % 60)}dk"
+                : $"{(int)diff.TotalMinutes}dk";
+            durationClass = diff.TotalHours > 24 ? "late" : "active";
+        }
+    }
+    else if (item.Status == 0 && item.OpenedDate.HasValue)
+    {
+        var diff = now - item.OpenedDate.Value;
+        durationStr = diff.TotalDays >= 1 ? $"{(int)diff.TotalDays}g bekliyor"
+            : diff.TotalHours >= 1 ? $"{(int)diff.TotalHours}sa bekliyor"
+            : $"{(int)diff.TotalMinutes}dk bekliyor";
+        durationClass = diff.TotalHours > 48 ? "late" : "normal";
+    }
+    else if ((item.Status == 4 || item.Status == 5) && item.OpenedDate.HasValue)
+    {
+        var diff = now - item.OpenedDate.Value;
+        string label = item.Status == 4 ? "müşteri bekliyor" : "biz döneceğiz";
+        durationStr = diff.TotalDays >= 1 ? $"{(int)diff.TotalDays}g {label}"
+            : diff.TotalHours >= 1 ? $"{(int)diff.TotalHours}sa {label}"
+            : $"{(int)diff.TotalMinutes}dk {label}";
+        durationClass = diff.TotalHours > 72 ? "late" : "normal";
+    }
+
+    string safeSearch = $"{item.TicketNo} {item.Title} {item.CustomerName} {item.LogoProductName} {item.CreatedByName} {item.AssignedToName} {item.CustomerImportance}".ToLower();
+
+    <tr data-status="@item.Status"
+        data-search="@safeSearch"
+        data-assigned="@(item.AssignedToUserID?.ToString() ?? "")">
+
+        <td>
+            <span style="font-family:monospace; font-size:.75rem; color:var(--ink-soft); font-weight:600;">@item.TicketNo</span>
+        </td>
+
+        <td>
+            <a href="/AdminTicket/Detay/@item.ID" class="tl-title-link" title="@item.Title">
+                @item.Title
+            </a>
+            @if (!string.IsNullOrEmpty(item.LogoProductName))
+            {
+                <span class="tl-sub">
+                    <i class="fas fa-cube mr-1" style="font-size:.62rem;"></i>@item.LogoProductName
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(item.Description))
+            {
+                <div class="tl-desc-preview" title="@item.Description">
+                    @(item.Description.Length > 55 ? item.Description.Substring(0, 55) + "…" : item.Description)
+                </div>
+            }
+        </td>
+
+        @if (isStaff)
+        {
+            <td>
+                <div style="font-weight:600; font-size:.81rem;">@item.CustomerName</div>
+                <div style="display:flex; align-items:center; gap:5px; margin-top:2px; flex-wrap:wrap;">
+                    @if (item.CustomerImportance != null)
+                    {
+                        <span class="b-vip @impClass">@item.CustomerImportance</span>
+                    }
+                </div>
+            </td>
+        }
+
+        <td>
+            <span class="b-priority @pClass">
+                <i class="fas @prioIcon mr-1"></i>@prioText
+            </span>
+        </td>
+
+        <td>
+            <span class="b-status @sClass">@statusText</span>
+        </td>
+
+        <td>
+            <div class="tl-user">
+                <div class="tl-avatar blue">
+                    @if (!string.IsNullOrEmpty(item.CreatedByPicture))
+                    {
+                        <img src="@(apiBase + item.CreatedByPicture)" alt="@cbInit"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                        <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@cbInit</span>
+                    }
+                    else
+                    {
+                        @cbInit
+                    }
+                </div>
+                <div>
+                    <div class="tl-user-name">@(item.CreatedByName ?? "-")</div>
+                    <div class="tl-user-contact">
+                        @if (!string.IsNullOrEmpty(item.CreatedByPhone))
+                        {
+                            <a href="tel:@item.CreatedByPhone" onclick="event.stopPropagation()">
+                                <i class="fas fa-phone"></i>@item.CreatedByPhone
+                            </a>
+                        }
+                        @if (!string.IsNullOrEmpty(item.CreatedByEmail))
+                        {
+                            <a href="mailto:@item.CreatedByEmail" onclick="event.stopPropagation()">
+                                <i class="fas fa-envelope"></i>@item.CreatedByEmail
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </td>
+
+        <td>
+            @if (!string.IsNullOrEmpty(item.AssignedToName))
+            {
+                <div class="tl-user">
+                    <div class="tl-avatar green">
+                        @if (!string.IsNullOrEmpty(item.AssignedToPicture))
+                        {
+                            <img src="@(apiBase + item.AssignedToPicture)" alt="@atInit"
+                                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                            <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@atInit</span>
+                        }
+                        else
+                        {
+                            @atInit
+                        }
+                    </div>
+                    <span style="font-size:.8rem; font-weight:600;">@item.AssignedToName</span>
+                </div>
+            }
+            else
+            {
+                <span class="tl-unassigned"><i class="fas fa-user-slash mr-1"></i>Atanmadı</span>
+            }
+        </td>
+
+        <td>
+            <span class="tl-duration @durationClass">
+                <i class="fas @(item.Status == 1 ? "fa-spinner fa-spin" : "fa-clock")" style="font-size:.65rem;"></i>
+                @durationStr
+            </span>
+        </td>
+
+        <td>
+            <div class="tl-actions">
+                <a href="/AdminTicket/Detay/@item.ID" class="tl-btn info" title="Detay">
+                    <i class="fas fa-eye"></i>
+                </a>
+                @if (isStaff && !closed)
+                {
+                    <button type="button" class="tl-btn assign" title="Devret / Ata"
+                            onclick="openAssignModal(@item.ID,
+                                        '@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Title ?? "")',
+                                        @(item.AssignedToUserID?.ToString() ?? "null"),
+                                        '@(item.AssignedToUserID?.ToString() ?? "")')">
+                        <i class="fas fa-user-check"></i>
+                    </button>
+                    <button type="button" class="tl-btn status" title="Durum Değiştir"
+                            data-id="@item.ID"
+                            data-title="@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Title ?? "")"
+                            data-status="@item.Status"
+                            data-opened="@(item.OpenedDate?.ToString("o") ?? "")"
+                            data-taken="@(item.TakenInProgressDate?.ToString("o") ?? "")"
+                            data-assigned="@(item.AssignedToUserID?.ToString() ?? "")"
+                            onclick="openStatusModal(this)">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>
+                }
+            </div>
+        </td>
+    </tr>
+}

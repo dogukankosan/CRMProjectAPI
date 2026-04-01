@@ -768,6 +768,7 @@
                     }
                 </div>
                 <div class="td-card-body">
+                <div id="filesBody">
                     @if (!Model.Files.Any())
                     {
                         <div style="text-align:center; padding:20px; color:var(--ink-soft);">
@@ -804,6 +805,7 @@
                             }
                         </div>
                     }
+                </div>
                     @if (!isClosed)
                     {
                         <form asp-action="DosyaYukle" asp-controller="AdminTicket" asp-route-id="@Model.ID"
@@ -832,7 +834,7 @@
                         <span style="font-size:.72rem; font-weight:400; color:var(--ink-soft);">(@Model.Comments.Count)</span>
                     </h6>
                 </div>
-                <div class="td-card-body">
+            <div class="td-card-body" id="commentsBody">
                     @if (!Model.Comments.Any())
                     {
                         <div style="text-align:center; padding:20px; color:var(--ink-soft);">
@@ -1250,15 +1252,17 @@
         {
                 <text>
                 (function() {
-                    var taken  = new Date('@Model.TakenInProgressDate.Value.ToString("o")');
-                    var now    = new Date();
-                    var diff   = Math.floor((now - taken) / 60000);
-                    if (diff < 0) diff = 0;
-                    var h = Math.floor(diff / 60);
-                    var m = diff % 60;
-                    var display = h > 0 ? h + ' sa ' + m + ' dk' : m + ' dk';
-                    var el = document.getElementById('workingDuration');
-                    if (el) el.textContent = display;
+                         // ✅ YENİ — DB tarihi yerel saat olarak zorla parse et
+            var takenStr = '@Model.TakenInProgressDate.Value.ToString("yyyy-MM-ddTHH:mm:ss")';
+            var taken = new Date(takenStr); // Tarayıcı yerel saat olarak yorumlar
+            var now   = new Date();
+            var diff  = Math.floor((now - taken) / 60000);
+            if (diff < 0) diff = 0;
+            var h = Math.floor(diff / 60);
+            var m = diff % 60;
+            var display = h > 0 ? h + ' sa ' + m + ' dk' : m + ' dk';
+            var el = document.getElementById('workingDuration');
+            if (el) el.textContent = display;
                 })();
                 </text>
         }
@@ -1308,6 +1312,61 @@
         // ── ESC ──
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closePreview();
+                });// ── SİGNALR — bu ticket'a ait yorum/dosya gelince güncelle ──
+        if (typeof ticketConnection !== 'undefined') {
+
+            ticketConnection.on('CommentAdded', function(data) {
+                if (data.ticketId !== ticketId) return;
+                // Sayfayı sessizce yenile
+                fetch('/AdminTicket/Detay/' + ticketId)
+                    .then(function(r) { return r.text(); })
+                    .then(function(html) {
+                        var parser = new DOMParser();
+                        var doc = parser.parseFromString(html, 'text/html');
+                        // Yorumlar bölümünü güncelle
+                        var newComments = doc.querySelector('#commentsBody');
+                        var curComments = document.getElementById('commentsBody');
+                        if (newComments && curComments) {
+                            curComments.innerHTML = newComments.innerHTML;
+                        }
+                    }).catch(function(){});
+
+                Swal.fire({
+                    toast: true, position: 'top-end', icon: 'info',
+                    title: 'Yeni yorum eklendi',
+                    showConfirmButton: false, timer: 3000, timerProgressBar: true
+                });
+            });
+
+              ticketConnection.on('FileAdded', function(data) {
+            if (data.ticketId !== ticketId) return;
+
+            fetch('/AdminTicket/DetayDosyalar/' + ticketId)
+                .then(function(r) { return r.text(); })
+                .then(function(html) {
+                    var filesBody = document.getElementById('filesBody');
+                    if (filesBody) filesBody.innerHTML = html;
+                }).catch(function(){});
+
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'info',
+                title: 'Yeni dosya eklendi',
+                showConfirmButton: false, timer: 3000, timerProgressBar: true
+            });
         });
+
+            ticketConnection.on('TicketUpdated', function(data) {
+                if (data.id !== ticketId) return;
+                Swal.fire({
+                    toast: true, position: 'top-end', icon: 'info',
+                    title: 'Ticket durumu güncellendi',
+                    text: 'Sayfayı yenilemek ister misiniz?',
+                    showConfirmButton: true, confirmButtonText: 'Yenile',
+                    timer: 6000, timerProgressBar: true
+                }).then(function(result) {
+                    if (result.isConfirmed) location.reload();
+                });
+            });
+        }
 </script>
 }

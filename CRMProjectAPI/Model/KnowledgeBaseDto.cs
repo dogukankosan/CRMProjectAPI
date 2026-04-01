@@ -7,6 +7,7 @@
         public string Description { get; set; } = string.Empty;
         public string? CodeLanguage { get; set; }
         public string? Category { get; set; }
+        public string? VideoLink { get; set; }        // ✅ YENİ
         public bool IsPublic { get; set; }
         public bool IsActive { get; set; }
         public int? CreatedBy { get; set; }  // ← ekle
@@ -31,6 +32,7 @@
         public string? CodeBlock { get; set; }
         public string? CodeLanguage { get; set; }
         public string? Category { get; set; }
+        public string? VideoLink { get; set; }        // ✅ YENİ
         public bool IsPublic { get; set; }
         public bool IsActive { get; set; }
         public int? CreatedBy { get; set; }
@@ -55,6 +57,7 @@
         public string Description { get; set; } = string.Empty;
         public string? CodeBlock { get; set; }
         public string? CodeLanguage { get; set; }
+        public string? VideoLink { get; set; }        // ✅ YENİ
         public List<short> LogoProductIDs { get; set; } = new();
         public string? Category { get; set; }
         public bool IsPublic { get; set; }

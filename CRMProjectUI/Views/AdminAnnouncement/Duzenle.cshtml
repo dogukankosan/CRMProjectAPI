@@ -1,0 +1,30 @@
+﻿@model CRMProjectUI.Models.AnnouncementDto
+@{
+    ViewData["Title"] = "Duyuru Düzenle";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+}
+
+<div class="section-header">
+    <h1>Duyuru Düzenle</h1>
+    <div class="section-header-breadcrumb">
+        <div class="breadcrumb-item"><a href="/">Anasayfa</a></div>
+        <div class="breadcrumb-item"><a href="/AdminDuyuru/Liste">Duyurular</a></div>
+        <div class="breadcrumb-item">Düzenle</div>
+    </div>
+</div>
+
+<div class="section-body">
+    @await Html.PartialAsync("_AnnouncementForm", new CRMProjectUI.Models.AnnouncementFormViewModel
+    {
+        CreateDto = new CRMProjectUI.Models.AnnouncementCreateDto
+        {
+            Title = Model.Title,
+            Content = Model.Content,
+            Priority = Model.Priority
+        },
+        FormAction = $"/AdminDuyuru/Duzenle/{Model.ID}",
+        IsEdit = true,
+        AnnouncementId = Model.ID,
+        ExistingFiles = Model.Files
+        })
+</div>

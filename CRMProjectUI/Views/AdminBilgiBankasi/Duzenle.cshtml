@@ -567,9 +567,42 @@
                     </select>
                 </div>
             </div>
+            <!-- VİDEO LİNK -->
+            <div class="kb-form-card">
+                <div class="kb-form-card-header">
+                    <i class="fas fa-play-circle" style="color:#ef4444;"></i>
+                    <h6>Video <small style="font-weight:400; color:var(--ink-soft);">(isteğe bağlı)</small></h6>
+                </div>
+                <div class="kb-form-card-body">
+                    <label class="kb-label">YouTube Video Linki</label>
+                    <div style="position:relative;">
+                        <input type="url" name="VideoLink" id="videoLinkInput"
+                               value="@Model?.VideoLink"
+                               class="kb-input"
+                               placeholder="https://www.youtube.com/watch?v=..."
+                               oninput="onVideoLinkChange(this.value)"
+                               style="padding-right: 42px;" />
+                        <i class="fab fa-youtube" style="position:absolute; right:13px; top:50%; transform:translateY(-50%); color:#ef4444; font-size:1.1rem; pointer-events:none;"></i>
+                    </div>
+                    <div id="videoLinkError" style="display:none; color:var(--danger); font-size:.76rem; margin-top:5px;">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> Geçerli bir YouTube linki giriniz
+                    </div>
 
+                    <!-- Önizleme -->
+                    <div id="videoPreviewBox" style="display:none; margin-top:12px; border-radius:10px; overflow:hidden; border:1.5px solid var(--border); background:#000;">
+                        <div style="position:relative; padding-bottom:56.25%; height:0;">
+                            <iframe id="videoPreviewFrame"
+                                    src=""
+                                    frameborder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowfullscreen
+                                    style="position:absolute; top:0; left:0; width:100%; height:100%;"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- GÖRÜNÜRLÜK -->
-            <!-- GÖRÜNÜRLÜK -->
+
             <div class="kb-form-card">
                 <div class="kb-form-card-header">
                     <i class="fas fa-eye" style="color:var(--accent);"></i>
@@ -670,7 +703,8 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             renderProductInputs();
-
+        var existingLink = document.getElementById('videoLinkInput').value;
+        if (existingLink) onVideoLinkChange(existingLink);
             // Mevcut kod bloğu varsa CodeMirror'ı başlat
             var lang = document.getElementById('codeLanguage').value;
             if (lang) {
@@ -811,13 +845,22 @@
             input.files = dt.files;
         }
 
-        function validateForm() {
+         function validateForm() {
             if (editor) { editor.save(); }
             if (selectedProducts.length === 0) {
                 document.getElementById('productError').style.display = 'block';
                 document.getElementById('productGrid').scrollIntoView({ behavior:'smooth', block:'center' });
                 return false;
             }
+
+            // ✅ Video link kontrolü
+            var videoVal = document.getElementById('videoLinkInput').value;
+            if (videoVal && !extractYouTubeId(videoVal)) {
+                document.getElementById('videoLinkError').style.display = 'block';
+                document.getElementById('videoLinkInput').scrollIntoView({ behavior:'smooth', block:'center' });
+                return false;
+            }
+
             return true;
         }
 
@@ -918,6 +961,36 @@
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closePreview();
-        });
+                });
+                // ── Video Link ──
+        function onVideoLinkChange(val) {
+            var errorEl    = document.getElementById('videoLinkError');
+            var previewBox = document.getElementById('videoPreviewBox');
+            var frame      = document.getElementById('videoPreviewFrame');
+
+            if (!val) {
+                errorEl.style.display    = 'none';
+                previewBox.style.display = 'none';
+                frame.src = '';
+                return;
+            }
+
+            var videoId = extractYouTubeId(val);
+            if (!videoId) {
+                errorEl.style.display    = 'block';
+                previewBox.style.display = 'none';
+                frame.src = '';
+                return;
+            }
+
+            errorEl.style.display    = 'none';
+            frame.src                = 'https://www.youtube.com/embed/' + videoId;
+            previewBox.style.display = 'block';
+        }
+
+        function extractYouTubeId(url) {
+            var m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+            return m ? m[1] : null;
+        }
     </script>
 }

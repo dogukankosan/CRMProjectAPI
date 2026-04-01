@@ -17,7 +17,8 @@
         public int? AssignedToUserID { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public DateTime? TakenInProgressDate { get; set; }
+        public DateTime? TakenInProgressDate => AssignedDate;
+
         public byte Priority { get; set; }
         public byte Status { get; set; }
         public string? AssignedToPicture { get; set; }
@@ -97,7 +98,7 @@
         public string? CreatedByPhone { get; set; }
         public string? CreatedByEmail { get; set; }
         public string? CustomerImportance { get; set; }
-        public DateTime? TakenInProgressDate { get; set; }
+        public DateTime? TakenInProgressDate => AssignedDate;
 
         // View helper'ları
         public string StatusText => Status switch

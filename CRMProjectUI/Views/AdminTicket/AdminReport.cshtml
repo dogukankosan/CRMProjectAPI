@@ -549,6 +549,9 @@
         }
         function fmtDate(d) {
             if (!d) return '—';
+            // Timezone kaymasını önlemek için sonuna Z ekleme, direkt string parse et
+            var parts = d.substring(0, 10).split('-');
+            if (parts.length === 3) return parts[2] + '.' + parts[1] + '.' + parts[0];
             return new Date(d).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric' });
         }
         function successBadge(rate) {
@@ -604,22 +607,27 @@
             document.getElementById('activeCount').textContent = s.ActiveCount || 0;
         }
 
-        function renderStats(s) {
+         function renderStats(s) {
             if (!s) return;
+
+            // null değerleri 0'a çevir
+            function n(v) { return v ?? 0; }
+
             var cards = [
-                { label: 'Toplam Atanan', value: s.TotalAssigned,                          sub: 'Tüm zamanlar',     cls: 'ps-blue',   icon: 'fa-inbox' },
-                { label: 'Toplam Çözdüm', value: s.TotalResolved,                          sub: 'Başarılı',          cls: 'ps-green',  icon: 'fa-check-circle' },
-                { label: 'Çözülemedi',    value: s.TotalFailed,                            sub: 'Kapalı',            cls: 'ps-red',    icon: 'fa-times-circle' },
-                { label: 'Aktif Ticket',  value: s.ActiveCount,                            sub: 'Şu an üzerimde',    cls: 'ps-orange', icon: 'fa-fire' },
-                { label: 'Ort. Süre',     value: minDisplay(s.AvgWorkingMinute),           sub: 'Genel ortalama',    cls: 'ps-purple', icon: 'fa-clock' },
-                { label: 'Başarı Oranı',  value: Math.round(s.SuccessRate || 0) + '%',    sub: 'Çözülen/Kapanan',   cls: 'ps-teal',   icon: 'fa-trophy' },
+                { label: 'Toplam Atanan', value: n(s.TotalAssigned),                       sub: 'Tüm zamanlar',   cls: 'ps-blue',   icon: 'fa-inbox' },
+                { label: 'Toplam Çözdüm', value: n(s.TotalResolved),                       sub: 'Başarılı',        cls: 'ps-green',  icon: 'fa-check-circle' },
+                { label: 'Çözülemedi',    value: n(s.TotalFailed),                         sub: 'Kapalı',          cls: 'ps-red',    icon: 'fa-times-circle' },
+                { label: 'Aktif Ticket',  value: n(s.ActiveCount),                         sub: 'Şu an üzerimde',  cls: 'ps-orange', icon: 'fa-fire' },
+                { label: 'Ort. Süre',     value: minDisplay(n(s.AvgWorkingMinute)),        sub: 'Genel ortalama',  cls: 'ps-purple', icon: 'fa-clock' },
+                { label: 'Başarı Oranı',  value: Math.round(n(s.SuccessRate)) + '%',      sub: 'Çözülen/Kapanan', cls: 'ps-teal',   icon: 'fa-trophy' },
             ];
+
             var html = '';
             cards.forEach(function(c) {
                 html += '<div class="col-md-2 col-sm-4 col-6 mb-3">' +
                     '<div class="pstat ' + c.cls + ' shadow-sm">' +
                     '<div class="pstat-icon"><i class="fas ' + c.icon + '"></i></div>' +
-                    '<div class="pstat-val">' + (c.value !== undefined ? c.value : 0) + '</div>' +
+                    '<div class="pstat-val">' + c.value + '</div>' +
                     '<div class="pstat-label">' + c.label + '</div>' +
                     '<div class="pstat-sub">' + c.sub + '</div>' +
                     '</div></div>';

@@ -210,6 +210,7 @@ namespace CRMProjectUI.Controllers
                     Description = kb.Description,
                     CodeBlock = kb.CodeBlock,
                     CodeLanguage = kb.CodeLanguage,
+                    VideoLink=kb.VideoLink,
                     LogoProductIDs = kb.Products.Select(p => p.LogoProductID).ToList(),
                     Category = kb.Category,
                     IsPublic = kb.IsPublic,

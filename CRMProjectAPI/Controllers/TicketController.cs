@@ -1,11 +1,13 @@
 ﻿using CRMProjectAPI.Data;
 using CRMProjectAPI.Helpers;
+using CRMProjectAPI.Hubs;
 using CRMProjectAPI.Models;
 using CRMProjectAPI.Services;
 using CRMProjectAPI.Validations;
 using Dapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using System.Security.Cryptography;
 
 namespace CRMProjectAPI.Controllers
@@ -19,19 +21,22 @@ namespace CRMProjectAPI.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly IMailService _mailService;
         private readonly ILogger<TicketController> _logger;
+        private readonly IHubContext<TicketHub> _hubContext;
 
         public TicketController(
             DapperContext context,
             IWebHostEnvironment env,
             IMailService mailService,
-            ILogger<TicketController> logger)
+            ILogger<TicketController> logger,
+            IHubContext<TicketHub> hubContext)
         {
             _context = context;
             _env = env;
             _mailService = mailService;
             _logger = logger;
+            _hubContext = hubContext;
         }
-     
+
         // ── JWT yardımcıları ─────────────────────────────────────────────────
         private int GetUserId() =>
             int.TryParse(User.FindFirst("userId")?.Value, out int uid) ? uid : 0;
@@ -222,7 +227,7 @@ namespace CRMProjectAPI.Controllers
         t.ID, t.TicketNo,t.Description, t.CustomerID, t.LogoProductID,
         t.CreatedByUserID, t.AssignedToUserID,
         t.Title, t.Priority, t.Status,
-        t.OpenedDate, t.AssignedDate, t.ResolvedDate,
+  t.OpenedDate, t.AssignedDate, t.ResolvedDate,
         t.WorkingMinute,
         c.CustomerName, c.CustomerCode,
         c.Importance        AS CustomerImportance,
@@ -232,8 +237,7 @@ namespace CRMProjectAPI.Controllers
         cu.Picture          AS CreatedByPicture,
         au.Picture          AS AssignedToPicture,
         cu.PhoneNumber      AS CreatedByPhone,
-        cu.EMailAddress     AS CreatedByEmail,
-        t.AssignedDate      AS TakenInProgressDate
+        cu.EMailAddress     AS CreatedByEmail
     FROM Tickets t WITH (NOLOCK)
     INNER JOIN Customers    c  WITH (NOLOCK) ON t.CustomerID       = c.ID
     LEFT  JOIN LogoProducts lp WITH (NOLOCK) ON t.LogoProductID    = lp.ID
@@ -262,21 +266,20 @@ namespace CRMProjectAPI.Controllers
         {
             using var connection = _context.CreateConnection();
             const string sql = @"
-    SELECT
-        t.*,
-        c.CustomerName, c.CustomerCode,
-        lp.LogoProductName,
-t.AssignedDate AS TakenInProgressDate,
-        ISNULL(cu.FullName, cu.Username) AS CreatedByName,
-        ISNULL(au.FullName, au.Username) AS AssignedToName,
-        cu.Picture AS CreatedByPicture,
-        au.Picture AS AssignedToPicture
-    FROM Tickets t WITH (NOLOCK)
-    INNER JOIN Customers    c  WITH (NOLOCK) ON t.CustomerID       = c.ID
-    LEFT  JOIN LogoProducts lp WITH (NOLOCK) ON t.LogoProductID    = lp.ID
-    LEFT  JOIN Users        cu WITH (NOLOCK) ON t.CreatedByUserID  = cu.ID
-    LEFT  JOIN Users        au WITH (NOLOCK) ON t.AssignedToUserID = au.ID
-    WHERE t.ID = @ID AND t.IsDeleted = 0
+SELECT
+    t.*,
+    c.CustomerName, c.CustomerCode,
+    lp.LogoProductName,
+    ISNULL(cu.FullName, cu.Username) AS CreatedByName,
+    ISNULL(au.FullName, au.Username) AS AssignedToName,
+    cu.Picture AS CreatedByPicture,
+    au.Picture AS AssignedToPicture
+FROM Tickets t WITH (NOLOCK)
+INNER JOIN Customers    c  WITH (NOLOCK) ON t.CustomerID       = c.ID
+LEFT  JOIN LogoProducts lp WITH (NOLOCK) ON t.LogoProductID    = lp.ID
+LEFT  JOIN Users        cu WITH (NOLOCK) ON t.CreatedByUserID  = cu.ID
+LEFT  JOIN Users        au WITH (NOLOCK) ON t.AssignedToUserID = au.ID
+WHERE t.ID = @ID AND t.IsDeleted = 0
 ";
 
             TicketDto? ticket = await connection.QueryFirstOrDefaultAsync<TicketDto>(sql, new { ID = id });
@@ -377,7 +380,7 @@ t.AssignedDate AS TakenInProgressDate,
                 return BadRequest(ApiResponse.Fail("Ticket hakkınız kalmamış"));
 
             // Ticket No üret: TKT-2026-00001
-            string year = DateTime.Now.Year.ToString();
+            string year = DateTimeHelper.NowTurkey.Year.ToString();
             int lastNum = await connection.ExecuteScalarAsync<int>(
                 "SELECT ISNULL(MAX(CAST(SUBSTRING(TicketNo, 10, 5) AS INT)), 0) FROM Tickets WITH (NOLOCK) WHERE TicketNo LIKE @Pattern",
                 new { Pattern = $"TKT-{year}-%" });
@@ -407,8 +410,8 @@ t.AssignedDate AS TakenInProgressDate,
                 dto.Priority,
                 // Admin/SuperAdmin tarih seçebilir, User için DateTime.Now
                 OpenedDate = (IsAdmin() || IsSuperAdmin()) && dto.OpenedDate.HasValue
-                             ? dto.OpenedDate.Value
-                             : DateTime.Now
+             ? dto.OpenedDate.Value
+             : DateTimeHelper.NowTurkey
             });
 
             // TicketCount'u 1 azalt
@@ -416,6 +419,20 @@ t.AssignedDate AS TakenInProgressDate,
                 "UPDATE Customers SET TicketCount = TicketCount - 1 WHERE ID = @ID",
                 new { ID = dto.CustomerID });
 
+            // SignalR — adminlere bildir
+            await _hubContext.Clients.Group("admins").SendAsync("TicketCreated", new
+            {
+                ticketNo,
+                customerId = dto.CustomerID,
+                title = dto.Title,
+                priority = dto.Priority
+            }); await _hubContext.Clients.Group($"customer_{dto.CustomerID}").SendAsync("TicketCreated", new
+            {
+                ticketNo,
+                customerId = dto.CustomerID,
+                title = dto.Title,
+                priority = dto.Priority
+            });
             return Ok(ApiResponse<int>.Ok(newId, $"Ticket oluşturuldu ({ticketNo})"));
         }
 
@@ -440,8 +457,8 @@ t.AssignedDate AS TakenInProgressDate,
 
             // Mevcut ticket bilgilerini çek
             var ticket = await connection.QueryFirstOrDefaultAsync(
-                "SELECT Status, CustomerID, AssignedToUserID FROM Tickets WITH (NOLOCK) WHERE ID = @ID AND IsDeleted = 0",
-                new { ID = id });
+        "SELECT Status, CustomerID, AssignedToUserID, TicketNo FROM Tickets WITH (NOLOCK) WHERE ID = @ID AND IsDeleted = 0",
+        new { ID = id });
 
             if (ticket == null)
                 return NotFound(ApiResponse.NotFound("Ticket bulunamadı"));
@@ -492,6 +509,19 @@ t.AssignedDate AS TakenInProgressDate,
                 dto.WorkingMinute,
                 ID = id
             });
+            // SignalR — ilgili müşteriye ve adminlere bildir
+            await _hubContext.Clients.Group($"customer_{ticket.CustomerID}").SendAsync("TicketUpdated", new
+            {
+                id,
+                status = dto.Status,
+                customerId = (int)ticket.CustomerID
+            });
+            await _hubContext.Clients.Group("admins").SendAsync("TicketUpdated", new
+            {
+                id,
+                status = dto.Status,
+                customerId = (int)ticket.CustomerID
+            });
 
             // Status 2, 3 veya 6 → mail gönder
             if (dto.Status == 2 || dto.Status == 3 || dto.Status == 6)
@@ -539,8 +569,8 @@ t.AssignedDate AS TakenInProgressDate,
 
             // Ticket var mı ve kapalı mı?
             var ticket = await connection.QueryFirstOrDefaultAsync(
-                "SELECT Status, AssignedToUserID FROM Tickets WITH (NOLOCK) WHERE ID = @ID AND IsDeleted = 0",
-                new { ID = id });
+          "SELECT Status, AssignedToUserID, CustomerID, TicketNo FROM Tickets WITH (NOLOCK) WHERE ID = @ID AND IsDeleted = 0",
+          new { ID = id });
 
             if (ticket == null)
                 return NotFound(ApiResponse.NotFound("Ticket bulunamadı"));
@@ -568,14 +598,32 @@ t.AssignedDate AS TakenInProgressDate,
                 return BadRequest(ApiResponse.Fail("Ticket sadece Admin veya SuperAdmin'e devredilebilir"));
 
             const string sql = @"
- UPDATE Tickets SET
-    AssignedToUserID = @UserID,
-    AssignedDate     = GETDATE(),
-    Status           = 1
-WHERE ID = @ID AND IsDeleted = 0
-    ";
+    UPDATE Tickets SET
+        AssignedToUserID = @UserID,
+        AssignedDate = CASE 
+                          WHEN AssignedDate IS NULL THEN GETDATE() 
+                          ELSE AssignedDate 
+                       END,
+        Status = 1
+    WHERE ID = @ID AND IsDeleted = 0
+";
 
             await connection.ExecuteAsync(sql, new { UserID = dto.AssignedToUserID, ID = id });
+
+            await _hubContext.Clients.Group($"customer_{ticket.CustomerID}").SendAsync("TicketUpdated", new
+            {
+                id,
+                ticketNo = (string)ticket.TicketNo,
+                status = (int)ticket.Status,
+                customerId = (int)ticket.CustomerID
+            });
+            await _hubContext.Clients.Group("admins").SendAsync("TicketUpdated", new
+            {
+                id,
+                ticketNo = (string)ticket.TicketNo,
+                status = (int)ticket.Status,
+                customerId = (int)ticket.CustomerID
+            });
 
             return Ok(ApiResponse.Ok("Ticket devredildi"));
         }
@@ -688,7 +736,16 @@ WHERE ID = @ID AND IsDeleted = 0
                 FileType = fileType,
                 UploadedByUserID = GetUserId()
             });
-
+            await _hubContext.Clients.Group($"customer_{ticket.CustomerID}").SendAsync("FileAdded", new
+            {
+                ticketId = id,
+                customerId = (int)ticket.CustomerID
+            });
+            await _hubContext.Clients.Group("admins").SendAsync("FileAdded", new
+            {
+                ticketId = id,
+                customerId = (int)ticket.CustomerID
+            });
             return Ok(ApiResponse<int>.Ok(newId, "Dosya yüklendi"));
         }
 
@@ -789,7 +846,17 @@ WHERE ID = @ID AND IsDeleted = 0
                 dto.UserID,
                 dto.Comment
             });
-
+            // Yorum kaydedildi
+            await _hubContext.Clients.Group($"customer_{ticket.CustomerID}").SendAsync("CommentAdded", new
+            {
+                ticketId = id,
+                customerId = (int)ticket.CustomerID
+            });
+            await _hubContext.Clients.Group("admins").SendAsync("CommentAdded", new
+            {
+                ticketId = id,
+                customerId = (int)ticket.CustomerID
+            });
             return Ok(ApiResponse<int>.Ok(newId, "Yorum eklendi"));
         }
 
@@ -1838,7 +1905,7 @@ WHERE ID = @ID AND IsDeleted = 0
             au.Picture          AS AssignedToPicture,
             cu.PhoneNumber      AS CreatedByPhone,
             cu.EMailAddress     AS CreatedByEmail,
-            t.AssignedDate      AS TakenInProgressDate,
+         
             t.SolutionNote,
             t.CancelReason
         FROM Tickets t WITH (NOLOCK)

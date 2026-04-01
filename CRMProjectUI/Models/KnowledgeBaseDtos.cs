@@ -8,6 +8,7 @@
         public string? CodeLanguage { get; set; }
         public string? Category { get; set; }
         public bool IsPublic { get; set; }
+        public string? VideoLink { get; set; }        // ✅ YENİ
         public bool IsActive { get; set; }
         public string? CreatedByName { get; set; }
         public DateTime CreatedDate { get; set; }
@@ -31,6 +32,7 @@
         public string? Category { get; set; }
         public bool IsPublic { get; set; }
         public bool IsActive { get; set; }
+        public string? VideoLink { get; set; }        // ✅ YENİ
         public int? CreatedBy { get; set; }  // ← EKLE
         public string? CreatedByName { get; set; }
         public DateTime CreatedDate { get; set; }
@@ -52,6 +54,7 @@
         public string Description { get; set; } = string.Empty;
         public string? CodeBlock { get; set; }
         public string? CodeLanguage { get; set; }
+        public string? VideoLink { get; set; }        // ✅ YENİ
         public List<short> LogoProductIDs { get; set; } = new();
         public string? Category { get; set; }
         public bool IsPublic { get; set; }
