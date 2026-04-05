@@ -203,14 +203,14 @@
                 {
                     <button type="button" class="tl-btn assign" title="Devret / Ata"
                             onclick="openAssignModal(@item.ID,
-                                        '@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Title ?? "")',
-                                        @(item.AssignedToUserID?.ToString() ?? "null"),
-                                        '@(item.AssignedToUserID?.ToString() ?? "")')">
+                            '@(item.Title?.Replace("'", "\\'").Replace("\"", "&quot;") ?? "")',
+                            @(item.AssignedToUserID?.ToString() ?? "null"),
+                            '@(item.AssignedToUserID?.ToString() ?? "")')">
                         <i class="fas fa-user-check"></i>
                     </button>
                     <button type="button" class="tl-btn status" title="Durum Değiştir"
                             data-id="@item.ID"
-                            data-title="@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Title ?? "")"
+                            data-title="@System.Net.WebUtility.HtmlEncode(item.Title ?? "")"
                             data-status="@item.Status"
                             data-opened="@(item.OpenedDate?.ToString("o") ?? "")"
                             data-taken="@(item.TakenInProgressDate?.ToString("o") ?? "")"

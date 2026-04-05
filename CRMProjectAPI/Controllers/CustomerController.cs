@@ -172,19 +172,21 @@ namespace CRMProjectAPI.Controllers
         public async Task<IActionResult> List()
         {
             const string sql = @"
-                SELECT 
-                    c.ID, c.CustomerCode, c.CustomerName, c.ShortName, c.CustomerType,
-                    c.VKN, c.TC, c.OfficialName, c.Phone1, c.CompanyEmail,
-                    c.Importance, c.TicketCount, c.Status, c.ContractEndDate, c.CreatedDate,
-                    cd.Il, cd.Ilce
-                FROM Customers c WITH (NOLOCK)
-                LEFT JOIN tCity_District_Street_Town cd WITH (NOLOCK) ON c.CityDistrictID = cd.ID
-                ORDER BY 
-                    CASE WHEN c.ContractEndDate <= DATEADD(DAY, 30, GETDATE()) AND c.ContractEndDate >= GETDATE() THEN 0
-                         WHEN c.ContractEndDate < GETDATE() THEN 1
-                         ELSE 2 END ASC,
-                    c.ID DESC
-            ";
+    SELECT 
+        c.ID, c.CustomerCode, c.CustomerName, c.ShortName, c.CustomerType,
+        c.VKN, c.TC, c.OfficialName, c.Phone1, c.CompanyEmail,
+        c.Importance, c.TicketCount, c.Status, c.ContractEndDate, c.CreatedDate,
+        c.LogoWebServiceUserName AS WsUsername,
+        c.LogoWebServicePassword AS WsPassword,
+        cd.Il, cd.Ilce
+    FROM Customers c WITH (NOLOCK)
+    LEFT JOIN tCity_District_Street_Town cd WITH (NOLOCK) ON c.CityDistrictID = cd.ID
+    ORDER BY 
+        CASE WHEN c.ContractEndDate <= DATEADD(DAY, 30, GETDATE()) AND c.ContractEndDate >= GETDATE() THEN 0
+             WHEN c.ContractEndDate < GETDATE() THEN 1
+             ELSE 2 END ASC,
+        c.ID DESC
+";
             using var connection = _context.CreateConnection();
             var customers = await connection.QueryAsync<CustomerListDto>(sql);
             return Ok(ApiResponse<IEnumerable<CustomerListDto>>.Ok(customers));

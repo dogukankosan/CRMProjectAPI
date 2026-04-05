@@ -78,6 +78,8 @@
         public string? VKN { get; set; }
         public string? TC { get; set; }
         public string? OfficialName { get; set; }
+        public string? WsUsername { get; set; }
+        public string? WsPassword { get; set; }
         public string? Phone1 { get; set; }
         public string? CompanyEmail { get; set; }
         public string? Il { get; set; }

@@ -13,56 +13,55 @@ namespace CRMProjectAPI
     {
         public static void Main(string[] args)
         {
-            WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+            var builder = WebApplication.CreateBuilder(args);
             builder.Host.UseWindowsService();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
 
-            builder.Services.AddSwaggerGen(c =>
+            if (builder.Environment.IsDevelopment())
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "CRM Project API", Version = "v1" });
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                builder.Services.AddSwaggerGen(c =>
                 {
-                    Name = "Authorization",
-                    Description = "JWT token giriniz. Örnek: Bearer {token}",
-                    Type = SecuritySchemeType.Http,
-                    Scheme = "Bearer",
-                    BearerFormat = "JWT",
-                    In = ParameterLocation.Header
-                });
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
+                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "CRM Project API", Version = "v1" });
+                    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                     {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                        },
-                        Array.Empty<string>()
-                    }
-                });
-
-                c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
-                {
-                    Name = "X-API-Key",
-                    Description = "API anahtarınızı giriniz",
-                    Type = SecuritySchemeType.ApiKey,
-                    In = ParameterLocation.Header
-                });
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
+                        Name = "Authorization",
+                        Description = "JWT token giriniz. Örnek: Bearer {token}",
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "Bearer",
+                        BearerFormat = "JWT",
+                        In = ParameterLocation.Header
+                    });
+                    c.AddSecurityRequirement(new OpenApiSecurityRequirement
                     {
-                        new OpenApiSecurityScheme
                         {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "ApiKey" }
-                        },
-                        Array.Empty<string>()
-                    }
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                            },
+                            Array.Empty<string>()
+                        }
+                    });
+                    c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+                    {
+                        Name = "X-API-Key",
+                        Description = "API anahtarınızı giriniz",
+                        Type = SecuritySchemeType.ApiKey,
+                        In = ParameterLocation.Header
+                    });
+                    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
+                        {
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "ApiKey" }
+                            },
+                            Array.Empty<string>()
+                        }
+                    });
                 });
-
-
-
-            });
+            }
 
             builder.Services.AddSingleton<DapperContext>();
             builder.Services.AddScoped<ILogService, LogService>();
@@ -70,7 +69,7 @@ namespace CRMProjectAPI
             builder.Services.AddSingleton<IJwtService, JwtService>();
             builder.Services.AddScoped<IMailService, MailService>();
             builder.Services.AddSignalR();
-      
+
             string jwtSecret = builder.Configuration["JwtSettings:SecretKey"]!;
             string jwtIssuer = builder.Configuration["JwtSettings:Issuer"]!;
             string jwtAudience = builder.Configuration["JwtSettings:Audience"]!;
@@ -89,6 +88,20 @@ namespace CRMProjectAPI
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
                         ClockSkew = TimeSpan.Zero
                     };
+
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["access_token"];
+                            var path = context.HttpContext.Request.Path;
+                            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                            {
+                                context.Token = accessToken;
+                            }
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
 
             builder.Services.AddAuthorization();
@@ -97,33 +110,37 @@ namespace CRMProjectAPI
             {
                 options.AddPolicy("CRMPolicy", policy =>
                 {
-                    var origins = builder.Configuration["AllowedOrigins"]!
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries);
-                    policy.WithOrigins(origins)
+                    policy.SetIsOriginAllowed(_ => true)
                           .AllowAnyMethod()
                           .AllowAnyHeader()
                           .AllowCredentials();
                 });
             });
-            WebApplication app = builder.Build();
+            var app = builder.Build();
 
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
+            if (app.Environment.IsDevelopment())
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "CRM Project API v1");
-                c.DisplayRequestDuration();
-            });
-        
-            // app.UseHttpsRedirection(); // ← kapalı
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "CRM Project API v1");
+                    c.DisplayRequestDuration();
+                });
+            }
+
+            // CORS en üstte olmalı — middleware'ler preflight'ı kesmeden önce
             app.UseCors("CRMPolicy");
+            app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseMiddleware<ApiExceptionHandlerMiddleware>();
             app.UseMiddleware<ApiKeyMiddleware>();
             app.UseAuthentication();
             app.UseAuthorization();
+
             app.MapHub<TicketHub>("/hubs/ticket");
             app.MapControllers();
+
             app.Run();
         }
     }

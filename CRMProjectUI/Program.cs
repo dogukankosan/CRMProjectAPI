@@ -3,7 +3,8 @@ using CRMProjectUI.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseWindowsService(); // Windows Service olarak çalışacaksa
 
 // ── MVC ──────────────────────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();
@@ -11,7 +12,7 @@ builder.Services.AddControllersWithViews();
 // ── HttpContext ───────────────────────────────────────────────────────────────
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
-var turkeyZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time");
+
 // ── Cookie Authentication ─────────────────────────────────────────────────────
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -23,11 +24,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
         options.Cookie.Name = "CRM.Auth";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.Strict; // Lax → Strict
+        // HTTPS gelince → CookieSecurePolicy.Always yaparsın
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     });
 
-// ── Global Authorize — login olmadan hiçbir yere girilemesin ─────────────────
+// ── Global Authorize ─────────────────────────────────────────────────────────
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
@@ -35,18 +37,33 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
+// ── API Base URL — tek yerden yönetim ────────────────────────────────────────
+string apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"]
+    ?? throw new InvalidOperationException("ApiSettings:BaseUrl ayarlanmamış!");
+
 // ── API Services ──────────────────────────────────────────────────────────────
-builder.Services.AddHttpClient<AuthApiService>();
-builder.Services.AddHttpClient<UserApiService>();
-builder.Services.AddHttpClient<CompanyApiService>();
-builder.Services.AddHttpClient<CustomerApiService>();
-builder.Services.AddHttpClient<MailSettingsApiService>();
-builder.Services.AddHttpClient<TicketApiService>();
-builder.Services.AddHttpClient<KnowledgeBaseApiService>();
-builder.Services.AddHttpClient<LogApiService>();
-builder.Services.AddHttpClient<ErrorLogApiService>();
+builder.Services.AddHttpClient<AuthApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<UserApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<CompanyApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<CustomerApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<MailSettingsApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<TicketApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<KnowledgeBaseApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<LogApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<ErrorLogApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+
+
+var app = builder.Build();
+
 // ── Pipeline ──────────────────────────────────────────────────────────────────
-WebApplication app = builder.Build();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error/500");
+    // HTTPS gelince bu ikisini aç:
+     app.UseHsts();
+}
+
+ app.UseHttpsRedirection(); // HTTPS gelince aç
 
 app.UseStaticFiles();
 app.UseRouting();
@@ -59,8 +76,8 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=AdminHome}/{action=Index}/{id?}");
 
-// ── Global DTO ayarları ───────────────────────────────────────────────────────
-UserDto.ApiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "";
-UserListDto.ApiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "";
+// ── Global DTO ayarları — pipeline öncesinde set et ──────────────────────────
+UserDto.ApiBaseUrl = apiBaseUrl;
+UserListDto.ApiBaseUrl = apiBaseUrl;
 
 app.Run();

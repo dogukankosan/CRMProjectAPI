@@ -123,8 +123,8 @@
     <link rel="stylesheet" href="~/adminThema/assets/css/style.css">
     <link rel="stylesheet" href="~/adminThema/assets/css/components.css">
     <link rel="stylesheet" href="~/adminThema/assets/css/custom.css">
-    <link rel="stylesheet" href="~/adminThema/assets/assets/bundles/datatables/datatables.min.css">
-    <link rel="stylesheet" href="~/adminThema/assets/assets/bundles/datatables/DataTables-1.10.16/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="~/adminThema/assets/bundles/datatables/datatables.min.css">
+    <link rel="stylesheet" href="~/adminThema/assets/bundles/datatables/DataTables-1.10.16/css/dataTables.bootstrap4.min.css">
     <link href="~/css/site.css" rel="stylesheet" />
 
     <style>
@@ -531,9 +531,9 @@
                 <aside id="sidebar-wrapper">
                     <div class="sidebar-brand">
                         <a href="/">
-                            <img alt="@company?.CompanyName Logo" src="@logoUrl" class="header-logo" />
+                            <img alt="@company?.CompanyName Logo" src="@logoUrl" class="header-logo" style="width:120px !important;height:auto;" />
                             <br />
-                            <span class="logo-name">@company?.ShortCompanyName</span>
+                            <span class="logo-name" style="font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;background:linear-gradient(135deg,#f59e0b,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">@company?.ShortCompanyName</span>
                         </a>
                         @if (!string.IsNullOrEmpty(company?.Slogan))
                         {
@@ -829,6 +829,12 @@
                             <i class="far fa-clock"></i> @company.WorkingHours
                         </span>
                     }
+
+<span class="footer-divider"></span>
+                    <span style="font-size:.72rem;color:#94a3b8;font-weight:600;">
+
+                        v1.0.0
+                    </span>
                 </div>
             </footer>
         </div>
@@ -1069,7 +1075,7 @@
       
         }, 1000);
  
-        
+             }); // DOMContentLoaded kapanışı
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
     <script>

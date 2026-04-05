@@ -587,28 +587,53 @@
                         </div>
                         <div class="tf-card-body">
                             <label class="tf-label">Müşteri <span class="req">*</span></label>
-                            <select class="tf-select" id="customerSelect" onchange="onCustomerChange(this.value)">
-                                <option value="">Müşteri seçiniz...</option>
-                                @foreach (var c in customers)
-                                {
-                                    if (Model.CustomerID == c.ID)
+
+                            <!-- Gizli gerçek value -->
+                            <input type="hidden" id="customerSelect" />
+
+                            <!-- Arama kutusu -->
+                            <div style="position:relative;">
+                                <div style="display:flex;align-items:center;gap:8px;border:1.5px solid var(--border);border-radius:9px;padding:8px 13px;background:var(--white);transition:border-color .2s;" id="customerSearchWrap">
+                                    <i class="fas fa-search" style="color:var(--ink-soft);font-size:.82rem;flex-shrink:0;"></i>
+                                    <input type="text" id="customerSearchInput"
+                                           placeholder="Müşteri adı veya kodu ile arayın..."
+                                           autocomplete="off"
+                                           style="border:none;outline:none;width:100%;font-size:.88rem;color:var(--ink);background:transparent;"
+                                           oninput="filterCustomers()"
+                                           onfocus="openCustomerDropdown()" />
+                                    <button type="button" id="customerClearBtn" onclick="clearCustomer()"
+                                            style="display:none;border:none;background:none;color:var(--ink-soft);cursor:pointer;font-size:.85rem;padding:0;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Dropdown listesi -->
+                                <!-- Dropdown listesi -->
+                                <div id="customerDropdown"
+                                     style="display:none;position:fixed;background:var(--white);border:1.5px solid var(--accent);border-radius:9px;box-shadow:0 8px 32px rgba(15,17,23,.12);z-index:9999;max-height:220px;overflow-y:auto;min-width:300px;">
+                                    @foreach (var c in customers)
                                     {
-                                        <option value="@c.ID" data-name="@c.CustomerName" selected>
-                                            @c.CustomerName (@c.CustomerCode)
-                                        </option>
+                                        <div class="customer-option"
+                                             data-id="@c.ID"
+                                             data-name="@c.CustomerName (@c.CustomerCode)"
+                                             onclick="selectCustomer('@c.ID', '@c.CustomerName (@c.CustomerCode)')"
+                                             style="padding:9px 14px;cursor:pointer;font-size:.85rem;color:var(--ink);border-bottom:1px solid var(--border);transition:background .12s;"
+                                             onmouseover="this.style.background='#eff6ff'"
+                                             onmouseout="this.style.background=''">
+                                            <i class="fas fa-building" style="color:var(--accent);font-size:.75rem;margin-right:6px;"></i>
+                                            @c.CustomerName <span style="color:var(--ink-soft);font-size:.78rem;">(@c.CustomerCode)</span>
+                                        </div>
                                     }
-                                    else
-                                    {
-                                        <option value="@c.ID" data-name="@c.CustomerName">
-                                            @c.CustomerName (@c.CustomerCode)
-                                        </option>
-                                    }
-                                }
-                            </select>
+                                    <div id="customerNoResult" style="display:none;padding:14px;text-align:center;color:var(--ink-soft);font-size:.83rem;">
+                                        <i class="fas fa-search mr-1"></i> Sonuç bulunamadı
+                                    </div>
+                                </div>
+                            </div>
+
                             <small style="font-size:.75rem; color:var(--ink-soft); margin-top:4px; display:block;">
                                 Müşteri seçildiğinde ilgili Logo ürünleri listelenecektir.
                             </small>
-                            <div id="eligibilityAlert"></div>  <!-- ← BURAYA EKLE -->
+                            <div id="eligibilityAlert"></div>
                         </div>
                     </div>
                 }
@@ -1158,5 +1183,72 @@ function updateCounter(fieldId, counterId, max) {
         if (s  && s.trim())  Swal.fire({ icon:'success', title:'Başarılı!', text:s,  timer:2500, showConfirmButton:false });
         if (er && er.trim()) Swal.fire({ icon:'error',   title:'Hata!',     text:er });
     }, 300);
+    });
+
+    function positionDropdown() {
+        var wrap = document.getElementById('customerSearchWrap');
+        var drop = document.getElementById('customerDropdown');
+        var rect = wrap.getBoundingClientRect();
+        drop.style.top   = (rect.bottom + 4) + 'px';
+        drop.style.left  = rect.left + 'px';
+        drop.style.width = rect.width + 'px';
+    }
+        window.addEventListener('scroll', function() {
+        var drop = document.getElementById('customerDropdown');
+        if (drop && drop.style.display === 'block') {
+            positionDropdown();
+        }
+    }, true);
+    function openCustomerDropdown() {
+        positionDropdown();
+        document.getElementById('customerDropdown').style.display = 'block';
+        document.getElementById('customerSearchWrap').style.borderColor = 'var(--accent)';
+        filterCustomers();
+    }
+
+    function filterCustomers() {
+        var q       = document.getElementById('customerSearchInput').value.toLowerCase().trim();
+        var options = document.querySelectorAll('.customer-option');
+        var count   = 0;
+        options.forEach(function(opt) {
+            var name = opt.getAttribute('data-name').toLowerCase();
+            var show = q === '' || name.includes(q);
+            opt.style.display = show ? '' : 'none';
+            if (show) count++;
+        });
+        document.getElementById('customerNoResult').style.display = count === 0 ? 'block' : 'none';
+        positionDropdown();
+        document.getElementById('customerDropdown').style.display = 'block';
+    }
+
+    function selectCustomer(id, name) {
+        document.getElementById('customerSelect').value        = id;
+        document.getElementById('customerIdHidden').value      = id;
+        document.getElementById('customerSearchInput').value   = name;
+        document.getElementById('customerClearBtn').style.display = 'inline';
+        document.getElementById('customerDropdown').style.display = 'none';
+        document.getElementById('customerSearchWrap').style.borderColor = 'var(--border)';
+        onCustomerChange(id);
+    }
+
+    function clearCustomer() {
+        document.getElementById('customerSelect').value        = '';
+        document.getElementById('customerIdHidden').value      = '';
+        document.getElementById('customerSearchInput').value   = '';
+        document.getElementById('customerClearBtn').style.display = 'none';
+        document.getElementById('customerDropdown').style.display = 'none';
+        document.getElementById('eligibilityAlert').innerHTML  = '';
+        document.getElementById('productGrid').innerHTML =
+            '<p style="font-size:.83rem;color:var(--ink-soft);margin:0;"><i class="fas fa-arrow-up mr-1"></i>Önce müşteri seçiniz.</p>';
+    }
+
+    // Dropdown dışına tıklayınca kapat
+    document.addEventListener('click', function(e) {
+        var wrap = document.getElementById('customerSearchWrap');
+        var drop = document.getElementById('customerDropdown');
+        if (wrap && drop && !wrap.contains(e.target) && !drop.contains(e.target)) {
+            drop.style.display = 'none';
+            wrap.style.borderColor = 'var(--border)';
+        }
     });
 </script>

@@ -76,6 +76,8 @@
         public string? ShortName { get; set; }
         public string CustomerType { get; set; } = string.Empty;
         public string? VKN { get; set; }
+        public string? WsUsername { get; set; }
+        public string? WsPassword { get; set; }
         public string? TC { get; set; }
         public string? OfficialName { get; set; }
         public string? Phone1 { get; set; }

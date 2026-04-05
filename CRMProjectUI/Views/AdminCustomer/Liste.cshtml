@@ -706,7 +706,9 @@
                             <th>VKN / TC</th>
                             <th>Yetkili</th>
                             <th>İletişim</th>
+                       <th>Web Servis</th>
                             <th onclick="sortTable(6)" style="cursor:pointer;">Konum <i class="fas fa-sort ml-1" style="opacity:.4;"></i></th>
+                                 
                             <th>Önem</th>
                             <th onclick="sortTable(8)" style="cursor:pointer;">Talep <i class="fas fa-sort ml-1" style="opacity:.4;"></i></th>
                             <th onclick="sortTable(9)" style="cursor:pointer;">Sözleşme <i class="fas fa-sort ml-1" style="opacity:.4;"></i></th>
@@ -780,6 +782,7 @@
                                         <span class="text-muted">-</span>
                                     }
                                 </td>
+                           
                                 <td>
                                     <div class="cl-contact">
                                         @if (!string.IsNullOrEmpty(item.Phone1))
@@ -791,6 +794,29 @@
                                             <a href="mailto:@item.CompanyEmail" class="mail"><i class="fas fa-envelope mr-1"></i>@item.CompanyEmail</a>
                                         }
                                     </div>
+                                </td>
+                                     <td>
+                                    @if (!string.IsNullOrEmpty(item.WsUsername) || !string.IsNullOrEmpty(item.WsPassword))
+                                    {
+                                        <div style="font-size:.75rem;">
+                                            <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
+                                                <i class="fas fa-user" style="color:var(--ink-soft);font-size:.65rem;width:12px;"></i>
+                                                <span style="font-family:monospace;font-weight:600;color:var(--ink);">@(item.WsUsername ?? "-")</span>
+                                            </div>
+                                            <div style="display:flex;align-items:center;gap:4px;">
+                                                <i class="fas fa-key" style="color:var(--warning);font-size:.65rem;width:12px;"></i>
+                                                <span id="ws_@item.ID" style="font-family:monospace;color:var(--ink-soft);">••••••</span>
+                                                <button type="button" onclick="toggleWs('@item.ID', '@item.WsPassword')"
+                                                        style="border:none;background:none;padding:0;cursor:pointer;color:var(--ink-soft);font-size:.65rem;">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:#94a3b8;font-size:.75rem;">-</span>
+                                    }
                                 </td>
                                 <td style="font-size:.82rem;">
                                     @if (!string.IsNullOrEmpty(item.Il))
@@ -894,6 +920,13 @@
     // ==================== INIT ====================
     document.addEventListener('DOMContentLoaded', function () {
         allRows = Array.from(document.querySelectorAll('#tableBody tr'));
+
+    // Default aktif gelsin
+    currentStatus = 'active';
+    document.querySelectorAll('.cl-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.cl-filter-btn').forEach(function(b) {
+        if (b.textContent.trim().startsWith('Aktif')) b.classList.add('active');
+    });
         applyFilters();
 
         // TempData mesajları
@@ -1429,6 +1462,17 @@
             closeFileModal();
         }
     });
+        function toggleWs(id, password) {
+        var el = document.getElementById('ws_' + id);
+        if (!el) return;
+        if (el.textContent === '••••••') {
+            el.textContent = password || '-';
+            el.style.color = 'var(--ink)';
+        } else {
+            el.textContent = '••••••';
+            el.style.color = 'var(--ink-soft)';
+        }
+    }
 </script>
 
 <!-- DOSYA MODAL -->

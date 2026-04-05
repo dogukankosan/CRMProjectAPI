@@ -5,155 +5,567 @@
     Layout = "~/Views/Shared/_adminLayout.cshtml";
     string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
     bool isSuperAdmin = User.IsInRole("SuperAdmin");
-    bool isAdmin      = User.IsInRole("Admin");
-    bool isUser       = User.IsInRole("User");
-    bool isStaff      = isSuperAdmin || isAdmin;
+    bool isAdmin = User.IsInRole("Admin");
+    bool isUser = User.IsInRole("User");
+    bool isStaff = isSuperAdmin || isAdmin;
 
-    var adminUsers   = ViewBag.AdminUsers   as List<CRMProjectUI.Models.UserListDto>   ?? new List<CRMProjectUI.Models.UserListDto>();
-    var customers    = ViewBag.Customers    as List<CRMProjectUI.Models.CustomerListDto> ?? new List<CRMProjectUI.Models.CustomerListDto>();
-    var logoProducts = ViewBag.LogoProducts as List<CRMProjectUI.Models.LogoProductDto>  ?? new List<CRMProjectUI.Models.LogoProductDto>();
+    var adminUsers = ViewBag.AdminUsers as List<CRMProjectUI.Models.UserListDto> ?? new List<CRMProjectUI.Models.UserListDto>();
+    var customers = ViewBag.Customers as List<CRMProjectUI.Models.CustomerListDto> ?? new List<CRMProjectUI.Models.CustomerListDto>();
+    var logoProducts = ViewBag.LogoProducts as List<CRMProjectUI.Models.LogoProductDto> ?? new List<CRMProjectUI.Models.LogoProductDto>();
 
-    string? fSearch   = ViewBag.Search          as string;
-    int?    fStatus   = ViewBag.Status          as int?;
-    int?    fPriority = ViewBag.Priority        as int?;
-    int?    fCustomer = ViewBag.CustomerId      as int?;
-    int?    fProduct  = ViewBag.LogoProductId   as int?;
-    int?    fAssigned = ViewBag.AssignedToUserId as int?;
-    int?    fCreated  = ViewBag.CreatedByUserId  as int?;
-    string? fStart    = ViewBag.StartDate       as string;
-    string? fEnd      = ViewBag.EndDate         as string;
+    string? fSearch = ViewBag.Search as string;
+    int? fStatus = ViewBag.Status as int?;
+    int? fPriority = ViewBag.Priority as int?;
+    int? fCustomer = ViewBag.CustomerId as int?;
+    int? fProduct = ViewBag.LogoProductId as int?;
+    int? fAssigned = ViewBag.AssignedToUserId as int?;
+    int? fCreated = ViewBag.CreatedByUserId as int?;
+    string? fStart = ViewBag.StartDate as string;
+    string? fEnd = ViewBag.EndDate as string;
 
-    int total     = Model?.Count ?? 0;
-    int acik      = Model?.Count(x => x.Status == 0 || x.Status == 1) ?? 0;
-    int kapali    = Model?.Count(x => x.Status == 2 || x.Status == 3 || x.Status == 6) ?? 0;
-    int bekliyor  = Model?.Count(x => x.Status == 4 || x.Status == 5) ?? 0;
+    int total = Model?.Count ?? 0;
+    int acik = Model?.Count(x => x.Status == 0 || x.Status == 1) ?? 0;
+    int kapali = Model?.Count(x => x.Status == 2 || x.Status == 3 || x.Status == 6) ?? 0;
+    int bekliyor = Model?.Count(x => x.Status == 4 || x.Status == 5) ?? 0;
 }
 <style>
     @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
     :root {
-        --ink: #0f1117; --ink-soft: #4a4f5e; --surface: #f7f8fc;
-        --white: #fff; --accent: #2563eb; --success: #10b981;
-        --warning: #f59e0b; --danger: #ef4444; --purple: #7c3aed;
-        --border: #e2e8f0; --radius: 12px;
+        --ink: #0f1117;
+        --ink-soft: #4a4f5e;
+        --surface: #f7f8fc;
+        --white: #fff;
+        --accent: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --purple: #7c3aed;
+        --border: #e2e8f0;
+        --radius: 12px;
         --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
         --shadow-md: 0 8px 32px rgba(15,17,23,.10);
     }
-    .tt-page { font-family: 'DM Sans', sans-serif; }
+
+    .tt-page {
+        font-family: 'DM Sans', sans-serif;
+    }
     /* ── HEADER ── */
     .tt-header {
         background: linear-gradient(135deg,#0f1117 0%,#1e2433 50%,#0f1117 100%);
-        border-radius: 16px; padding: 22px 28px; margin-bottom: 20px;
-        display: flex; align-items: center; justify-content: space-between;
-        position: relative; overflow: hidden;
+        border-radius: 16px;
+        padding: 22px 28px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
     }
-    .tt-header::before {
-        content:''; position:absolute; top:-60px; right:-60px;
-        width:200px; height:200px;
-        background:radial-gradient(circle,rgba(99,102,241,.3) 0%,transparent 70%);
-        border-radius:50%;
-    }
-    .tt-header h4 { color:#fff; font-weight:800; margin:0; font-size:1.2rem; position:relative; z-index:1; }
-    .tt-header p  { color:rgba(255,255,255,.55); margin:0; font-size:.82rem; position:relative; z-index:1; }
+
+        .tt-header::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle,rgba(99,102,241,.3) 0%,transparent 70%);
+            border-radius: 50%;
+        }
+
+        .tt-header h4 {
+            color: #fff;
+            font-weight: 800;
+            margin: 0;
+            font-size: 1.2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tt-header p {
+            color: rgba(255,255,255,.55);
+            margin: 0;
+            font-size: .82rem;
+            position: relative;
+            z-index: 1;
+        }
     /* ── STAT KARTLARI ── */
-    .tt-stats { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
-    .tt-stat  {
-        flex:1; min-width:100px; background:var(--white); border:1px solid var(--border);
-        border-radius:var(--radius); padding:12px 15px; box-shadow:var(--shadow-sm);
-        display:flex; align-items:center; gap:10px; cursor:pointer;
+    .tt-stats {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    .tt-stat {
+        flex: 1;
+        min-width: 100px;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 15px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
         transition: box-shadow .2s, transform .2s;
     }
-    .tt-stat:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
-    .tt-stat-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:.82rem; flex-shrink:0; }
-    .tt-stat-icon.blue   { background:#eff6ff; color:var(--accent); }
-    .tt-stat-icon.indigo { background:#eef2ff; color:#4f46e5; }
-    .tt-stat-icon.green  { background:#f0fdf4; color:var(--success); }
-    .tt-stat-icon.amber  { background:#fffbeb; color:var(--warning); }
-    .tt-stat-icon.red    { background:#fef2f2; color:var(--danger); }
-    .tt-stat-label { font-size:.65rem; color:var(--ink-soft); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
-    .tt-stat-value { font-family:'Syne',sans-serif; font-size:1.25rem; font-weight:800; color:var(--ink); line-height:1; }
+
+        .tt-stat:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+    .tt-stat-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .82rem;
+        flex-shrink: 0;
+    }
+
+        .tt-stat-icon.blue {
+            background: #eff6ff;
+            color: var(--accent);
+        }
+
+        .tt-stat-icon.indigo {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .tt-stat-icon.green {
+            background: #f0fdf4;
+            color: var(--success);
+        }
+
+        .tt-stat-icon.amber {
+            background: #fffbeb;
+            color: var(--warning);
+        }
+
+    .tt-stat-label {
+        font-size: .65rem;
+        color: var(--ink-soft);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .tt-stat-value {
+        font-family: 'Syne',sans-serif;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--ink);
+        line-height: 1;
+    }
+    /* ── SÜRE ÖZET ── */
+    .tt-sure-bar {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 18px;
+        margin-bottom: 14px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .tt-sure-label {
+        font-size: .72rem;
+        font-weight: 700;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        flex-shrink: 0;
+    }
+
+    .tt-sure-items {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .tt-sure-item span {
+        font-size: .72rem;
+        font-weight: 600;
+        display: block;
+    }
+
+    .tt-sure-item div {
+        font-family: 'Syne',sans-serif;
+        font-size: 1.1rem;
+        font-weight: 800;
+        line-height: 1.15;
+    }
     /* ── FİLTRE PANELİ ── */
     .tt-filter-card {
-        background:var(--white); border:1px solid var(--border); border-radius:var(--radius);
-        padding:16px 18px; margin-bottom:14px; box-shadow:var(--shadow-sm);
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        margin-bottom: 14px;
+        box-shadow: var(--shadow-sm);
     }
-    .tt-filter-title { font-weight:700; font-size:.82rem; color:var(--ink-soft); margin-bottom:12px; display:flex; align-items:center; gap:6px; }
-    .tt-filter-label { font-size:.75rem; font-weight:600; color:var(--ink-soft); display:block; margin-bottom:4px; }
+
+    .tt-filter-title {
+        font-weight: 700;
+        font-size: .82rem;
+        color: var(--ink-soft);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .tt-filter-label {
+        font-size: .75rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        display: block;
+        margin-bottom: 4px;
+    }
+
     .tt-filter-input, .tt-filter-select {
-        width:100%; padding:7px 11px; border:1.5px solid var(--border); border-radius:8px;
-        font-size:.82rem; color:var(--ink); background:var(--white); outline:none;
-        transition:border-color .2s;
+        width: 100%;
+        padding: 7px 11px;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        font-size: .82rem;
+        color: var(--ink);
+        background: var(--white);
+        outline: none;
+        transition: border-color .2s;
     }
-    .tt-filter-input:focus, .tt-filter-select:focus { border-color:var(--accent); }
+
+        .tt-filter-input:focus, .tt-filter-select:focus {
+            border-color: var(--accent);
+        }
+
     .tt-filter-btn {
-        padding:8px 18px; border-radius:9px; background:var(--accent); color:#fff;
-        border:none; font-size:.82rem; font-weight:600; cursor:pointer;
-        display:inline-flex; align-items:center; gap:6px;
-        box-shadow:0 3px 10px rgba(37,99,235,.35); transition:background .2s;
+        padding: 8px 18px;
+        border-radius: 9px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        font-size: .82rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 3px 10px rgba(37,99,235,.35);
+        transition: background .2s;
     }
-    .tt-filter-btn:hover { background:#1d4ed8; }
+
+        .tt-filter-btn:hover {
+            background: #1d4ed8;
+        }
+
     .tt-filter-reset {
-        padding:8px 18px; border-radius:9px; background:var(--white); color:var(--ink-soft);
-        border:1.5px solid var(--border); font-size:.82rem; font-weight:600; cursor:pointer;
-        display:inline-flex; align-items:center; gap:6px; text-decoration:none;
-        transition:all .15s;
+        padding: 8px 18px;
+        border-radius: 9px;
+        background: var(--white);
+        color: var(--ink-soft);
+        border: 1.5px solid var(--border);
+        font-size: .82rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        transition: all .15s;
     }
-    .tt-filter-reset:hover { border-color:var(--danger); color:var(--danger); text-decoration:none; }
+
+        .tt-filter-reset:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+            text-decoration: none;
+        }
     /* ── TABLO ── */
-    .tt-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
-    .tt-table { width:100%; border-collapse:collapse; }
-    .tt-table thead th {
-        font-family:'Syne',sans-serif; font-size:.66rem; font-weight:700;
-        text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft);
-        padding:9px 12px; background:var(--surface); border-bottom:1px solid var(--border);
-        white-space:nowrap;
+    .tt-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
     }
-    .tt-table tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
-    .tt-table tbody tr:last-child { border-bottom:none; }
-    .tt-table tbody tr:hover { background:#f8fafd; }
-    .tt-table tbody td { padding:8px 12px; vertical-align:middle; font-size:.83rem; }
+
+    .tt-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .tt-table thead th {
+            font-family: 'Syne',sans-serif;
+            font-size: .66rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--ink-soft);
+            padding: 9px 12px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .tt-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .15s;
+        }
+
+            .tt-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .tt-table tbody tr:hover {
+                background: #f8fafd;
+            }
+
+        .tt-table tbody td {
+            padding: 8px 12px;
+            vertical-align: middle;
+            font-size: .83rem;
+        }
     /* ── STATUS BADGE ── */
     .b-status {
-        font-size:.68rem; font-weight:600; padding:3px 8px; border-radius:20px;
-        display:inline-flex; align-items:center; gap:3px; white-space:nowrap;
+        font-size: .68rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        white-space: nowrap;
     }
-    .b-status::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
-    .bs-0 { background:#f1f5f9; color:#475569; } .bs-0::before { background:#94a3b8; }
-    .bs-1 { background:#eef2ff; color:#3730a3; } .bs-1::before { background:#4f46e5; }
-    .bs-2 { background:#f0fdf4; color:#166534; } .bs-2::before { background:#16a34a; }
-    .bs-3 { background:#fef2f2; color:#991b1b; } .bs-3::before { background:var(--danger); }
-    .bs-4 { background:#fffbeb; color:#92400e; } .bs-4::before { background:var(--warning); }
-    .bs-5 { background:#f5f3ff; color:#5b21b6; } .bs-5::before { background:var(--purple); }
-    .bs-6 { background:#f1f5f9; color:#475569; } .bs-6::before { background:#94a3b8; }
+
+        .b-status::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+    .bs-0 {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+        .bs-0::before {
+            background: #94a3b8;
+        }
+
+    .bs-1 {
+        background: #eef2ff;
+        color: #3730a3;
+    }
+
+        .bs-1::before {
+            background: #4f46e5;
+        }
+
+    .bs-2 {
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+        .bs-2::before {
+            background: #16a34a;
+        }
+
+    .bs-3 {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+        .bs-3::before {
+            background: var(--danger);
+        }
+
+    .bs-4 {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+        .bs-4::before {
+            background: var(--warning);
+        }
+
+    .bs-5 {
+        background: #f5f3ff;
+        color: #5b21b6;
+    }
+
+        .bs-5::before {
+            background: var(--purple);
+        }
+
+    .bs-6 {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+        .bs-6::before {
+            background: #94a3b8;
+        }
     /* ── PRIORITY BADGE ── */
-    .b-priority { font-size:.67rem; font-weight:700; padding:2px 7px; border-radius:6px; white-space:nowrap; }
-    .bp-1 { background:#f0fdf4; color:#166534; }
-    .bp-2 { background:#eff6ff; color:#1e40af; }
-    .bp-3 { background:#fffbeb; color:#92400e; }
-    .bp-4 { background:#fef2f2; color:#991b1b; }
-    /* ── AVATAR ── */
-    .tt-avatar { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.6rem; font-weight:700; color:#fff; flex-shrink:0; overflow:hidden; }
-    .tt-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-    .tt-avatar.blue  { background:var(--accent); }
-    .tt-avatar.green { background:var(--success); }
-    /* ── SAYFALAMA ── */
-    .tt-pagination { display:flex; align-items:center; justify-content:space-between; padding:10px 15px; border-top:1px solid var(--border); font-size:.77rem; color:var(--ink-soft); flex-wrap:wrap; gap:7px; }
-    .tt-page-btns { display:flex; gap:3px; }
-    .tt-page-btn { width:27px; height:27px; border-radius:7px; border:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:.77rem; transition:all .15s; }
-    .tt-page-btn:hover { background:#eff6ff; border-color:var(--accent); color:var(--accent); }
-    .tt-page-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
-    .tt-page-btn.disabled { opacity:.4; cursor:not-allowed; pointer-events:none; }
-    /* ── EMPTY ── */
-    .tt-empty { text-align:center; padding:48px 24px; color:var(--ink-soft); }
-    .tt-empty i { font-size:2.5rem; opacity:.2; display:block; margin-bottom:12px; }
-    .tt-no-results { text-align:center; padding:28px; color:var(--ink-soft); font-size:.87rem; }
-    /* ── ADD BTN ── */
-    .tt-add-btn {
-        display:inline-flex; align-items:center; gap:6px; padding:7px 15px;
-        border-radius:9px; background:var(--accent); color:#fff; font-size:.82rem;
-        font-weight:600; text-decoration:none; white-space:nowrap;
-        box-shadow:0 3px 10px rgba(37,99,235,.35); transition:background .2s, transform .15s;
+    .b-priority {
+        font-size: .67rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 6px;
+        white-space: nowrap;
     }
-    .tt-add-btn:hover { background:#1d4ed8; transform:translateY(-1px); color:#fff; text-decoration:none; }
+
+    .bp-1 {
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+    .bp-2 {
+        background: #eff6ff;
+        color: #1e40af;
+    }
+
+    .bp-3 {
+        background: #fffbeb;
+        color: #92400e;
+    }
+
+    .bp-4 {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+    /* ── AVATAR ── */
+    .tt-avatar {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .6rem;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+        .tt-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .tt-avatar.blue {
+            background: var(--accent);
+        }
+
+        .tt-avatar.green {
+            background: var(--success);
+        }
+    /* ── EXCEL BUTON ── */
+    .tt-excel-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 16px;
+        border-radius: 9px;
+        background: #16a34a;
+        color: #fff;
+        font-size: .82rem;
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+        cursor: pointer;
+        box-shadow: 0 3px 10px rgba(22,163,74,.35);
+        transition: background .2s, transform .15s;
+        position: relative;
+        z-index: 1;
+        border: none;
+    }
+
+        .tt-excel-btn:hover {
+            background: #15803d;
+            transform: translateY(-1px);
+            color: #fff;
+            text-decoration: none;
+        }
+    /* ── SAYFALAMA ── */
+    .tt-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 15px;
+        border-top: 1px solid var(--border);
+        font-size: .77rem;
+        color: var(--ink-soft);
+        flex-wrap: wrap;
+        gap: 7px;
+    }
+
+    .tt-page-btns {
+        display: flex;
+        gap: 3px;
+    }
+
+    .tt-page-btn {
+        width: 27px;
+        height: 27px;
+        border-radius: 7px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: .77rem;
+        transition: all .15s;
+    }
+
+        .tt-page-btn:hover {
+            background: #eff6ff;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .tt-page-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .tt-page-btn.disabled {
+            opacity: .4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+    /* ── EMPTY ── */
+    .tt-empty {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--ink-soft);
+    }
+
+        .tt-empty i {
+            font-size: 2.5rem;
+            opacity: .2;
+            display: block;
+            margin-bottom: 12px;
+        }
 </style>
 
 <div class="tt-page">
@@ -162,6 +574,41 @@
         <div>
             <h4><i class="fas fa-list mr-2"></i>@(isUser ? "Tüm Taleplerim" : "Tüm Talepler")</h4>
             <p>@total kayıt listeleniyor</p>
+        </div>
+        <button onclick="exportToExcel()" class="tt-excel-btn">
+            <i class="fas fa-file-excel"></i> Excel'e Aktar
+        </button>
+    </div>
+
+    <!-- SÜRE ÖZET BARI -->
+    <div class="tt-sure-bar">
+        <div class="tt-sure-label">
+            <i class="fas fa-clock" style="color:var(--accent);"></i> Toplam Destek Süresi
+        </div>
+        <div class="tt-sure-items">
+            <div class="tt-sure-item">
+                <span style="color:var(--ink-soft);">Tümü</span>
+                <div id="sureTotal" style="color:var(--ink);">—</div>
+            </div>
+            <div class="tt-sure-item">
+                <span style="color:#4f46e5;">Aktif</span>
+                <div id="sureAcik" style="color:#4f46e5;">—</div>
+            </div>
+            <div class="tt-sure-item">
+                <span style="color:var(--success);">Kapandı</span>
+                <div id="sureKapali" style="color:var(--success);">—</div>
+            </div>
+            <div class="tt-sure-item">
+                <span style="color:var(--warning);">Bekliyor</span>
+                <div id="sureBekliyor" style="color:var(--warning);">—</div>
+            </div>
+            <div class="tt-sure-item" id="sureFilteredWrap" style="display:none;">
+                <span style="color:var(--accent);">Görüntülenen</span>
+                <div id="sureFiltered" style="color:var(--accent);">—</div>
+            </div>
+        </div>
+        <div style="margin-left:auto;font-size:.71rem;color:var(--ink-soft);opacity:.65;">
+            <i class="fas fa-info-circle mr-1"></i>Filtre uygulandığında güncellenir
         </div>
     </div>
 
@@ -235,15 +682,43 @@
                 @if (isStaff)
                 {
                     <!-- Firma -->
+                    <!-- Firma -->
                     <div class="col-md-3 col-sm-6">
                         <label class="tt-filter-label">Firma</label>
-                        <select name="customerId" class="tt-filter-select">
-                            <option value="">Tüm Firmalar</option>
-                            @foreach (var c in customers)
-                            {
-                                <option value="@c.ID">@c.CustomerName</option>
-                            }
-                        </select>
+                        <input type="hidden" name="customerId" id="ttCustomerIdHidden" value="@(fCustomer?.ToString() ?? "")" />
+                        <div style="position:relative;">
+                            <div style="display:flex;align-items:center;gap:7px;border:1.5px solid var(--border);border-radius:8px;padding:6px 11px;background:var(--white);transition:border-color .2s;" id="ttCustomerWrap">
+                                <i class="fas fa-search" style="color:var(--ink-soft);font-size:.75rem;flex-shrink:0;"></i>
+                                <input type="text" id="ttCustomerSearch" placeholder="Firma ara..."
+                                       autocomplete="off"
+                                       style="border:none;outline:none;width:100%;font-size:.82rem;color:var(--ink);background:transparent;"
+                                       oninput="ttFilterCustomers()"
+                                       onfocus="ttOpenCustomerDropdown()" />
+                                <button type="button" id="ttCustomerClear" onclick="ttClearCustomer()"
+                                        style="display:none;border:none;background:none;color:var(--ink-soft);cursor:pointer;font-size:.8rem;padding:0;flex-shrink:0;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div id="ttCustomerDropdown"
+                                 style="display:none;position:fixed;background:var(--white);border:1.5px solid var(--accent);border-radius:9px;box-shadow:0 8px 32px rgba(15,17,23,.12);z-index:9999;max-height:200px;overflow-y:auto;min-width:200px;">
+                                @foreach (var c in customers)
+                                {
+                                    <div class="tt-customer-option"
+                                         data-id="@c.ID"
+                                         data-name="@c.CustomerName"
+                                         onclick="ttSelectCustomer('@c.ID', '@c.CustomerName.Replace("'", "\\'")')"
+                                         style="padding:8px 14px;cursor:pointer;font-size:.82rem;color:var(--ink);border-bottom:1px solid var(--border);"
+                                         onmouseover="this.style.background='#eff6ff'"
+                                         onmouseout="this.style.background=''">
+                                        <i class="fas fa-building" style="color:var(--accent);font-size:.7rem;margin-right:6px;"></i>
+                                        @c.CustomerName
+                                    </div>
+                                }
+                                <div id="ttCustomerNoResult" style="display:none;padding:12px;text-align:center;color:var(--ink-soft);font-size:.8rem;">
+                                    <i class="fas fa-search mr-1"></i> Sonuç bulunamadı
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <!-- Atanan -->
                     <div class="col-md-2 col-sm-6">
@@ -316,12 +791,18 @@
                         <tr>
                             <th>No</th>
                             <th>Başlık</th>
-                            @if (isStaff) { <th>Müşteri</th> }
+                            @if (isStaff)
+                            {
+                                <th>Müşteri</th>
+                            }
                             <th>Ürün</th>
                             <th>Öncelik</th>
                             <th>Durum</th>
                             <th>Oluşturan</th>
-                            @if (isStaff) { <th>Atanan</th> }
+                            @if (isStaff)
+                            {
+                                <th>Atanan</th>
+                            }
                             <th>Açılış</th>
                             <th>Kapanış</th>
                             <th>Süre</th>
@@ -333,24 +814,30 @@
                         {
                             string sClass = $"bs-{item.Status}";
                             string pClass = $"bp-{item.Priority}";
-                            string statusText = item.Status switch {
-                                0 => "Beklemede", 1 => "İşlemde", 2 => "Başarılı Kapandı",
-                                3 => "Çözülemedi", 4 => "Müşteri Dönecek",
-                                5 => "Biz Döneceğiz", 6 => "İptal Edildi", _ => "-"
+                            string statusText = item.Status switch
+                            {
+                                0 => "Beklemede",
+                                1 => "İşlemde",
+                                2 => "Başarılı Kapandı",
+                                3 => "Çözülemedi",
+                                4 => "Müşteri Dönecek",
+                                5 => "Biz Döneceğiz",
+                                6 => "İptal Edildi",
+                                _ => "-"
                             };
-                            string prioText = item.Priority switch { 1=>"Düşük", 2=>"Normal", 3=>"Yüksek", 4=>"Kritik", _=>"Normal" };
-                            string prioIcon = item.Priority switch { 4=>"fa-fire", 3=>"fa-arrow-up", 2=>"fa-minus", _=>"fa-arrow-down" };
+                            string prioText = item.Priority switch { 1 => "Düşük", 2 => "Normal", 3 => "Yüksek", 4 => "Kritik", _ => "Normal" };
+                            string prioIcon = item.Priority switch { 4 => "fa-fire", 3 => "fa-arrow-up", 2 => "fa-minus", _ => "fa-arrow-down" };
                             string cbInit = string.IsNullOrEmpty(item.CreatedByName) ? "?"
-                                : string.Concat(item.CreatedByName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+                            : string.Concat(item.CreatedByName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
                             string atInit = string.IsNullOrEmpty(item.AssignedToName) ? "?"
-                                : string.Concat(item.AssignedToName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
+                            : string.Concat(item.AssignedToName.Split(' ').Take(2).Select(w => w[0])).ToUpper();
                             string safeSearch = $"{item.TicketNo} {item.Title} {item.CustomerName} {item.LogoProductName} {item.CreatedByName} {item.AssignedToName}".ToLower();
 
                             string workingDisplay = item.WorkingMinute == 0 ? "—"
-                                : item.WorkingMinute < 60 ? $"{item.WorkingMinute}dk"
-                                : $"{item.WorkingMinute/60}sa {item.WorkingMinute%60}dk";
+                            : item.WorkingMinute < 60 ? $"{item.WorkingMinute}dk"
+                            : $"{item.WorkingMinute / 60}sa {item.WorkingMinute % 60}dk";
 
-                            <tr data-status="@item.Status" data-search="@safeSearch">
+                            <tr data-status="@item.Status" data-search="@safeSearch" data-minutes="@item.WorkingMinute">
                                 <td><span style="font-family:monospace;font-size:.75rem;color:var(--ink-soft);font-weight:600;">@item.TicketNo</span></td>
                                 <td>
                                     <a asp-action="Detay" asp-controller="AdminTicket" asp-route-id="@item.ID"
@@ -377,7 +864,11 @@
                                                      onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
                                                 <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@cbInit</span>
                                             }
-                                            else { @cbInit }
+                                            else
+                                            {
+
+                                                @cbInit
+                                            }
                                         </div>
                                         <span style="font-size:.79rem;font-weight:600;">@(item.CreatedByName ?? "—")</span>
                                     </div>
@@ -395,7 +886,11 @@
                                                              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
                                                         <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">@atInit</span>
                                                     }
-                                                    else { @atInit }
+                                                    else
+                                                    {
+
+                                                        @atInit
+                                                    }
                                                 </div>
                                                 <span style="font-size:.79rem;font-weight:600;">@item.AssignedToName</span>
                                             </div>
@@ -412,7 +907,11 @@
                                     {
                                         <small style="color:var(--ink-soft);">@item.ClosedDate.Value.ToString("dd.MM.yyyy")</small>
                                     }
-                                    else { <small style="color:#94a3b8;">—</small> }
+                                    else
+                                    {
+
+                                        <small style="color:#94a3b8;">—</small>
+                                    }
                                 </td>
                                 <td>
                                     <span style="font-size:.78rem;font-weight:600;color:var(--ink-soft);">@workingDisplay</span>
@@ -439,110 +938,308 @@
 </div>
 
 @section Scripts {
-<script>
-    var allRows      = [];
-    var filteredRows = [];
-    var currentPage  = 1;
-    var pageSize     = 20;
-    var quickSearch  = '';
-    var statusFilter = '';
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        var allRows      = [];
+        var filteredRows = [];
+        var currentPage  = 1;
+        var pageSize     = 20;
+        var quickSearch  = '';
+        var statusFilter = '';
 
         document.addEventListener('DOMContentLoaded', function () {
-            // Filtre değerlerini set et
+                    // Sayfa yüklenince seçili firma adını göster
+        var selectedCustomerId = '@(fCustomer?.ToString() ?? "")';
+        if (selectedCustomerId) {
+            var opt = document.querySelector('.tt-customer-option[data-id="' + selectedCustomerId + '"]');
+            if (opt) {
+                document.getElementById('ttCustomerSearch').value        = opt.getAttribute('data-name');
+                document.getElementById('ttCustomerClear').style.display = 'inline';
+            }
+        }
             var statusVal   = '@(fStatus?.ToString() ?? "")';
             var priorityVal = '@(fPriority?.ToString() ?? "")';
             var customerVal = '@(fCustomer?.ToString() ?? "")';
             var productVal  = '@(fProduct?.ToString() ?? "")';
             var assignedVal = '@(fAssigned?.ToString() ?? "")';
 
-            if (statusVal)   setSelectVal('select[name="status"]',          statusVal);
-            if (priorityVal) setSelectVal('select[name="priority"]',        priorityVal);
-            if (customerVal) setSelectVal('select[name="customerId"]',      customerVal);
-            if (productVal)  setSelectVal('select[name="logoProductId"]',   productVal);
-            if (assignedVal) setSelectVal('select[name="assignedToUserId"]',assignedVal);
+            if (statusVal)   setSelectVal('select[name="status"]',           statusVal);
+            if (priorityVal) setSelectVal('select[name="priority"]',         priorityVal);
+            if (customerVal) setSelectVal('select[name="customerId"]',       customerVal);
+            if (productVal)  setSelectVal('select[name="logoProductId"]',    productVal);
+            if (assignedVal) setSelectVal('select[name="assignedToUserId"]', assignedVal);
 
             allRows = Array.from(document.querySelectorAll('#ttBody tr'));
             applyFilters();
         });
+
         function setSelectVal(selector, val) {
             var el = document.querySelector(selector);
             if (el) el.value = val;
         }
-    function filterByStatusQuick(val, el) {
-        statusFilter = val;
-        currentPage  = 1;
-        applyFilters();
-    }
 
-    function quickFilter() {
-        quickSearch = document.getElementById('quickSearch').value.toLowerCase().trim();
-        currentPage = 1;
-        applyFilters();
-    }
+        function filterByStatusQuick(val, el) {
+            statusFilter = val;
+            currentPage  = 1;
+            applyFilters();
+        }
 
-    function changePageSize(val) {
-        pageSize    = parseInt(val);
-        currentPage = 1;
-        applyFilters();
-    }
+        function quickFilter() {
+            quickSearch = document.getElementById('quickSearch').value.toLowerCase().trim();
+            currentPage = 1;
+            applyFilters();
+        }
 
-    function applyFilters() {
-        filteredRows = allRows.filter(function(row) {
-            var s = row.getAttribute('data-status');
-            var statusMatch = true;
-            if      (statusFilter === 'open')    statusMatch = (s === '0' || s === '1');
-            else if (statusFilter === 'closed')  statusMatch = (s === '2' || s === '3' || s === '6');
-            else if (statusFilter === 'waiting') statusMatch = (s === '4' || s === '5');
+        function changePageSize(val) {
+            pageSize    = parseInt(val);
+            currentPage = 1;
+            applyFilters();
+        }
 
-            var searchMatch = quickSearch === '' || (row.getAttribute('data-search') || '').includes(quickSearch);
-            return statusMatch && searchMatch;
-        });
-        renderPage();
-    }
+        function applyFilters() {
+            filteredRows = allRows.filter(function(row) {
+                var s = row.getAttribute('data-status');
+                var statusMatch = true;
+                if      (statusFilter === 'open')    statusMatch = (s === '0' || s === '1');
+                else if (statusFilter === 'closed')  statusMatch = (s === '2' || s === '3' || s === '6');
+                else if (statusFilter === 'waiting') statusMatch = (s === '4' || s === '5');
 
-    function renderPage() {
-            var tbody      = document.getElementById('ttBody'); 
+                var searchMatch = quickSearch === '' || (row.getAttribute('data-search') || '').includes(quickSearch);
+                return statusMatch && searchMatch;
+            });
+
+            renderPage();
+            updateSureOzet();
+        }
+
+        function renderPage() {
+            var tbody = document.getElementById('ttBody');
             if (!tbody) return;
-        var total      = filteredRows.length;
-        var totalPages = Math.max(1, Math.ceil(total / pageSize));
-        if (currentPage > totalPages) currentPage = totalPages;
-        var start = (currentPage - 1) * pageSize;
-        var end   = Math.min(start + pageSize, total);
+            var total      = filteredRows.length;
+            var totalPages = Math.max(1, Math.ceil(total / pageSize));
+            if (currentPage > totalPages) currentPage = totalPages;
+            var start = (currentPage - 1) * pageSize;
+            var end   = Math.min(start + pageSize, total);
 
-        allRows.forEach(function(r) { r.style.display = 'none'; });
+            allRows.forEach(function(r) { r.style.display = 'none'; });
 
-        var nr = document.getElementById('noResultsRow');
-        if (total === 0) {
-            if (!nr) {
-                nr = document.createElement('tr');
-                nr.id = 'noResultsRow';
-                nr.innerHTML = '<td colspan="@(isStaff ? 12 : 10)" style="text-align:center;padding:28px;color:var(--ink-soft);font-size:.87rem;"><i class="fas fa-search mr-2"></i>Sonuç bulunamadı.</td>';
-                tbody.appendChild(nr);
+            var nr = document.getElementById('noResultsRow');
+            if (total === 0) {
+                if (!nr) {
+                    nr = document.createElement('tr');
+                    nr.id = 'noResultsRow';
+                    nr.innerHTML = '<td colspan="@(isStaff ? 12 : 10)" style="text-align:center;padding:28px;color:var(--ink-soft);font-size:.87rem;"><i class="fas fa-search mr-2"></i>Sonuç bulunamadı.</td>';
+                    tbody.appendChild(nr);
+                }
+                nr.style.display = '';
+            } else {
+                if (nr) nr.style.display = 'none';
+                filteredRows.slice(start, end).forEach(function(r) { r.style.display = ''; tbody.appendChild(r); });
             }
-            nr.style.display = '';
-        } else {
-            if (nr) nr.style.display = 'none';
-            filteredRows.slice(start, end).forEach(function(r) { r.style.display = ''; tbody.appendChild(r); });
+
+            document.getElementById('paginationInfo').textContent = total === 0
+                ? 'Kayıt yok' : (start + 1) + ' – ' + end + ' / ' + total + ' kayıt';
+
+            var btns = document.getElementById('paginationBtns');
+            btns.innerHTML = '';
+            function addBtn(lbl, page, disabled, active) {
+                var btn = document.createElement('div');
+                btn.className = 'tt-page-btn' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+                btn.innerHTML = lbl;
+                if (!disabled && !active) btn.onclick = function () { currentPage = page; renderPage(); };
+                btns.appendChild(btn);
+            }
+            addBtn('<i class="fas fa-chevron-left"></i>', currentPage - 1, currentPage === 1, false);
+            var from = Math.max(1, currentPage - 2), to = Math.min(totalPages, currentPage + 2);
+            if (from > 1) { addBtn('1', 1, false, false); if (from > 2) addBtn('...', -1, true, false); }
+            for (var p = from; p <= to; p++) addBtn(String(p), p, false, p === currentPage);
+            if (to < totalPages) { if (to < totalPages - 1) addBtn('...', -1, true, false); addBtn(String(totalPages), totalPages, false, false); }
+            addBtn('<i class="fas fa-chevron-right"></i>', currentPage + 1, currentPage === totalPages, false);
         }
 
-        document.getElementById('paginationInfo').textContent = total === 0
-            ? 'Kayıt yok' : (start + 1) + ' – ' + end + ' / ' + total + ' kayıt';
-
-        var btns = document.getElementById('paginationBtns');
-        btns.innerHTML = '';
-        function addBtn(lbl, page, disabled, active) {
-            var btn = document.createElement('div');
-            btn.className = 'tt-page-btn' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
-            btn.innerHTML = lbl;
-            if (!disabled && !active) btn.onclick = function () { currentPage = page; renderPage(); };
-            btns.appendChild(btn);
+        /* ─────────────────────────────────────────
+           SÜRE HESAPLAMA
+        ───────────────────────────────────────── */
+        function minToDisplay(min) {
+            if (!min || min === 0) return '0dk';
+            if (min < 60) return min + 'dk';
+            var h = Math.floor(min / 60), m = min % 60;
+            return m > 0 ? h + 'sa ' + m + 'dk' : h + 'sa';
         }
-        addBtn('<i class="fas fa-chevron-left"></i>', currentPage - 1, currentPage === 1, false);
-        var from = Math.max(1, currentPage - 2), to = Math.min(totalPages, currentPage + 2);
-        if (from > 1) { addBtn('1', 1, false, false); if (from > 2) addBtn('...', -1, true, false); }
-        for (var p = from; p <= to; p++) addBtn(String(p), p, false, p === currentPage);
-        if (to < totalPages) { if (to < totalPages - 1) addBtn('...', -1, true, false); addBtn(String(totalPages), totalPages, false, false); }
-        addBtn('<i class="fas fa-chevron-right"></i>', currentPage + 1, currentPage === totalPages, false);
-    }
-</script>
+
+        function updateSureOzet() {
+            var totalMin    = 0, acikMin = 0, kapaliMin = 0, bekliyorMin = 0, filteredMin = 0;
+            var isFiltered  = statusFilter !== '' || quickSearch !== '';
+
+            allRows.forEach(function(row) {
+                var min = parseInt(row.getAttribute('data-minutes') || '0', 10);
+                var s   = row.getAttribute('data-status');
+                totalMin += min;
+                if (s === '0' || s === '1')              acikMin     += min;
+                if (s === '2' || s === '3' || s === '6') kapaliMin   += min;
+                if (s === '4' || s === '5')              bekliyorMin += min;
+            });
+
+            filteredRows.forEach(function(row) {
+                filteredMin += parseInt(row.getAttribute('data-minutes') || '0', 10);
+            });
+
+            document.getElementById('sureTotal').textContent    = minToDisplay(totalMin);
+            document.getElementById('sureAcik').textContent     = minToDisplay(acikMin);
+            document.getElementById('sureKapali').textContent   = minToDisplay(kapaliMin);
+            document.getElementById('sureBekliyor').textContent = minToDisplay(bekliyorMin);
+
+            var fw = document.getElementById('sureFilteredWrap');
+            if (isFiltered) {
+                document.getElementById('sureFiltered').textContent = minToDisplay(filteredMin);
+                fw.style.display = '';
+            } else {
+                fw.style.display = 'none';
+            }
+        }
+
+        /* ─────────────────────────────────────────
+           EXCEL'E AKTAR  (SheetJS — gerçek .xlsx)
+        ───────────────────────────────────────── */
+        function exportToExcel() {
+            if (typeof XLSX === 'undefined') {
+                alert('SheetJS kütüphanesi henüz yüklenmedi, lütfen birkaç saniye bekleyip tekrar deneyin.');
+                return;
+            }
+
+            var rows    = filteredRows.length > 0 ? filteredRows : allRows;
+            var isStaff = @(isStaff ? "true" : "false");
+
+            /* ── Başlık satırı ── */
+            var headers = ['Ticket No', 'Başlık', 'Ürün', 'Öncelik', 'Durum', 'Oluşturan', 'Açılış', 'Kapanış', 'Süre (dk)', 'Süre'];
+            if (isStaff) {
+                headers.splice(2, 0, 'Müşteri');
+                headers.splice(7, 0, 'Atanan');
+            }
+
+            /* ── Veri satırları ── */
+            var dataArr = [headers];
+
+            rows.forEach(function(row) {
+                var cells = row.querySelectorAll('td');
+                var idx   = 0;
+                var data  = [];
+
+                data.push(cells[idx++]?.textContent?.trim() || '');  // Ticket No
+                data.push(cells[idx++]?.textContent?.trim() || '');  // Başlık
+                if (isStaff) data.push(cells[idx++]?.textContent?.trim() || '');  // Müşteri
+                data.push(cells[idx++]?.textContent?.trim() || '');  // Ürün
+                data.push(cells[idx++]?.textContent?.trim() || '');  // Öncelik
+                data.push(cells[idx++]?.textContent?.trim() || '');  // Durum
+                data.push(cells[idx++]?.textContent?.trim() || '');  // Oluşturan
+                if (isStaff) data.push(cells[idx++]?.textContent?.trim() || '');  // Atanan
+                data.push(cells[idx++]?.textContent?.trim() || '');  // Açılış
+                data.push(cells[idx++]?.textContent?.trim() || '');  // Kapanış
+
+                var min = parseInt(row.getAttribute('data-minutes') || '0', 10);
+                data.push(min);               // Süre (dk) — sayısal
+                data.push(minToDisplay(min)); // Süre — okunabilir
+
+                dataArr.push(data);
+            });
+
+            /* ── SheetJS ile xlsx üret ── */
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(dataArr);
+
+            /* Sütun genişlikleri */
+            var colWidths = headers.map(function(h, i) {
+                var max = h.length;
+                dataArr.slice(1).forEach(function(row) {
+                    var v = row[i] != null ? String(row[i]).length : 0;
+                    if (v > max) max = v;
+                });
+                return { wch: Math.min(max + 2, 50) };
+            });
+            ws['!cols'] = colWidths;
+
+            /* Başlık satırı kalın + arka plan */
+            var range = XLSX.utils.decode_range(ws['!ref']);
+            for (var c = range.s.c; c <= range.e.c; c++) {
+                var cellAddr = XLSX.utils.encode_cell({ r: 0, c: c });
+                if (!ws[cellAddr]) continue;
+                ws[cellAddr].s = {
+                    font:      { bold: true, color: { rgb: 'FFFFFF' } },
+                    fill:      { fgColor: { rgb: '2563EB' } },
+                    alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
+                };
+            }
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Talepler');
+
+            var now     = new Date();
+            var dateStr = now.getFullYear() + '-'
+                        + String(now.getMonth() + 1).padStart(2, '0') + '-'
+                        + String(now.getDate()).padStart(2, '0');
+
+            XLSX.writeFile(wb, 'talepler_' + dateStr + '.xlsx', { bookType: 'xlsx', type: 'binary', cellStyles: true });
+        }
+
+
+                // ── FİRMA ARAMA ──
+        function ttOpenCustomerDropdown() {
+            ttPositionCustomerDropdown();
+            document.getElementById('ttCustomerDropdown').style.display = 'block';
+            document.getElementById('ttCustomerWrap').style.borderColor = 'var(--accent)';
+            ttFilterCustomers();
+        }
+
+        function ttPositionCustomerDropdown() {
+            var wrap = document.getElementById('ttCustomerWrap');
+            var drop = document.getElementById('ttCustomerDropdown');
+            var rect = wrap.getBoundingClientRect();
+            drop.style.top   = (rect.bottom + 4) + 'px';
+            drop.style.left  = rect.left + 'px';
+            drop.style.width = rect.width + 'px';
+        }
+
+        function ttFilterCustomers() {
+            var q = document.getElementById('ttCustomerSearch').value.toLowerCase().trim();
+            var opts = document.querySelectorAll('.tt-customer-option');
+            var count = 0;
+            opts.forEach(function(opt) {
+                var name = opt.getAttribute('data-name').toLowerCase();
+                var show = q === '' || name.includes(q);
+                opt.style.display = show ? '' : 'none';
+                if (show) count++;
+            });
+            document.getElementById('ttCustomerNoResult').style.display = count === 0 ? 'block' : 'none';
+            ttPositionCustomerDropdown();
+            document.getElementById('ttCustomerDropdown').style.display = 'block';
+        }
+
+        function ttSelectCustomer(id, name) {
+            document.getElementById('ttCustomerIdHidden').value      = id;
+            document.getElementById('ttCustomerSearch').value        = name;
+            document.getElementById('ttCustomerClear').style.display = 'inline';
+            document.getElementById('ttCustomerDropdown').style.display = 'none';
+            document.getElementById('ttCustomerWrap').style.borderColor = 'var(--border)';
+        }
+
+        function ttClearCustomer() {
+            document.getElementById('ttCustomerIdHidden').value      = '';
+            document.getElementById('ttCustomerSearch').value        = '';
+            document.getElementById('ttCustomerClear').style.display = 'none';
+            document.getElementById('ttCustomerDropdown').style.display = 'none';
+        }
+
+        document.addEventListener('click', function(e) {
+            var wrap = document.getElementById('ttCustomerWrap');
+            var drop = document.getElementById('ttCustomerDropdown');
+            if (wrap && drop && !wrap.contains(e.target) && !drop.contains(e.target)) {
+                drop.style.display = 'none';
+                if (wrap) wrap.style.borderColor = 'var(--border)';
+            }
+        });
+
+        window.addEventListener('scroll', function() {
+            var drop = document.getElementById('ttCustomerDropdown');
+            if (drop && drop.style.display === 'block') ttPositionCustomerDropdown();
+        }, true);
+    </script>
 }
