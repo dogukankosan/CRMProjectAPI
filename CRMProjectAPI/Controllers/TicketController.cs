@@ -1022,24 +1022,30 @@ WHERE t.ID = @ID AND t.IsDeleted = 0
             using var connection = _context.CreateConnection();
 
             const string statsSql = @"
-        SELECT
-            COUNT(*)                                                                   AS Total,
-            SUM(CASE WHEN Status IN (0,1,4,5) THEN 1 ELSE 0 END)                     AS OpenCount,
-            SUM(CASE WHEN Status = 2 THEN 1 ELSE 0 END)                              AS Resolved,
-            SUM(CASE WHEN Status = 3 THEN 1 ELSE 0 END)                              AS Failed,
-            SUM(CASE WHEN CAST(ClosedDate AS DATE) = CAST(GETDATE() AS DATE)
-                AND Status IN (2,3) THEN 1 ELSE 0 END)                               AS TodayResolved,
-            SUM(CASE WHEN DATEPART(WEEK, ClosedDate) = DATEPART(WEEK, GETDATE())
-                AND YEAR(ClosedDate) = YEAR(GETDATE())
-                AND Status IN (2,3) THEN 1 ELSE 0 END)                               AS ThisWeekResolved,
-            SUM(CASE WHEN MONTH(ClosedDate) = MONTH(GETDATE())
-                AND YEAR(ClosedDate) = YEAR(GETDATE())
-                AND Status IN (2,3) THEN 1 ELSE 0 END)                               AS ThisMonthResolved,
-            ISNULL(AVG(CAST(WorkingMinute AS FLOAT)), 0)                              AS AvgWorkingMinute
-        FROM Tickets WITH (NOLOCK)
-        WHERE IsDeleted = 0
-          AND AssignedToUserID = @UserId
-    ";
+    SELECT
+        COUNT(*)                                                                   AS Total,
+        SUM(CASE WHEN Status IN (0,1,4,5) THEN 1 ELSE 0 END)                       AS OpenCount,
+        SUM(CASE WHEN Status = 2 THEN 1 ELSE 0 END)                                AS Resolved,
+        SUM(CASE WHEN Status = 3 THEN 1 ELSE 0 END)                                AS Failed,
+        SUM(CASE WHEN CAST(ClosedDate AS DATE) = CAST(GETDATE() AS DATE)
+            AND Status IN (2,3) THEN 1 ELSE 0 END)                                 AS TodayResolved,
+        SUM(CASE WHEN DATEPART(WEEK, ClosedDate) = DATEPART(WEEK, GETDATE())
+            AND YEAR(ClosedDate) = YEAR(GETDATE())
+            AND Status IN (2,3) THEN 1 ELSE 0 END)                                 AS ThisWeekResolved,
+        SUM(CASE WHEN MONTH(ClosedDate) = MONTH(GETDATE())
+            AND YEAR(ClosedDate) = YEAR(GETDATE())
+            AND Status IN (2,3) THEN 1 ELSE 0 END)                                 AS ThisMonthResolved,
+        ISNULL(AVG(CAST(WorkingMinute AS FLOAT)), 0)                                AS AvgWorkingMinute,
+
+        -- ✔ Bugünkü toplam çalışma süresi eklendi
+        SUM(CASE WHEN CAST(ClosedDate AS DATE) = CAST(GETDATE() AS DATE)
+                 THEN ISNULL(CAST(WorkingMinute AS FLOAT), 0)
+                 ELSE 0 END)                                                       AS TodayWorkingMinute
+
+    FROM Tickets WITH (NOLOCK)
+    WHERE IsDeleted = 0
+      AND AssignedToUserID = @UserId
+";
             dynamic? stats = await connection.QueryFirstOrDefaultAsync(statsSql, new { UserId = userId });
 
             // Üzerindeki açık ticketlar

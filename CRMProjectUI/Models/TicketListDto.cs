@@ -456,11 +456,25 @@
         public int? ThisMonthResolved { get; set; }
         public double? AvgWorkingMinute { get; set; }
 
+        // ✔ Bugün toplam çalışma süresi
+        public double? TodayWorkingMinute { get; set; }
+
         public string AvgWorkingDisplay
         {
             get
             {
                 int t = (int)AvgWorkingMinute;
+                if (t < 60) return $"{t} dk";
+                return $"{t / 60} sa {t % 60} dk";
+            }
+        }
+
+        // ✔ Bugünkü çalışma süresi formatlı (opsiyonel)
+        public string TodayWorkingDisplay
+        {
+            get
+            {
+                int t = (int)(TodayWorkingMinute ?? 0);
                 if (t < 60) return $"{t} dk";
                 return $"{t / 60} sa {t % 60} dk";
             }

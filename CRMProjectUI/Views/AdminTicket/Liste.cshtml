@@ -879,11 +879,8 @@
                     <label style="font-size:.8rem;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:5px;">
                         Çalışma Süresi <small style="font-weight:400;">(dakika)</small>
                     </label>
-                    <input type="number" id="workingMinInput" min="1" value="1"
-                           oninput="this.value = Math.max(1, parseInt(this.value) || 1);"
-                           onchange="this.value = Math.max(1, parseInt(this.value) || 1);"
-                           onblur="this.value = Math.max(1, parseInt(this.value) || 1);"
-                           style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.85rem;" />
+                        <input type="number" id="workingMinInput"
+                               style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.85rem;" />
                 </div>
             </div>
             <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
@@ -1027,9 +1024,18 @@
     }
 
     var assignTicketId = null;
-    function openAssignModal(id, title, currentUserId, assignedTo) {
-        var callerId = '@callerUserId';
-        var isSA     = @(isSuperAdmin ? "true" : "false");
+        function htmlDecode(input) {
+            var doc = new DOMParser().parseFromString(input, 'text/html');
+            return doc.documentElement.textContent;
+        }
+
+        function openAssignModal(btn) {
+               var id         = parseInt(btn.getAttribute('data-id'));
+        var title      = htmlDecode(btn.getAttribute('data-title'));
+        var assignedTo = btn.getAttribute('data-assigned');
+        var currentUserId = assignedTo; // ← BU SATIRI EKLE
+        var callerId   = '@callerUserId';
+        var isSA       = @(isSuperAdmin ? "true" : "false");
 
         if (!isSA) {
             if (assignedTo && assignedTo !== callerId) {
@@ -1073,8 +1079,9 @@
     var statusTicketId = null;
     var currentElapsed = 0; // ← bunu ekle
        function openStatusModal(btn) {
+                var title         = htmlDecode(btn.getAttribute('data-title')); // ✅ bu kalacak
         var id            = parseInt(btn.getAttribute('data-id'));
-        var title         = btn.getAttribute('data-title');
+  
         var currentStatus = btn.getAttribute('data-status');
         var openedDate    = btn.getAttribute('data-opened');
         var takenDate     = btn.getAttribute('data-taken');
@@ -1113,28 +1120,35 @@
         if (elapsed < 1) elapsed = 1;
     }
         currentElapsed = elapsed;
-        document.getElementById('workingMinInput').value = elapsed;
+        document.getElementById('workingMinInput').value = '';
+
 
         onStatusChange();
         document.getElementById('statusModal').style.display = 'flex';
     }
     function closeStatusModal() { document.getElementById('statusModal').style.display = 'none'; statusTicketId = null; }
-    function onStatusChange() {
-        var v = document.getElementById('statusSelect').value;
-        document.getElementById('solutionNoteGroup').style.display  = (v==='2'||v==='3') ? 'block' : 'none';
-        document.getElementById('cancelReasonGroup').style.display  = (v==='6')          ? 'block' : 'none';
-        var showWorking = (v==='2'||v==='3'||v==='6');
-        document.getElementById('workingMinGroup').style.display    = showWorking ? 'block' : 'none';
-        if (showWorking) {
-            document.getElementById('workingMinInput').value = currentElapsed;
+           function onStatusChange() {
+            var v = document.getElementById('statusSelect').value;
+            document.getElementById('solutionNoteGroup').style.display = (v==='2'||v==='3') ? 'block' : 'none';
+            document.getElementById('cancelReasonGroup').style.display = (v==='6')          ? 'block' : 'none';
+            var showWorking = (v==='2'||v==='3'||v==='6');
+            document.getElementById('workingMinGroup').style.display   = showWorking ? 'block' : 'none';
         }
-    }
-             function submitStatus() {
-        var status     = document.getElementById('statusSelect').value;
-        var note       = document.getElementById('solutionNoteInput')?.value.trim() ?? '';
-        var minutes    = parseInt(document.getElementById('workingMinInput').value, 10);
-        if (isNaN(minutes) || minutes < 1) minutes = 1; // ← EN AZ 1
-        document.getElementById('workingMinInput').value = minutes;
+        function submitStatus() {
+            var submitBtn = document.querySelector('#statusModal button[onclick="submitStatus()"]');
+            if (submitBtn && submitBtn.disabled) return;
+
+            var status      = document.getElementById('statusSelect').value;
+            var note        = document.getElementById('solutionNoteInput')?.value.trim() ?? '';
+            var workingInput = document.getElementById('workingMinInput');
+            var minutes     = parseInt(workingInput.value, 10);
+            var showWorking = (status === '2' || status === '3' || status === '6');
+            if (showWorking && (!workingInput.value || isNaN(minutes) || minutes < 1)) {
+                Swal.fire({ icon: 'warning', title: 'Eksik Alan', text: 'Çalışma süresi zorunludur, lütfen dakika giriniz.' });
+                workingInput.focus();
+                return;
+            }
+
 
         var currentSt  = parseInt(document.getElementById('statusSelect').getAttribute('data-current') || '0');
         var assignedTo = document.getElementById('statusSelect').getAttribute('data-assigned') || '';

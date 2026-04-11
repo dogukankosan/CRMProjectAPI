@@ -11,7 +11,14 @@
     string tarih = DateTime.Now.ToString("dddd, dd MMMM yyyy",
                           new System.Globalization.CultureInfo("tr-TR"));
 }
-
+@{
+var totalMinutes = stats?.TodayWorkingMinute ?? 0;
+var hours = (int)(totalMinutes / 60);
+var minutes = (int)(totalMinutes % 60);
+var display = hours > 0
+    ? $"{hours} saat {minutes} dakika"
+    : $"{minutes} dakika";
+}
 <style>
     @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -438,7 +445,10 @@
             </div>
             <div class="db-stat">
                 <div class="db-stat-icon amber"><i class="fas fa-stopwatch"></i></div>
-                <div><div class="db-stat-label">Ort. Süre</div><div class="db-stat-value" style="color:var(--warning); font-size:1rem;">@(stats?.AvgWorkingDisplay ?? "-")</div></div>
+                <div>
+                    <div class="db-stat-label">Bugünkü Çalışma Süresi</div>
+                    <div class="db-stat-value" style="color:var(--warning); font-size:1rem;">@display</div>
+                </div>
             </div>
         </div>
 

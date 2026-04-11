@@ -121,6 +121,8 @@ namespace CRMProjectAPI.Validations
                 errors.Add("En az bir Müşteri ürünü seçilmelidir");
 
             // OPSİYONEL ALANLAR
+            ValidateOptionalMaxLength(dto.BulutERPUsername, "BulutERP kullanıcı adı", 256, errors);
+            ValidateOptionalMaxLength(dto.BulutERPPassword, "BulutERP şifresi", 256, errors);
             ValidateOptionalMaxLength(dto.ShortName, "Kısa ad", 50, errors);
             ValidateOptionalPhone(dto.Phone1, "Telefon numarası", 20, errors);
             ValidateOptionalPhone(dto.Phone2, "İkinci telefon", 20, errors);

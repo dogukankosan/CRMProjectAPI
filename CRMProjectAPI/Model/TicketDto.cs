@@ -83,6 +83,7 @@
         public DateTime OpenedDate { get; set; }
         public DateTime? AssignedDate { get; set; }
         public DateTime? ResolvedDate { get; set; }
+        public DateTime? ClosedDate { get; set; }
         public int WorkingMinute { get; set; }
 
         // JOIN'den gelen alanlar

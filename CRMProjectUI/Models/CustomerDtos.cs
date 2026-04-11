@@ -10,6 +10,9 @@
         public string CustomerCode { get; set; } = string.Empty;
         public string CustomerName { get; set; } = string.Empty;
         public string? ShortName { get; set; }
+        // BulutERP
+        public string? BulutERPUsername { get; set; }
+        public string? BulutERPPassword { get; set; }
         public string CustomerType { get; set; } = "Kurumsal";
 
         // Vergi Bilgileri
@@ -72,7 +75,8 @@
     {
         public int ID { get; set; }
         public string? CustomerCode { get; set; }
-        public string CustomerName { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty; public string? BulutERPUsername { get; set; }
+        public string? BulutERPPassword { get; set; }
         public string? ShortName { get; set; }
         public string CustomerType { get; set; } = string.Empty;
         public string? VKN { get; set; }

@@ -142,6 +142,7 @@
             transform: scale(1.1);
         }
 
+     
         .dropdown-list-content a:hover,
         .dropdown-list-content a:hover *,
         .dropdown-list-content a:focus,
@@ -153,6 +154,7 @@
             text-decoration: none !important;
         }
 
+   
         .social-link {
             transition: all 0.3s ease;
             margin-left: 8px;
@@ -839,7 +841,13 @@
             </footer>
         </div>
     </div>
-
+    <!-- ── MEDYA MODAL ── -->
+    <div id="annMediaOverlay" style="display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.8);align-items:center;justify-content:center;flex-direction:column;gap:12px;" onclick="annCloseMediaModal()">
+        <button onclick="annCloseMediaModal();event.stopPropagation();" style="position:absolute;top:18px;right:22px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:1.2rem;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-times"></i>
+        </button>
+        <div id="annMediaContent" onclick="event.stopPropagation()"></div>
+    </div>
     <script src="~/adminThema/assets/js/app.min.js"></script>
     <script src="~/adminThema/assets/bundles/apexcharts/apexcharts.min.js"></script>
     <script src="~/adminThema/assets/js/scripts.js"></script>
@@ -1103,9 +1111,9 @@
                     osc.stop(startTime + duration);
                 }
 
-                playTone(1046, ctx.currentTime,        0.18, 1.0); // Do
-                playTone(1318, ctx.currentTime + 0.2,  0.18, 0.9); // Mi
-                playTone(1568, ctx.currentTime + 0.4,  0.28, 1.0); // Sol
+                    playTone(1046, ctx.currentTime,       0.18, 0.3); // Do
+        playTone(1318, ctx.currentTime + 0.2, 0.18, 0.25); // Mi
+        playTone(1568, ctx.currentTime + 0.4, 0.28, 0.3);  // Sol
 
             } catch(e) {}
         }
@@ -1214,15 +1222,50 @@
             if (ann.files && ann.files.length > 0) {
                 filesDiv.style.display = 'flex';
                 filesDiv.innerHTML = '';
-                ann.files.forEach(function(f) {
-                    var a = document.createElement('a');
-                    a.href = '/AdminDuyuru/Dosya/' + f.id;
-                    a.target = '_blank';
-                    a.download = '';
-                    a.className = 'ann-popup-file-link';
-                    a.innerHTML = '<i class="fas fa-file" style="font-size:.65rem;"></i>' + f.originalFileName;
-                    filesDiv.appendChild(a);
-                });
+                  ann.files.forEach(function(f) {
+            var ext = (f.originalFileName || '').split('.').pop().toLowerCase();
+            var isImage = ['jpg','jpeg','png','gif','webp','svg','bmp'].indexOf(ext) !== -1;
+            var isPdf = ext === 'pdf';
+
+            var iconMap = {
+                'pdf': 'fa-file-pdf',
+                'doc': 'fa-file-word', 'docx': 'fa-file-word',
+                'xls': 'fa-file-excel', 'xlsx': 'fa-file-excel',
+                'zip': 'fa-file-archive', 'rar': 'fa-file-archive',
+                'txt': 'fa-file-alt', 'mp4': 'fa-file-video', 'mp3': 'fa-file-audio'
+            };
+
+            if (isImage) {
+                // Göz ikonu butonu — tıklayınca modal açılır
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'ann-popup-file-link';
+                btn.style.cssText = 'border:none;cursor:pointer;';
+                btn.innerHTML = '<i class="fas fa-eye" style="font-size:.75rem;color:#2563eb;"></i> Görseli Görüntüle';
+                btn.onclick = function() { annOpenImageModal('/AdminDuyuru/Dosya/' + f.id, f.originalFileName); };
+                filesDiv.appendChild(btn);
+            } else if (isPdf) {
+                // PDF — göz ikonu, modal'da iframe ile açılır
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'ann-popup-file-link';
+                btn.style.cssText = 'border:none;cursor:pointer;';
+                btn.innerHTML = '<i class="fas fa-eye" style="font-size:.75rem;color:#dc2626;"></i> PDF Görüntüle';
+                btn.onclick = function() { annOpenPdfModal('/AdminDuyuru/Dosya/' + f.id, f.originalFileName); };
+                filesDiv.appendChild(btn);
+            } else {
+                // Diğer dosyalar — sadece indirme ikonu, isim yok
+                var icon = iconMap[ext] || 'fa-file';
+                var a = document.createElement('a');
+                a.href = '/AdminDuyuru/Dosya/' + f.id;
+                a.target = '_blank';
+                a.download = '';
+                a.className = 'ann-popup-file-link';
+                a.title = f.originalFileName;
+                a.innerHTML = '<i class="fas ' + icon + '" style="font-size:.75rem;"></i> İndir';
+                filesDiv.appendChild(a);
+            }
+        });
             } else {
                 filesDiv.style.display = 'none';
             }
@@ -1234,7 +1277,24 @@
             document.getElementById('annPrevBtn').disabled = __annIndex === 0;
             document.getElementById('annNextBtn').disabled = __annIndex === total - 1;
         }
+                function annOpenImageModal(src, name) {
+            var overlay = document.getElementById('annMediaOverlay');
+            var content = document.getElementById('annMediaContent');
+            content.innerHTML = '<img src="' + src + '" alt="' + name + '" style="max-width:90vw;max-height:85vh;border-radius:10px;object-fit:contain;box-shadow:0 8px 32px rgba(0,0,0,.3);">';
+            overlay.style.display = 'flex';
+        }
 
+        function annOpenPdfModal(src, name) {
+            var overlay = document.getElementById('annMediaOverlay');
+            var content = document.getElementById('annMediaContent');
+            content.innerHTML = '<iframe src="' + src + '" style="width:85vw;height:85vh;border:none;border-radius:10px;" title="' + name + '"></iframe>';
+            overlay.style.display = 'flex';
+        }
+
+        function annCloseMediaModal() {
+            document.getElementById('annMediaOverlay').style.display = 'none';
+            document.getElementById('annMediaContent').innerHTML = '';
+        }
         function annNavigate(dir) {
             var newIdx = __annIndex + dir;
             if (newIdx < 0 || newIdx >= __announcements.length) return;

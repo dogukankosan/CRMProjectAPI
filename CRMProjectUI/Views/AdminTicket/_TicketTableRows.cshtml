@@ -202,10 +202,10 @@
                 @if (isStaff && !closed)
                 {
                     <button type="button" class="tl-btn assign" title="Devret / Ata"
-                            onclick="openAssignModal(@item.ID,
-                            '@(item.Title?.Replace("'", "\\'").Replace("\"", "&quot;") ?? "")',
-                            @(item.AssignedToUserID?.ToString() ?? "null"),
-                            '@(item.AssignedToUserID?.ToString() ?? "")')">
+                            data-id="@item.ID"
+                            data-title="@System.Net.WebUtility.HtmlEncode(item.Title ?? "")"
+                            data-assigned="@(item.AssignedToUserID?.ToString() ?? "")"
+                            onclick="openAssignModal(this)">
                         <i class="fas fa-user-check"></i>
                     </button>
                     <button type="button" class="tl-btn status" title="Durum Değiştir"

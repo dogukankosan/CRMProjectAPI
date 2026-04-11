@@ -894,7 +894,7 @@ body.dark .navbar a,
         [class*="theme-"] .dropdown-item:hover,
         [class*="theme-"] .dropdown-menu a:hover {
             background-color: var(--accent-color) !important;
-            color: var(--btn-text) !important;
+            color: blue !important;
         }
 
             [class*="theme-"] .dropdown-item:hover i {

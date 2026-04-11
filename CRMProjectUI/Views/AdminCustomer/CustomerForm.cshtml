@@ -447,14 +447,14 @@
                                                     <button type="button" class="ticket-btn minus" onclick="changeTicket(-1)">−</button>
                                                     <input name="TicketCount" type="number" class="form-control text-center"
                                                            min="0" id="TicketCount" style="max-width:80px;"
-                                                           value="@Model.TicketCount" />
+                                                           value="@(isEdit? Model.TicketCount: 100)" />
                                                     <button type="button" class="ticket-btn plus" onclick="changeTicket(1)">+</button>
                                                 }
                                                 else
                                                 {
                                                     <input name="TicketCount" type="number" class="form-control text-center"
                                                            min="0" id="TicketCount" style="max-width:80px;"
-                                                           value="@Model.TicketCount" readonly />
+                                                           value="@(isEdit? Model.TicketCount: 100)" readonly />
                                                 }
                                             </div>
                                         </div>
@@ -750,6 +750,38 @@
                                             </div>
                                             
                                             <input type="hidden" id="sqlPassHidden" name="SQLPassword" value="@Model.SQLPassword" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>BulutERP Kullanıcı Adı</label>
+                                            <input asp-for="BulutERPUsername" class="form-control" maxlength="256" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>BulutERP Şifresi</label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" maxlength="256" id="bulutErpPass"
+                                                       autocomplete="new-password"
+                                                       data-real="@Model.BulutERPPassword"
+                                                       placeholder="@(isEdit && !string.IsNullOrEmpty(Model.BulutERPPassword) ? "••••••••" : "")" />
+                                                <div class="input-group-append">
+                                                    <button type="button" class="btn btn-outline-secondary"
+                                                            onclick="togglePassword('bulutErpPass', this)">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    @if (isEdit && !string.IsNullOrEmpty(Model.BulutERPPassword))
+                                                    {
+                                                        <button type="button" class="btn btn-outline-danger"
+                                                                onclick="clearPassword('bulutErpPass', 'bulutErpPassHidden')"
+                                                                title="Şifreyi Sil">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </div>
+                                            <input type="hidden" id="bulutErpPassHidden" name="BulutERPPassword" value="@Model.BulutERPPassword" />
                                         </div>
                                     </div>
                                 </div>
@@ -1357,6 +1389,39 @@
         document.getElementById('contractFileLabel').textContent = 'Dosya seçiniz...';
         document.getElementById('contractPreview').style.display = 'none';
     }
+    // ==================== TC ALGORİTMA KONTROLÜ ====================
+     function validateTC(tc) {
+        if (tc.length !== 11) return false;
+        if (tc[0] === '0') return false;
+        var digits = tc.split('').map(Number);
+        var sum10 = digits.slice(0, 10).reduce(function(a, b) { return a + b; }, 0);
+        if (sum10 % 10 !== digits[10]) return false;
+        var oddSum  = digits[0] + digits[2] + digits[4] + digits[6] + digits[8];
+        var evenSum = digits[1] + digits[3] + digits[5] + digits[7];
+        if ((oddSum * 7 - evenSum) % 10 !== digits[9]) return false;
+        return true;
+    }
+
+
+        // ==================== VKN ALGORİTMA KONTROLÜ ====================
+    function validateVKN(vkn) {
+        if (vkn.length !== 10) return false;
+        var digits = vkn.split('').map(Number);
+        var lastDigit = digits[9];
+        var tmp = new Array(9);
+        for (var i = 0; i < 9; i++) {
+            tmp[i] = (digits[i] + (9 - i)) % 10;
+        }
+        var sum = 0;
+        for (var i = 0; i < 9; i++) {
+            if (tmp[i] !== 0) {
+                var multiplied = tmp[i] * Math.pow(2, 9 - i);
+                var mod = multiplied % 9;
+                sum += (mod === 0) ? 9 : mod;
+            }
+        }
+        return (10 - (sum % 10)) % 10 === lastDigit;
+    }
     function removeContract() {
         Swal.fire({
             title: 'Sözleşmeyi kaldır?',
@@ -1428,29 +1493,7 @@
             return false;
         }
     }
-        // ==================== VKN ALGORİTMA KONTROLÜ ====================
-    function validateVKN(vkn) {
-        if (vkn.length !== 10) return false;
 
-        var digits = vkn.split('').map(Number);
-        var lastDigit = digits[9];
-
-        var tmp = new Array(9);
-        for (var i = 0; i < 9; i++) {
-            tmp[i] = (digits[i] + (9 - i)) % 10;
-        }
-
-        var sum = 0;
-        for (var i = 0; i < 9; i++) {
-            if (tmp[i] !== 0) {
-                var multiplied = tmp[i] * Math.pow(2, 9 - i);
-                var mod = multiplied % 9;
-                sum += (mod === 0) ? 9 : mod;
-            }
-        }
-
-        return (10 - (sum % 10)) % 10 === lastDigit;
-    }
     // ==================== YETKİLİ TELEFON KONTROLÜ ====================
     var officialPhone = document.getElementById('OfficialPhone');
     var officialCode  = document.getElementById('countryCodeOfficial').value;
@@ -1523,7 +1566,7 @@
         }
 
         // Şifreler — boşsa mevcut değeri gönder
-        ['logoWsPass', 'sqlPass'].forEach(function(id) {
+    ['logoWsPass', 'sqlPass', 'bulutErpPass'].forEach(function(id) {
             var visibleInput = document.getElementById(id);
             var hiddenInput  = document.getElementById(id + 'Hidden');
             if (!visibleInput || !hiddenInput) return;
@@ -1558,24 +1601,9 @@
                      .querySelector('.btn-outline-danger').style.display = 'none';
             }
         });
-        }// ==================== TC ALGORİTMA KONTROLÜ ====================
-    function validateTC(tc) {
-        if (tc.length !== 11) return false;
-        if (tc[0] === '0') return false;
+        }
 
-        var digits = tc.split('').map(Number);
-
-        // İlk 10 hanenin toplamının birler basamağı = 11. hane
-        var sum10 = digits.slice(0, 10).reduce(function(a, b) { return a + b; }, 0);
-        if (sum10 % 10 !== digits[10]) return false;
-
-        // Tek indekslilerin toplamı * 7 - çift indekslilerin toplamı) % 10 = 10. hane
-        var oddSum  = digits[0] + digits[2] + digits[4] + digits[6] + digits[8];
-        var evenSum = digits[1] + digits[3] + digits[5] + digits[7];
-        if ((oddSum * 7 - evenSum) % 10 !== digits[9]) return false;
-
-        return true;
-        }// ==================== GERÇEK ZAMANLI VKN/TC KONTROL ====================
+        // ==================== GERÇEK ZAMANLI VKN/TC KONTROL ====================
     function validateVknInput(input) {
         var errorEl = document.getElementById('vknError');
         var errorText = errorEl.querySelector('span') || errorEl;

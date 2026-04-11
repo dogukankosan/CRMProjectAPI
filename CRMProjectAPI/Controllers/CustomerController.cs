@@ -178,6 +178,7 @@ namespace CRMProjectAPI.Controllers
         c.Importance, c.TicketCount, c.Status, c.ContractEndDate, c.CreatedDate,
         c.LogoWebServiceUserName AS WsUsername,
         c.LogoWebServicePassword AS WsPassword,
+c.BulutERPUsername, c.BulutERPPassword,
         cd.Il, cd.Ilce
     FROM Customers c WITH (NOLOCK)
     LEFT JOIN tCity_District_Street_Town cd WITH (NOLOCK) ON c.CityDistrictID = cd.ID
@@ -301,8 +302,14 @@ namespace CRMProjectAPI.Controllers
                 customer.ContractPath = null;
                 customer.ContractStartDate = null;
                 customer.ContractEndDate = null;
+                // BulutERP: SA + Admin görür, User göremez
             }
 
+            if (IsUser() && !IsAdmin())
+            {
+                customer.BulutERPUsername = null;
+                customer.BulutERPPassword = null;
+            }
             return Ok(ApiResponse<CustomerDto>.Ok(customer));
         }
 
@@ -326,14 +333,15 @@ namespace CRMProjectAPI.Controllers
                     CompanyEmail, Phone1, Phone2, CityDistrictID, Address,
                     Importance, TicketCount, LogoWebServiceUserName, LogoWebServicePassword,
                     SQLPassword, ContractPath, ContractStartDate, ContractEndDate,
-                    InternalNotes, Status, CreatedBy, CreatedDate
+                    InternalNotes, Status, CreatedBy, CreatedDate,
+BulutERPUsername, BulutERPPassword
                 ) VALUES (
                     @CustomerCode, @CustomerName, @ShortName, @CustomerType,
                     @VKN, @TC, @OfficialName, @OfficialTitle, @OfficialPhone, @OfficialEmail,
                     @CompanyEmail, @Phone1, @Phone2, @CityDistrictID, @Address,
                     @Importance, @TicketCount, @LogoWebServiceUserName, @LogoWebServicePassword,
                     @SQLPassword, @ContractPath, @ContractStartDate, @ContractEndDate,
-                    @InternalNotes, @Status, @CreatedBy, GETDATE()
+                    @InternalNotes, @Status, @CreatedBy, GETDATE(),@BulutERPUsername, @BulutERPPassword
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);
             ";
@@ -447,6 +455,11 @@ namespace CRMProjectAPI.Controllers
         Importance                = @Importance,
         TicketCount               = @TicketCount,
         LogoWebServiceUserName    = @LogoWebServiceUserName,
+BulutERPUsername          = @BulutERPUsername,
+BulutERPPassword          = CASE 
+                                WHEN @BulutERPPassword = 'DELETE' THEN NULL
+                                WHEN @BulutERPPassword IS NULL OR @BulutERPPassword = '' THEN BulutERPPassword
+                                ELSE @BulutERPPassword END,
 LogoWebServicePassword    = CASE 
                                 WHEN @LogoWebServicePassword = 'DELETE' THEN NULL
                                 WHEN @LogoWebServicePassword IS NULL OR @LogoWebServicePassword = '' THEN LogoWebServicePassword

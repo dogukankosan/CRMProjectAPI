@@ -581,55 +581,91 @@
     </div>
 
     <!-- SÜRE ÖZET BARI -->
-    <div class="tt-sure-bar">
-        <div class="tt-sure-label">
-            <i class="fas fa-clock" style="color:var(--accent);"></i> Toplam Destek Süresi
+    <!-- ── SÜRE ÖZET BARI ── -->
+    <div style="background:#fff;border:1px solid #e4e7ef;border-radius:12px;padding:12px 18px;display:flex;align-items:center;flex-wrap:wrap;gap:10px 20px;box-shadow:0 1px 4px rgba(15,17,23,.06);margin-bottom:12px;">
+
+        <div style="display:flex;align-items:center;gap:7px;font-size:.7rem;font-weight:700;color:#5a6070;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;">
+            <i class="fas fa-clock" style="color:#2563eb;font-size:.8rem;"></i>
+            Destek Süresi
         </div>
-        <div class="tt-sure-items">
-            <div class="tt-sure-item">
-                <span style="color:var(--ink-soft);">Tümü</span>
-                <div id="sureTotal" style="color:var(--ink);">—</div>
+
+        <div style="width:1px;height:30px;background:#e4e7ef;flex-shrink:0;"></div>
+
+        <div style="display:flex;gap:20px;flex-wrap:wrap;flex:1;min-width:0;">
+            <div style="display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:.68rem;font-weight:600;color:#5a6070;">Tümü</span>
+                <div id="sureTotal" style="font-size:1.05rem;font-weight:800;color:#0f1117;line-height:1.1;">—</div>
             </div>
-            <div class="tt-sure-item">
-                <span style="color:#4f46e5;">Aktif</span>
-                <div id="sureAcik" style="color:#4f46e5;">—</div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:.68rem;font-weight:600;color:#4f46e5;">Aktif</span>
+                <div id="sureAcik" style="font-size:1.05rem;font-weight:800;color:#4f46e5;line-height:1.1;">—</div>
             </div>
-            <div class="tt-sure-item">
-                <span style="color:var(--success);">Kapandı</span>
-                <div id="sureKapali" style="color:var(--success);">—</div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:.68rem;font-weight:600;color:#10b981;">Kapandı</span>
+                <div id="sureKapali" style="font-size:1.05rem;font-weight:800;color:#10b981;line-height:1.1;">—</div>
             </div>
-            <div class="tt-sure-item">
-                <span style="color:var(--warning);">Bekliyor</span>
-                <div id="sureBekliyor" style="color:var(--warning);">—</div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:.68rem;font-weight:600;color:#f59e0b;">Bekliyor</span>
+                <div id="sureBekliyor" style="font-size:1.05rem;font-weight:800;color:#f59e0b;line-height:1.1;">—</div>
             </div>
-            <div class="tt-sure-item" id="sureFilteredWrap" style="display:none;">
-                <span style="color:var(--accent);">Görüntülenen</span>
-                <div id="sureFiltered" style="color:var(--accent);">—</div>
+            <div id="sureFilteredWrap" style="display:none;flex-direction:column;gap:2px;">
+                <span style="font-size:.68rem;font-weight:600;color:#2563eb;">Görüntülenen</span>
+                <div id="sureFiltered" style="font-size:1.05rem;font-weight:800;color:#2563eb;line-height:1.1;">—</div>
             </div>
         </div>
-        <div style="margin-left:auto;font-size:.71rem;color:var(--ink-soft);opacity:.65;">
-            <i class="fas fa-info-circle mr-1"></i>Filtre uygulandığında güncellenir
+
+        <div style="margin-left:auto;font-size:.67rem;color:#5a6070;opacity:.6;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;">
+            <i class="fas fa-info-circle"></i> Filtre uygulandığında güncellenir
         </div>
     </div>
 
-    <!-- STAT KARTLARI -->
-    <div class="tt-stats">
-        <div class="tt-stat" onclick="filterByStatusQuick('', this)">
-            <div class="tt-stat-icon blue"><i class="fas fa-ticket-alt"></i></div>
-            <div><div class="tt-stat-label">Toplam</div><div class="tt-stat-value">@total</div></div>
+    <!-- ── STAT KARTLARI ── -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px;">
+
+        <div onclick="filterByStatusQuick('', this)"
+             style="background:#fff;border:1px solid #e4e7ef;border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:11px;cursor:pointer;box-shadow:0 1px 4px rgba(15,17,23,.06);transition:box-shadow .2s,transform .2s;">
+            <div style="width:36px;height:36px;border-radius:9px;background:#dbeafe;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
+            <div>
+                <div style="font-size:.63rem;font-weight:700;color:#5a6070;text-transform:uppercase;letter-spacing:.05em;">Toplam</div>
+                <div style="font-size:1.3rem;font-weight:800;color:#0f1117;line-height:1;margin-top:3px;">@total</div>
+            </div>
         </div>
-        <div class="tt-stat" onclick="filterByStatusQuick('open', this)">
-            <div class="tt-stat-icon indigo"><i class="fas fa-folder-open"></i></div>
-            <div><div class="tt-stat-label">Aktif</div><div class="tt-stat-value" style="color:#4f46e5;">@acik</div></div>
+
+        <div onclick="filterByStatusQuick('open', this)"
+             style="background:#fff;border:1px solid #e4e7ef;border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:11px;cursor:pointer;box-shadow:0 1px 4px rgba(15,17,23,.06);transition:box-shadow .2s,transform .2s;">
+            <div style="width:36px;height:36px;border-radius:9px;background:#e0e7ff;color:#4338ca;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;">
+                <i class="fas fa-folder-open"></i>
+            </div>
+            <div>
+                <div style="font-size:.63rem;font-weight:700;color:#5a6070;text-transform:uppercase;letter-spacing:.05em;">Aktif</div>
+                <div style="font-size:1.3rem;font-weight:800;color:#4f46e5;line-height:1;margin-top:3px;">@acik</div>
+            </div>
         </div>
-        <div class="tt-stat" onclick="filterByStatusQuick('closed', this)">
-            <div class="tt-stat-icon green"><i class="fas fa-check-circle"></i></div>
-            <div><div class="tt-stat-label">Kapandı</div><div class="tt-stat-value" style="color:var(--success);">@kapali</div></div>
+
+        <div onclick="filterByStatusQuick('closed', this)"
+             style="background:#fff;border:1px solid #e4e7ef;border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:11px;cursor:pointer;box-shadow:0 1px 4px rgba(15,17,23,.06);transition:box-shadow .2s,transform .2s;">
+            <div style="width:36px;height:36px;border-radius:9px;background:#dcfce7;color:#15803d;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div>
+                <div style="font-size:.63rem;font-weight:700;color:#5a6070;text-transform:uppercase;letter-spacing:.05em;">Kapandı</div>
+                <div style="font-size:1.3rem;font-weight:800;color:#10b981;line-height:1;margin-top:3px;">@kapali</div>
+            </div>
         </div>
-        <div class="tt-stat" onclick="filterByStatusQuick('waiting', this)">
-            <div class="tt-stat-icon amber"><i class="fas fa-hourglass-half"></i></div>
-            <div><div class="tt-stat-label">Bekliyor</div><div class="tt-stat-value" style="color:var(--warning);">@bekliyor</div></div>
+
+        <div onclick="filterByStatusQuick('waiting', this)"
+             style="background:#fff;border:1px solid #e4e7ef;border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:11px;cursor:pointer;box-shadow:0 1px 4px rgba(15,17,23,.06);transition:box-shadow .2s,transform .2s;">
+            <div style="width:36px;height:36px;border-radius:9px;background:#fef3c7;color:#b45309;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div>
+                <div style="font-size:.63rem;font-weight:700;color:#5a6070;text-transform:uppercase;letter-spacing:.05em;">Bekliyor</div>
+                <div style="font-size:1.3rem;font-weight:800;color:#f59e0b;line-height:1;margin-top:3px;">@bekliyor</div>
+            </div>
         </div>
+
     </div>
 
     <!-- FİLTRE PANELİ -->
@@ -749,7 +785,8 @@
                     <button type="submit" class="tt-filter-btn">
                         <i class="fas fa-search"></i> Filtrele
                     </button>
-                    <a asp-action="TumTalepler" asp-controller="AdminTicket" class="tt-filter-reset">
+                  
+                    <a asp-action="TumTalepler" asp-controller="AdminTicket" class="tt-filter-reset" style="margin-left:10px">
                         <i class="fas fa-times"></i> Temizle
                     </a>
                 </div>

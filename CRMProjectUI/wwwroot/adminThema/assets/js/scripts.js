@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 $(window).on("load", function () {
   $(".loader").fadeOut("slow");
@@ -131,13 +131,15 @@ $(function () {
   };
 
   // sticky header toggle function
-  var toggle_sticky_header = function (sticky) {
-    if (!sticky) {
-      $(".main-navbar")[0].classList.remove("sticky");
-    } else {
-      $(".main-navbar")[0].classList += " sticky";
-    }
-  };
+    var toggle_sticky_header = function (sticky) {
+        var navbar = $(".main-navbar")[0];
+        if (!navbar) return; // ← NULL KONTROLÜ EKLE
+        if (!sticky) {
+            navbar.classList.remove("sticky");
+        } else {
+            navbar.classList += " sticky";
+        }
+    };
 
   $('.menu-toggle').on('click', function (e) {
     var $this = $(this);
@@ -547,13 +549,15 @@ $(function () {
       toggle_sidebar_mini(false);
     }
   });
-  $("#sticky_header_setting").on("change", function () {
-    if ($(".main-navbar")[0].classList.contains("sticky")) {
-      toggle_sticky_header(false);
-    } else {
-      toggle_sticky_header(true);
-    }
-  });
+    $("#sticky_header_setting").on("change", function () {
+        var navbar = $(".main-navbar")[0];
+        if (!navbar) return;
+        if (navbar.classList.contains("sticky")) {
+            toggle_sticky_header(false);
+        } else {
+            toggle_sticky_header(true);
+        }
+    });
 
   $(".theme-setting-toggle").on("click", function () {
     if ($(".theme-setting")[0].classList.contains("active")) {
