@@ -54,6 +54,8 @@
         public string? ContractPath { get; set; }
         public DateTime? ContractStartDate { get; set; }
         public DateTime? ContractEndDate { get; set; }
+        public bool HasMaintenanceContract { get; set; } = false;  // ← EKLE
+
 
         // Notlar
         public string? InternalNotes { get; set; }
@@ -92,6 +94,8 @@
         public int TicketCount { get; set; }
         public byte Status { get; set; }
         public DateTime? ContractEndDate { get; set; }
+        public bool HasMaintenanceContract { get; set; }  // ← EKLE
+
         public DateTime CreatedDate { get; set; }
 
         // View helper'ları
@@ -205,7 +209,29 @@
         public CustomerTicketStatsDto? TicketStats { get; set; }
         public List<TicketListDto> RecentTickets { get; set; } = new();
     }
+    public class CustomerUsersOverviewDto
+    {
+        public int CustomerID { get; set; }
+        public string? CustomerName { get; set; }
+        public string? ShortName { get; set; }
+        public byte CustomerStatus { get; set; }
+        public List<CustomerUserItemDto> Users { get; set; } = new();
+    }
 
+    public class CustomerUserItemDto
+    {
+        public int UserID { get; set; }
+        public string? FullName { get; set; }
+        public string? Username { get; set; }
+        public string? EMailAddress { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Picture { get; set; }
+        public byte ISAdmin { get; set; }
+        public bool UserStatus { get; set; }
+        public bool SendEmail { get; set; }
+        public DateTime? CreatedDate { get; set; }
+        public DateTime? UpdatedDate { get; set; }
+    }
     public class CustomerTicketStatsDto
     {
         public int? Total { get; set; }

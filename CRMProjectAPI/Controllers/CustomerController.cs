@@ -176,6 +176,7 @@ namespace CRMProjectAPI.Controllers
         c.ID, c.CustomerCode, c.CustomerName, c.ShortName, c.CustomerType,
         c.VKN, c.TC, c.OfficialName, c.Phone1, c.CompanyEmail,
         c.Importance, c.TicketCount, c.Status, c.ContractEndDate, c.CreatedDate,
+c.HasMaintenanceContract, 
         c.LogoWebServiceUserName AS WsUsername,
         c.LogoWebServicePassword AS WsPassword,
 c.BulutERPUsername, c.BulutERPPassword,
@@ -334,14 +335,14 @@ c.BulutERPUsername, c.BulutERPPassword,
                     Importance, TicketCount, LogoWebServiceUserName, LogoWebServicePassword,
                     SQLPassword, ContractPath, ContractStartDate, ContractEndDate,
                     InternalNotes, Status, CreatedBy, CreatedDate,
-BulutERPUsername, BulutERPPassword
+BulutERPUsername, BulutERPPassword,HasMaintenanceContract
                 ) VALUES (
                     @CustomerCode, @CustomerName, @ShortName, @CustomerType,
                     @VKN, @TC, @OfficialName, @OfficialTitle, @OfficialPhone, @OfficialEmail,
                     @CompanyEmail, @Phone1, @Phone2, @CityDistrictID, @Address,
                     @Importance, @TicketCount, @LogoWebServiceUserName, @LogoWebServicePassword,
                     @SQLPassword, @ContractPath, @ContractStartDate, @ContractEndDate,
-                    @InternalNotes, @Status, @CreatedBy, GETDATE(),@BulutERPUsername, @BulutERPPassword
+                    @InternalNotes, @Status, @CreatedBy, GETDATE(),@BulutERPUsername, @BulutERPPassword,@HasMaintenanceContract
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);
             ";
@@ -414,8 +415,14 @@ BulutERPUsername, BulutERPPassword
         [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> Update(int id, [FromBody] CustomerDto dto)
         {
-            dto.ID = id; 
+            dto.ID = id;
             // ── ContractPath 'DELETE' gelirse fiziksel dosyayı sil ──
+            if (!IsSuperAdmin())
+            {
+                using var connCheck = _context.CreateConnection();
+                dto.HasMaintenanceContract = await connCheck.QueryFirstOrDefaultAsync<bool>(
+                    "SELECT HasMaintenanceContract FROM Customers WHERE ID = @ID", new { ID = id });
+            }
             if (dto.ContractPath == "DELETE")
             {
                 using var connTemp = _context.CreateConnection();
@@ -482,7 +489,8 @@ SQLPassword               = CASE
         InternalNotes             = @InternalNotes,
         Status                    = @Status,
         UpdatedBy                 = @UpdatedBy,
-        UpdatedDate               = GETDATE()
+        UpdatedDate               = GETDATE(),
+HasMaintenanceContract    = @HasMaintenanceContract
     WHERE ID = @ID
 ";
             using var connection = _context.CreateConnection();
@@ -913,7 +921,67 @@ SQLPassword               = CASE
             var districts = await connection.QueryAsync<DistrictSelectDto>(sql, new { Il = il });
             return Ok(ApiResponse<IEnumerable<DistrictSelectDto>>.Ok(districts));
         }
+        /// <summary>
+        /// Tüm müşteriler ve altındaki kullanıcılar — Admin/SuperAdmin
+        /// </summary>
+        [HttpGet("users-overview")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
+        public async Task<IActionResult> GetCustomersWithUsers()
+        {
+            const string sql = @"
+        SELECT 
+            c.ID           AS CustomerID,
+            c.CustomerName,
+            c.ShortName,
+            c.Status       AS CustomerStatus,
+            u.ID           AS UserID,
+            u.FullName,
+            u.Username,
+            u.EMailAddress,
+            u.PhoneNumber,
+            u.Picture,
+            u.ISAdmin,
+            u.Status       AS UserStatus,
+            u.SendEmail,
+            u.CreatedDate,
+            u.UpdatedDate
+        FROM Customers c WITH (NOLOCK)
+        LEFT JOIN Users u WITH (NOLOCK) ON u.CompanyID = c.ID
+        WHERE c.DeletedDate IS NULL
+        ORDER BY c.CustomerName ASC, u.ISAdmin DESC, u.FullName ASC
+    ";
 
+            using var connection = _context.CreateConnection();
+            var rows = await connection.QueryAsync(sql);
+
+            var result = rows
+                .GroupBy(r => new { r.CustomerID, r.CustomerName, r.ShortName, r.CustomerStatus })
+                .Select(g => new
+                {
+                    g.Key.CustomerID,
+                    g.Key.CustomerName,
+                    g.Key.ShortName,
+                    g.Key.CustomerStatus,
+                    Users = g
+                        .Where(r => r.UserID != null)
+                        .Select(r => new
+                        {
+                            r.UserID,
+                            r.FullName,
+                            r.Username,
+                            r.EMailAddress,
+                            r.PhoneNumber,
+                            r.Picture,
+                            r.ISAdmin,
+                            r.UserStatus,
+                            r.SendEmail,
+                            r.CreatedDate,
+                            r.UpdatedDate
+                        }).ToList()
+                });
+
+            return Ok(ApiResponse<object>.Ok(result));
+        }
         #endregion
     }
 }

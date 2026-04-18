@@ -623,8 +623,11 @@
             <div><div class="cl-stat-label">VIP Müşteri</div><div class="cl-stat-value">@vipCount</div></div>
         </div>
         <div class="cl-stat">
-            <div class="cl-stat-icon yellow"><i class="fas fa-ticket-alt"></i></div>
-            <div><div class="cl-stat-label">Toplam Bırakılabilecek Talep</div><div class="cl-stat-value">@totalTickets</div></div>
+            <div class="cl-stat-icon green"><i class="fas fa-tools"></i></div>
+            <div>
+                <div class="cl-stat-label">Bakım Anlaşmalı</div>
+                <div class="cl-stat-value">@(Model?.Count(x => x.HasMaintenanceContract) ?? 0)</div>
+            </div>
         </div>
         @if (expiredCount > 0)
         {
@@ -662,12 +665,17 @@
                 <i class="fas fa-file-excel"></i> Excel
             </button>
         </div>
-      
-        <div class="cl-toolbar-right">
+  <div class="cl-toolbar-right">
             <div class="cl-search">
                 <i class="fas fa-search"></i>
                 <input type="text" id="searchInput" placeholder="Ara..." oninput="filterTable()" />
-            </div>
+
+            <!-- BURAYA -->
+            <a asp-action="KullaniciBakis" asp-controller="AdminMusteri" class="cl-add-btn"
+               style="background:#7c3aed; box-shadow: 0 3px 10px rgba(124,58,237,.35);">
+                <i class="fas fa-users"></i> Cari Kullanıcılar
+            </a>
+
             @if (isAdminOrSuper)
             {
                 <a asp-action="Ekle" asp-controller="AdminMusteri" class="cl-add-btn">
@@ -713,6 +721,7 @@
                             <th onclick="sortTable(8)" style="cursor:pointer;">Talep <i class="fas fa-sort ml-1" style="opacity:.4;"></i></th>
                             <th onclick="sortTable(9)" style="cursor:pointer;">Sözleşme <i class="fas fa-sort ml-1" style="opacity:.4;"></i></th>
                             <th>Durum</th>
+                            <th>Bakım</th>
                             <th>İşlemler</th>
                         </tr>
                     </thead>
@@ -879,6 +888,20 @@
                                 </td>
                                 <td>
                                     <span class="b-status @(isActive ? "active" : "passive")">@(isActive ? "Aktif" : "Pasif")</span>
+                                </td>
+                                <td class="text-center">
+                                    @if (item.HasMaintenanceContract)
+                                    {
+                                        <span title="Bakım Anlaşmalı" style="color:#10b981; font-size:.85rem;">
+                                            <i class="fas fa-tools"></i>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:#cbd5e1; font-size:.85rem;">
+                                            <i class="fas fa-tools"></i>
+                                        </span>
+                                    }
                                 </td>
                                 <td>
                                     <div class="cl-actions">

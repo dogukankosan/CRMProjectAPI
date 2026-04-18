@@ -2,6 +2,9 @@
 using CRMProjectAPI.Hubs;
 using CRMProjectAPI.Middleware;
 using CRMProjectAPI.Services;
+using Hangfire;
+using Hangfire.Dashboard;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -68,7 +71,17 @@ namespace CRMProjectAPI
             builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
             builder.Services.AddSingleton<IJwtService, JwtService>();
             builder.Services.AddScoped<IMailService, MailService>();
+            builder.Services.AddScoped<ITicketMailJob, TicketMailJob>();
             builder.Services.AddSignalR();
+
+            // ✅ HANGFIRE
+            builder.Services.AddHangfire(config => config
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            builder.Services.AddHangfireServer();
 
             string jwtSecret = builder.Configuration["JwtSettings:SecretKey"]!;
             string jwtIssuer = builder.Configuration["JwtSettings:Issuer"]!;
@@ -116,6 +129,7 @@ namespace CRMProjectAPI
                           .AllowCredentials();
                 });
             });
+
             var app = builder.Build();
 
             if (app.Environment.IsDevelopment())
@@ -126,9 +140,14 @@ namespace CRMProjectAPI
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "CRM Project API v1");
                     c.DisplayRequestDuration();
                 });
+
+    
             }
 
-            // CORS en üstte olmalı — middleware'ler preflight'ı kesmeden önce
+            app.UseHangfireDashboard("/hangfire", new DashboardOptions
+            {
+                Authorization = new List<IDashboardAuthorizationFilter>()
+            });
             app.UseCors("CRMPolicy");
             app.UseHttpsRedirection();
             app.UseStaticFiles();

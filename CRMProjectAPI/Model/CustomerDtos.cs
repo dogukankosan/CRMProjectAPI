@@ -53,6 +53,8 @@
         public string? ContractPath { get; set; }
         public DateTime? ContractStartDate { get; set; }
         public DateTime? ContractEndDate { get; set; }
+        public bool HasMaintenanceContract { get; set; } = false;  // ← EKLE
+
 
         // Notlar
         public string? InternalNotes { get; set; }
@@ -92,6 +94,8 @@
         public int TicketCount { get; set; }
         public byte Status { get; set; }
         public DateTime? ContractEndDate { get; set; }
+        public bool HasMaintenanceContract { get; set; }  // ← EKLE
+
         public DateTime CreatedDate { get; set; }
     }
 

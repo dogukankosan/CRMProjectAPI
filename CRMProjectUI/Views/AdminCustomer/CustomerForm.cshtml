@@ -896,6 +896,30 @@
                                     <textarea asp-for="InternalNotes" class="form-control" rows="3"
                                               placeholder="Sadece iç kullanım için notlar..."></textarea>
                                 </div>
+
+                                @if (isSuperAdmin || !isEdit)
+                                {
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="hasMaintenanceContract"
+                                                   name="HasMaintenanceContract" value="true"
+                                                   @(Model.HasMaintenanceContract ? "checked" : "") />
+                                            <label class="custom-control-label" for="hasMaintenanceContract">
+                                                <i class="fas fa-tools mr-1"></i> Bakım Anlaşmalı
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <input type="hidden" name="HasMaintenanceContract" value="@(Model.HasMaintenanceContract ? "true" : "false")" />
+                                    <div class="form-group">
+                                        <span class="badge badge-@(Model.HasMaintenanceContract ? "success" : "secondary") p-2">
+                                            <i class="fas fa-tools mr-1"></i>
+                                            @(Model.HasMaintenanceContract ? "Bakım Anlaşmalı" : "Bakım Anlaşması Yok")
+                                        </span>
+                                    </div>
+                                }
                                 <div class="form-group">
                                     <label>Durum</label>
                                     @if (canEditStatus)

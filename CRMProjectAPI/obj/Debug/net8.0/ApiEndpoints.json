@@ -624,6 +624,16 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "CRMProjectAPI.Controllers.CustomerController",
+    "Method": "GetCustomersWithUsers",
+    "RelativePath": "api/customer/users-overview",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "CRMProjectAPI.Controllers.KnowledgeBaseController",
     "Method": "List",
     "RelativePath": "api/knowledgebase",

@@ -5,6 +5,7 @@ using CRMProjectAPI.Models;
 using CRMProjectAPI.Services;
 using CRMProjectAPI.Validations;
 using Dapper;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -22,19 +23,22 @@ namespace CRMProjectAPI.Controllers
         private readonly IMailService _mailService;
         private readonly ILogger<TicketController> _logger;
         private readonly IHubContext<TicketHub> _hubContext;
+        private readonly IBackgroundJobClient _backgroundJobs;
 
         public TicketController(
             DapperContext context,
             IWebHostEnvironment env,
             IMailService mailService,
             ILogger<TicketController> logger,
-            IHubContext<TicketHub> hubContext)
+            IHubContext<TicketHub> hubContext,
+            IBackgroundJobClient backgroundJobs) // ✅ ekle
         {
             _context = context;
             _env = env;
             _mailService = mailService;
             _logger = logger;
             _hubContext = hubContext;
+            _backgroundJobs = backgroundJobs; // ✅ ekle
         }
 
         // ── JWT yardımcıları ─────────────────────────────────────────────────
@@ -526,17 +530,12 @@ WHERE t.ID = @ID AND t.IsDeleted = 0
             // Status 2, 3 veya 6 → mail gönder
             if (dto.Status == 2 || dto.Status == 3 || dto.Status == 6)
             {
-                try
-                {
-                    int customerId = (int)ticket.CustomerID;
-                    await SendTicketClosedMailAsync(connection, id, customerId, dto.Status);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ticket kapanma maili gönderilemedi. TicketID: {ID}", id);
-                }
-            }
+                int customerId = (int)ticket.CustomerID;
+                byte currentStatusByte = dto.Status;
 
+                _backgroundJobs.Enqueue<ITicketMailJob>(x =>
+                    x.SendTicketClosedMailAsync(id, customerId, currentStatusByte));
+            }
             string statusText = dto.Status switch
             {
                 0 => "Beklemede",
@@ -1730,6 +1729,19 @@ WHERE t.ID = @ID AND t.IsDeleted = 0
             }
 
             string subject = $"Destek Talebi {statusText} — {ticket.TicketNo}";
+            // ← BURAYA EKLE
+            bool hasMaintenanceContract = await connection.ExecuteScalarAsync<bool>(
+                "SELECT HasMaintenanceContract FROM Customers WHERE ID = @ID",
+                new { ID = customerId });
+
+            string maintenanceWarning = !hasMaintenanceContract
+                ? @"<div style='background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:20px;'>
+            <p style='margin:0;color:#92400e;font-size:.9rem;'>
+                ⚠️ <strong>Önemli Bilgi:</strong> Bakım anlaşmanız bulunmamaktadır. 
+                Bu destek talebi için tarafınıza daha sonra fatura kesilebilir.
+            </p>
+        </div>"
+                : string.Empty;
             string assignedTo = string.IsNullOrEmpty((string?)ticket.AssignedToName)
                 ? "Belirtilmemiş" : (string)ticket.AssignedToName;
 
@@ -1754,7 +1766,9 @@ WHERE t.ID = @ID AND t.IsDeleted = 0
             <p style='margin:6px 0 0;color:#6b7280;font-size:.9rem;'>
                 <strong style='color:#0f1117;'>{ticket.TicketNo}</strong> numaralı talep güncellendi.
             </p>
-        </div>
+        </div>   
+{maintenanceWarning}
+
         <table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:20px;'>
             <tr style='background:#f7f8fc;'>
                 <td style='padding:10px 16px;border-bottom:1px solid #e2e8f0;font-weight:700;color:#4a4f5e;font-size:.85rem;width:40%;'>Talep No</td>

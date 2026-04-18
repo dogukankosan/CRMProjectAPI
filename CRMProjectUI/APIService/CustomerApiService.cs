@@ -339,7 +339,23 @@ namespace CRMProjectUI.APIService
                 return new List<LogoProductDto>();
             }
         }
-
+        public async Task<List<CustomerUsersOverviewDto>> GetCustomersWithUsersAsync(string? token = null)
+        {
+            try
+            {
+                HttpRequestMessage request = CreateRequest(HttpMethod.Get, "/api/customer/users-overview", token: token);
+                HttpResponseMessage response = await _httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                string json = await response.Content.ReadAsStringAsync();
+                ApiResponse<List<CustomerUsersOverviewDto>>? result = JsonSerializer.Deserialize<ApiResponse<List<CustomerUsersOverviewDto>>>(json, JsonOptions);
+                return result?.Data ?? new List<CustomerUsersOverviewDto>();
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "API isteği başarısız: GetCustomersWithUsersAsync");
+                throw;
+            }
+        }
         #endregion
 
         #region Customer Files

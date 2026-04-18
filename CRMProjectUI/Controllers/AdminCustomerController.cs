@@ -224,6 +224,7 @@ namespace CRMProjectUI.Controllers
         {
             try
             {
+  
                 // Admin düzenlemede Status, Importance, TicketCount değiştiremesin
                 if (!IsSuperAdmin)
                 {
@@ -282,7 +283,21 @@ namespace CRMProjectUI.Controllers
                 return View("CustomerForm", dto);
             }
         }
-
+        [HttpGet("KullaniciBakis")]
+        public async Task<IActionResult> KullaniciBakis()
+        {
+            try
+            {
+                var data = await _customerService.GetCustomersWithUsersAsync(Token);
+                return View(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "KullaniciBakis yüklenirken hata");
+                TempData["Error"] = "Veriler yüklenirken bir hata oluştu";
+                return View(new List<CustomerUsersOverviewDto>());
+            }
+        }
         #endregion
 
         // ────────────────────────────────────────────────────────────────────

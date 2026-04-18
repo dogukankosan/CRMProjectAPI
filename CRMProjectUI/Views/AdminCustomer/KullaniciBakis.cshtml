@@ -1,0 +1,919 @@
+﻿@model List<CRMProjectUI.Models.CustomerUsersOverviewDto>
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    ViewData["Title"] = "Cari Kullanıcı Bakışı";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+
+    int totalCustomers = Model?.Count ?? 0;
+    int totalUsers = Model?.Sum(c => c.Users.Count) ?? 0;
+    int activeUsers = Model?.Sum(c => c.Users.Count(u => u.UserStatus)) ?? 0;
+    int passiveUsers = totalUsers - activeUsers;
+    int emailOnUsers = Model?.Sum(c => c.Users.Count(u => u.SendEmail)) ?? 0;
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+    :root {
+        --ink: #0f1117;
+        --ink-soft: #4a4f5e;
+        --surface: #f7f8fc;
+        --white: #ffffff;
+        --accent: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --purple: #7c3aed;
+        --border: #e2e8f0;
+        --radius: 12px;
+        --shadow-sm: 0 2px 8px rgba(15,17,23,.06);
+        --shadow-md: 0 8px 32px rgba(15,17,23,.10);
+    }
+
+    .ub-page {
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .ub-stats {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .ub-stat {
+        flex: 1;
+        min-width: 140px;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: box-shadow .2s, transform .2s;
+    }
+
+        .ub-stat:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+    .ub-stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+        .ub-stat-icon.blue {
+            background: #eff6ff;
+            color: var(--accent);
+        }
+
+        .ub-stat-icon.green {
+            background: #f0fdf4;
+            color: var(--success);
+        }
+
+        .ub-stat-icon.red {
+            background: #fef2f2;
+            color: var(--danger);
+        }
+
+        .ub-stat-icon.yellow {
+            background: #fffbeb;
+            color: var(--warning);
+        }
+
+        .ub-stat-icon.purple {
+            background: #f5f3ff;
+            color: var(--purple);
+        }
+
+    .ub-stat-label {
+        font-size: .7rem;
+        color: var(--ink-soft);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 2px;
+    }
+
+    .ub-stat-value {
+        font-family: 'Syne',sans-serif;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--ink);
+        line-height: 1;
+    }
+
+    .ub-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 18px;
+        margin-bottom: 16px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .ub-toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .ub-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .ub-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        padding: 5px 14px;
+        transition: border-color .2s;
+    }
+
+        .ub-search:focus-within {
+            border-color: var(--accent);
+        }
+
+        .ub-search i {
+            color: var(--ink-soft);
+            font-size: .85rem;
+        }
+
+        .ub-search input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: .83rem;
+            color: var(--ink);
+            width: 200px;
+        }
+
+    .ub-filter-btn {
+        font-size: .78rem;
+        font-weight: 600;
+        padding: 5px 14px;
+        border-radius: 20px;
+        border: 1.5px solid var(--border);
+        background: var(--surface);
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: all .18s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .ub-filter-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: #eff6ff;
+        }
+
+        .ub-filter-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+    .ub-filter-count {
+        font-size: .68rem;
+        font-weight: 700;
+        background: rgba(255,255,255,.25);
+        padding: 1px 6px;
+        border-radius: 10px;
+    }
+
+    .ub-filter-btn:not(.active) .ub-filter-count {
+        background: var(--border);
+        color: var(--ink-soft);
+    }
+
+    .ub-back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 16px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border);
+        background: var(--white);
+        color: var(--ink-soft);
+        font-size: .83rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .18s;
+    }
+
+        .ub-back-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+    .ub-expand-btn {
+        font-size: .78rem;
+        font-weight: 600;
+        padding: 5px 14px;
+        border-radius: 20px;
+        border: 1.5px solid var(--border);
+        background: var(--surface);
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: all .18s;
+    }
+
+        .ub-expand-btn:hover {
+            border-color: var(--purple);
+            color: var(--purple);
+            background: #f5f3ff;
+        }
+
+    .ub-customer-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 10px;
+        overflow: hidden;
+        transition: box-shadow .2s;
+    }
+
+        .ub-customer-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+    .ub-customer-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 18px;
+        cursor: pointer;
+        user-select: none;
+        transition: background .15s;
+    }
+
+        .ub-customer-header:hover {
+            background: #f8fafd;
+        }
+
+    .ub-customer-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Syne',sans-serif;
+        font-weight: 800;
+        font-size: .85rem;
+        flex-shrink: 0;
+        background: linear-gradient(135deg,#eff6ff,#dbeafe);
+        color: var(--accent);
+        border: 1.5px solid #bfdbfe;
+    }
+
+        .ub-customer-avatar.passive {
+            background: linear-gradient(135deg,#fef2f2,#fee2e2);
+            color: var(--danger);
+            border-color: #fecaca;
+        }
+
+    .ub-customer-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .ub-customer-name {
+        font-family: 'Syne',sans-serif;
+        font-weight: 700;
+        font-size: .95rem;
+        color: var(--ink);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ub-customer-meta {
+        font-size: .75rem;
+        color: var(--ink-soft);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 2px;
+        flex-wrap: wrap;
+    }
+
+    .ub-badge {
+        font-size: .68rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+        .ub-badge.active {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .ub-badge.passive {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .ub-badge.count {
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .ub-badge.email-on {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .ub-badge.no-user {
+            background: #f8fafc;
+            color: #94a3b8;
+        }
+
+    /* Kullanıcı Ekle butonu */
+    .ub-add-user-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 13px;
+        border-radius: 8px;
+        background: #f5f3ff;
+        color: var(--purple);
+        border: 1.5px solid #ddd6fe;
+        font-size: .75rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: all .18s;
+    }
+
+        .ub-add-user-btn:hover {
+            background: var(--purple);
+            color: #fff;
+            border-color: var(--purple);
+            text-decoration: none;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(124,58,237,.3);
+        }
+
+    .ub-chevron {
+        font-size: .8rem;
+        color: var(--ink-soft);
+        transition: transform .25s;
+        flex-shrink: 0;
+    }
+
+        .ub-chevron.open {
+            transform: rotate(180deg);
+        }
+
+    .ub-user-table-wrap {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height .3s ease;
+        border-top: 0px solid var(--border);
+    }
+
+        .ub-user-table-wrap.open {
+            max-height: 2000px;
+            border-top: 1px solid var(--border);
+        }
+
+    .ub-user-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .ub-user-table thead th {
+            font-size: .68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--ink-soft);
+            padding: 9px 16px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .ub-user-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .12s;
+        }
+
+            .ub-user-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+            .ub-user-table tbody tr:hover {
+                background: #f8fafd;
+            }
+
+        .ub-user-table tbody td {
+            padding: 10px 16px;
+            font-size: .845rem;
+            vertical-align: middle;
+        }
+
+    .ub-user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+
+    .ub-user-avatar-placeholder {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg,#f1f5f9,#e2e8f0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .7rem;
+        font-weight: 700;
+        color: var(--ink-soft);
+        flex-shrink: 0;
+    }
+
+    .ub-role {
+        font-size: .68rem;
+        font-weight: 700;
+        padding: 2px 9px;
+        border-radius: 8px;
+    }
+
+        .ub-role.superadmin {
+            background: #f5f3ff;
+            color: #5b21b6;
+        }
+
+        .ub-role.admin {
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .ub-role.user {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+    .ub-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .ub-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+        .ub-dot.on {
+            background: var(--success);
+            box-shadow: 0 0 0 2px #d1fae5;
+        }
+
+        .ub-dot.off {
+            background: #cbd5e1;
+        }
+
+    .ub-empty-state {
+        padding: 32px;
+        text-align: center;
+        color: var(--ink-soft);
+    }
+
+        .ub-empty-state i {
+            font-size: 2rem;
+            opacity: .2;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+    .ub-no-results {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--ink-soft);
+    }
+
+        .ub-no-results i {
+            font-size: 2rem;
+            opacity: .2;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+    @@media (max-width:768px) {
+        .ub-search input {
+            width: 140px;
+        }
+
+        .ub-add-user-btn span {
+            display: none;
+        }
+
+        .ub-user-table thead {
+            display: none;
+        }
+
+        .ub-user-table tbody td {
+            display: block;
+            padding: 6px 14px;
+        }
+
+            .ub-user-table tbody td:before {
+                content: attr(data-label);
+                font-size: .65rem;
+                font-weight: 700;
+                color: var(--ink-soft);
+                text-transform: uppercase;
+                display: block;
+                margin-bottom: 2px;
+            }
+    }
+</style>
+
+<div class="ub-page">
+
+    <!-- STAT CARDS -->
+    <div class="ub-stats">
+        <div class="ub-stat">
+            <div class="ub-stat-icon blue"><i class="fas fa-building"></i></div>
+            <div><div class="ub-stat-label">Toplam Cari</div><div class="ub-stat-value">@totalCustomers</div></div>
+        </div>
+        <div class="ub-stat">
+            <div class="ub-stat-icon purple"><i class="fas fa-users"></i></div>
+            <div><div class="ub-stat-label">Toplam Kullanıcı</div><div class="ub-stat-value">@totalUsers</div></div>
+        </div>
+        <div class="ub-stat">
+            <div class="ub-stat-icon green"><i class="fas fa-user-check"></i></div>
+            <div><div class="ub-stat-label">Aktif Kullanıcı</div><div class="ub-stat-value">@activeUsers</div></div>
+        </div>
+        <div class="ub-stat">
+            <div class="ub-stat-icon red"><i class="fas fa-user-times"></i></div>
+            <div><div class="ub-stat-label">Pasif Kullanıcı</div><div class="ub-stat-value">@passiveUsers</div></div>
+        </div>
+        <div class="ub-stat">
+            <div class="ub-stat-icon yellow"><i class="fas fa-envelope"></i></div>
+            <div><div class="ub-stat-label">Mail Açık</div><div class="ub-stat-value">@emailOnUsers</div></div>
+        </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="ub-toolbar">
+        <div class="ub-toolbar-left">
+            <button class="ub-filter-btn active" onclick="filterCustomers('all', this)">
+                Tümü <span class="ub-filter-count">@totalCustomers</span>
+            </button>
+            <button class="ub-filter-btn" onclick="filterCustomers('active', this)">
+                <i class="fas fa-circle" style="font-size:.45rem; color:var(--success);"></i> Aktif Cari
+            </button>
+            <button class="ub-filter-btn" onclick="filterCustomers('passive', this)">
+                <i class="fas fa-circle" style="font-size:.45rem; color:var(--danger);"></i> Pasif Cari
+            </button>
+            <button class="ub-filter-btn" onclick="filterCustomers('no-user', this)">
+                <i class="fas fa-user-slash" style="font-size:.7rem;"></i> Kullanıcısız
+            </button>
+            <button class="ub-expand-btn" onclick="expandAll()">
+                <i class="fas fa-expand-alt mr-1"></i> Tümünü Aç
+            </button>
+            <button class="ub-expand-btn" onclick="collapseAll()">
+                <i class="fas fa-compress-alt mr-1"></i> Tümünü Kapat
+            </button>
+        </div>
+        <div class="ub-toolbar-right">
+            <div class="ub-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Cari veya kullanıcı ara..." oninput="doSearch()" />
+            </div>
+            <a asp-action="Liste" asp-controller="AdminMusteri" class="ub-back-btn">
+                <i class="fas fa-arrow-left"></i> Müşteri Listesi
+            </a>
+        </div>
+    </div>
+
+    <!-- LIST -->
+    <div id="customerList">
+        @if (Model == null || !Model.Any())
+        {
+            <div class="ub-no-results">
+                <i class="fas fa-users"></i>
+                Kayıtlı müşteri bulunamadı.
+            </div>
+        }
+        else
+        {
+            @foreach (var customer in Model)
+            {
+                bool custActive = customer.CustomerStatus == 1;
+                int userCount = customer.Users.Count;
+                int activeUsr = customer.Users.Count(u => u.UserStatus);
+                int emailUsr = customer.Users.Count(u => u.SendEmail);
+                string initials = string.Join("", (customer.ShortName ?? customer.CustomerName ?? "?")
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Take(2).Select(w => w[0].ToString().ToUpper()));
+
+                <div class="ub-customer-card"
+                     data-cust-status="@(custActive ? "active" : "passive")"
+                     data-user-count="@userCount"
+                     data-search-text="@((customer.CustomerName + " " + customer.ShortName).ToLower())">
+
+                    <!-- Header -->
+                    <div class="ub-customer-header" onclick="toggleCard(this)">
+                        <div class="ub-customer-avatar @(custActive ? "" : "passive")">@initials</div>
+
+                        <div class="ub-customer-info">
+                            <div class="ub-customer-name">@customer.CustomerName</div>
+                            <div class="ub-customer-meta">
+                                @if (!string.IsNullOrEmpty(customer.ShortName))
+                                {
+                                    <span style="font-family:monospace; font-size:.72rem;">@customer.ShortName</span>
+                                    <span style="color:var(--border);">|</span>
+                                }
+                                <span class="ub-badge @(custActive ? "active" : "passive")">
+                                    <i class="fas fa-circle" style="font-size:.4rem;"></i>
+                                    @(custActive ? "Aktif Cari" : "Pasif Cari")
+                                </span>
+                                @if (userCount == 0)
+                                {
+                                    <span class="ub-badge no-user"><i class="fas fa-user-slash" style="font-size:.6rem;"></i> Kullanıcı yok</span>
+                                }
+                                else
+                                {
+                                    <span class="ub-badge count"><i class="fas fa-users" style="font-size:.6rem;"></i> @userCount kullanıcı</span>
+                                    @if (activeUsr > 0)
+                                    {
+                                        <span class="ub-badge active"><i class="fas fa-check" style="font-size:.55rem;"></i> @activeUsr aktif</span>
+                                    }
+                                    @if (emailUsr > 0)
+                                    {
+                                        <span class="ub-badge email-on"><i class="fas fa-envelope" style="font-size:.55rem;"></i> @emailUsr mail açık</span>
+                                    }
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Kullanıcı Ekle Butonu -->
+                        <a href="/AdminKullanici/Ekle?customerId=@customer.CustomerID"
+                           class="ub-add-user-btn"
+                           target="_blank"
+                           title="Bu cariye kullanıcı ekle"
+                           onclick="event.stopPropagation()">
+                            <i class="fas fa-user-plus"></i> <span>Kullanıcı Ekle</span>
+                        </a>
+
+                        <i class="fas fa-chevron-down ub-chevron"></i>
+                    </div>
+
+                    <!-- User Table -->
+                    <div class="ub-user-table-wrap">
+                        @if (!customer.Users.Any())
+                        {
+                            <div class="ub-empty-state">
+                                <i class="fas fa-user-slash"></i>
+                                Bu cariye ait kullanıcı bulunmuyor.
+                                <div class="mt-2">
+                                    <a href="/AdminKullanici/Ekle?customerId=@customer.CustomerID"
+                                       style="color:var(--purple); font-size:.83rem; font-weight:600;">
+                                        <i class="fas fa-user-plus mr-1"></i> İlk kullanıcıyı ekle
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <table class="ub-user-table">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Ad Soyad / Kullanıcı Adı</th>
+                                        <th>E-posta</th>
+                                        <th>Telefon</th>
+                                        <th>Rol</th>
+                                        <th>Hesap Durumu</th>
+                                        <th>Mail Bildirimi</th>
+                                        <th>Kayıt Tarihi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var u in customer.Users)
+                                    {
+                                        string roleClass = u.ISAdmin == 2 ? "superadmin" : u.ISAdmin == 1 ? "admin" : "user";
+                                        string roleLabel = u.ISAdmin == 2 ? "SuperAdmin" : u.ISAdmin == 1 ? "Admin" : "Kullanıcı";
+                                        string roleIcon = u.ISAdmin == 2 ? "fa-crown" : u.ISAdmin == 1 ? "fa-shield-alt" : "fa-user";
+                                        string displayName = !string.IsNullOrEmpty(u.FullName) ? u.FullName : u.Username ?? "-";
+                                        string userInitials = string.Join("", displayName
+                                        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                        .Take(2).Select(w => w[0].ToString().ToUpper()));
+
+                                        <tr>
+                                            <td data-label="">
+                                                @if (!string.IsNullOrEmpty(u.Picture))
+                                                {
+                                                    <img src="@($"{apiBase}{u.Picture}")" class="ub-user-avatar" alt="@displayName" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="ub-user-avatar-placeholder">@userInitials</div>
+                                                }
+                                            </td>
+                                            <td data-label="Kullanıcı">
+                                                <div style="font-weight:600; color:var(--ink);">@displayName</div>
+                                                <div style="font-size:.75rem; color:var(--ink-soft); font-family:monospace;">@u.Username</div>
+                                            </td>
+                                            <td data-label="E-posta">
+                                                @if (!string.IsNullOrEmpty(u.EMailAddress))
+                                                {
+                                                    <a href="mailto:@u.EMailAddress"
+                                                       style="color:var(--accent); text-decoration:none; font-size:.83rem;">
+                                                        <i class="fas fa-envelope mr-1" style="font-size:.7rem;"></i>@u.EMailAddress
+                                                    </a>
+                                                }
+                                                else
+                                                {
+
+                                                    <span style="color:var(--border);">—</span>
+                                                }
+                                            </td>
+                                            <td data-label="Telefon">
+                                                @if (!string.IsNullOrEmpty(u.PhoneNumber))
+                                                {
+                                                    string rawP = u.PhoneNumber.Replace(" ", "").Replace("(", "").Replace(")", "").Replace("+", "");
+                                                    string waL = rawP.StartsWith("90") ? $"https://wa.me/{rawP}" : $"https://wa.me/90{rawP}";
+                                                    <a href="@waL" target="_blank"
+                                                       style="color:var(--success); text-decoration:none; font-size:.83rem;">
+                                                        <i class="fab fa-whatsapp mr-1"></i>@u.PhoneNumber
+                                                    </a>
+                                                }
+                                                else
+                                                {
+
+                                                    <span style="color:var(--border);">—</span>
+                                                }
+                                            </td>
+                                            <td data-label="Rol">
+                                                <span class="ub-role @roleClass">
+                                                    <i class="fas @roleIcon mr-1" style="font-size:.6rem;"></i>@roleLabel
+                                                </span>
+                                            </td>
+                                            <td data-label="Durum">
+                                                <span class="ub-toggle">
+                                                    <span class="ub-dot @(u.UserStatus ? "on" : "off")"></span>
+                                                    @(u.UserStatus ? "Aktif" : "Pasif")
+                                                </span>
+                                            </td>
+                                            <td data-label="Mail Bildirimi">
+                                                @if (u.SendEmail)
+                                                {
+                                                    <span style="color:var(--success); font-size:.83rem; font-weight:600;">
+                                                        <i class="fas fa-check-circle mr-1"></i>Açık
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span style="color:#cbd5e1; font-size:.83rem;">
+                                                        <i class="fas fa-times-circle mr-1"></i>Kapalı
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td data-label="Kayıt Tarihi">
+                                                <span style="font-size:.78rem; color:var(--ink-soft);">
+                                                    @(u.CreatedDate?.ToString("dd.MM.yyyy") ?? "—")
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <div id="noResults" style="display:none;" class="ub-no-results">
+        <i class="fas fa-search"></i>
+        Arama sonucu bulunamadı.
+    </div>
+
+</div>
+
+<script>
+    function toggleCard(header) {
+        var wrap    = header.nextElementSibling;
+        var chevron = header.querySelector('.ub-chevron');
+        var isOpen  = wrap.classList.contains('open');
+        wrap.classList.toggle('open', !isOpen);
+        chevron.classList.toggle('open', !isOpen);
+    }
+
+    function expandAll() {
+        document.querySelectorAll('.ub-user-table-wrap').forEach(function(w) {
+            w.classList.add('open');
+            w.previousElementSibling.querySelector('.ub-chevron').classList.add('open');
+        });
+    }
+
+    function collapseAll() {
+        document.querySelectorAll('.ub-user-table-wrap').forEach(function(w) {
+            w.classList.remove('open');
+            w.previousElementSibling.querySelector('.ub-chevron').classList.remove('open');
+        });
+    }
+
+    var currentFilter = 'all';
+    var currentSearch = '';
+
+    function filterCustomers(type, btn) {
+        document.querySelectorAll('.ub-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        currentFilter = type;
+        applyFilters();
+    }
+
+    function doSearch() {
+        currentSearch = document.getElementById('searchInput').value.toLowerCase().trim();
+        applyFilters();
+    }
+
+    function applyFilters() {
+        var cards   = document.querySelectorAll('.ub-customer-card');
+        var visible = 0;
+
+        cards.forEach(function(card) {
+            var status    = card.getAttribute('data-cust-status');
+            var userCount = parseInt(card.getAttribute('data-user-count'));
+            var searchTxt = card.getAttribute('data-search-text') || '';
+            var userTexts = Array.from(card.querySelectorAll('tbody td'))
+                .map(function(td) { return td.textContent.toLowerCase(); }).join(' ');
+
+            var filterMatch =
+                currentFilter === 'all' ||
+                (currentFilter === 'active'  && status === 'active')  ||
+                (currentFilter === 'passive' && status === 'passive') ||
+                (currentFilter === 'no-user' && userCount === 0);
+
+            var searchMatch =
+                currentSearch === '' ||
+                searchTxt.includes(currentSearch) ||
+                userTexts.includes(currentSearch);
+
+            var show = filterMatch && searchMatch;
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+
+            if (currentSearch !== '' && searchMatch && userTexts.includes(currentSearch)) {
+                card.querySelector('.ub-user-table-wrap').classList.add('open');
+                card.querySelector('.ub-chevron').classList.add('open');
+            }
+        });
+
+        document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.ub-customer-card[data-cust-status="active"]').forEach(function(card) {
+            if (parseInt(card.getAttribute('data-user-count')) > 0) {
+                card.querySelector('.ub-user-table-wrap').classList.add('open');
+                card.querySelector('.ub-chevron').classList.add('open');
+            }
+        });
+    });
+</script>
