@@ -1,0 +1,222 @@
+﻿@model CRMProjectUI.Models.CertificateUpdateDto
+@{
+    ViewData["Title"] = "Sertifika Düzenle";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+    var cert = ViewBag.Cert as CRMProjectUI.Models.CertificateDto;
+}
+
+<style>
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+    .pdf-drop-zone {
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all .2s;
+        background: #f8f9fa;
+    }
+
+        .pdf-drop-zone:hover, .pdf-drop-zone.drag-over {
+            border-color: #007bff;
+            background: #eff6ff;
+        }
+
+        .pdf-drop-zone.has-file {
+            border-color: #28a745;
+            background: #f0fdf4;
+        }
+</style>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="text-center text-white">
+        <div class="spinner-border" style="width:3rem;height:3rem;" role="status"></div>
+        <p class="mt-2">Kaydediliyor...</p>
+    </div>
+</div>
+
+<div id="tempDataMessages"
+     data-success="@TempData["Success"]"
+     data-error="@TempData["Error"]">
+</div>
+
+<div class="section-body">
+    <div class="row">
+        <div class="col-12 col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-edit mr-2"></i> Sertifika Düzenle</h4>
+                    <a asp-action="Liste" asp-controller="AdminSertifikalar" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Listeye Dön
+                    </a>
+                </div>
+                <div class="card-body">
+
+                    <!-- Mevcut sertifika bilgisi -->
+                    @if (cert != null)
+                    {
+                        <div class="alert alert-info d-flex align-items-center mb-4">
+                            <i class="fas fa-info-circle fa-lg mr-3"></i>
+                            <div>
+                                <strong>@cert.UserFullName</strong> adlı kullanıcıya ait sertifika düzenleniyor.
+                                <br />
+                                <small class="text-muted">
+                                    Mevcut dosya: <strong>@cert.OriginalFileName</strong>
+                                    (@((cert.FileSizeBytes / 1024.0).ToString("F1")) KB)
+                                    · Yükleme: @cert.CreatedDate.ToString("dd.MM.yyyy")
+                                </small>
+                            </div>
+                        </div>
+                    }
+
+                    <form asp-action="Duzenle" asp-controller="AdminSertifikalar"
+                          asp-route-id="@cert?.ID"
+                          method="post" enctype="multipart/form-data" id="certForm">
+                        @Html.AntiForgeryToken()
+
+                        <!-- Başlık -->
+                        <div class="form-group">
+                            <label>Sertifika Başlığı <span class="text-danger">*</span></label>
+                            <input type="text" name="Title" class="form-control"
+                                   maxlength="200" required
+                                   value="@Model.Title" />
+                        </div>
+
+                        <!-- Not -->
+                        <div class="form-group">
+                            <label>Not <small class="text-muted">(Opsiyonel)</small></label>
+                            <textarea name="Notes" class="form-control" rows="3"
+                                      maxlength="1000">@Model.Notes</textarea>
+                            <small class="text-muted float-right"><span id="notesCounter">@(Model.Notes?.Length ?? 0)</span>/1000</small>
+                        </div>
+
+                        <!-- PDF Güncelle (opsiyonel) -->
+                        <div class="form-group">
+                            <label>
+                                PDF Dosyasını Güncelle
+                                <small class="text-muted">(Boş bırakılırsa mevcut dosya korunur)</small>
+                            </label>
+                            <div class="pdf-drop-zone" id="dropZone" onclick="document.getElementById('pdfFile').click()">
+                                <div id="dropZoneContent">
+                                    <i class="fas fa-file-pdf fa-2x text-muted mb-2"></i>
+                                    <p class="mb-1 text-muted">Yeni PDF seçmek için tıklayın veya sürükleyin</p>
+                                    <p class="text-muted mb-0" style="font-size:.8rem;">Max 20MB · Seçilmezse mevcut dosya kalır</p>
+                                </div>
+                                <div id="filePreview" style="display:none;">
+                                    <i class="fas fa-file-pdf fa-2x text-danger mb-2"></i>
+                                    <p class="font-weight-bold mb-1" id="fileName"></p>
+                                    <p class="text-muted mb-0" id="fileSize" style="font-size:.85rem;"></p>
+                                    <button type="button" class="btn btn-sm btn-outline-danger mt-2"
+                                            onclick="clearFile(event)">
+                                        <i class="fas fa-times"></i> Dosyayı Kaldır
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="file" id="pdfFile" name="pdfFile"
+                                   accept=".pdf" style="display:none;"
+                                   onchange="handleFile(this.files[0])" />
+                        </div>
+
+                        <div class="text-right mt-4">
+                            <a asp-action="Liste" asp-controller="AdminSertifikalar"
+                               class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times"></i> İptal
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-save"></i> Güncelle
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var el = document.getElementById('tempDataMessages');
+            var error = el.getAttribute('data-error');
+            if (error) Swal.fire({ icon: 'error', title: 'Hata!', text: error, timer: 4000, showConfirmButton: true });
+
+            // Not sayacı
+            var notesEl = document.querySelector('textarea[name="Notes"]');
+            var counter = document.getElementById('notesCounter');
+            if (notesEl && counter) {
+                notesEl.addEventListener('input', function () {
+                    counter.textContent = this.value.length;
+                });
+            }
+
+            // Drag & Drop
+            var dropZone = document.getElementById('dropZone');
+            dropZone.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                this.classList.add('drag-over');
+            });
+            dropZone.addEventListener('dragleave', function () {
+                this.classList.remove('drag-over');
+            });
+            dropZone.addEventListener('drop', function (e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                var file = e.dataTransfer.files[0];
+                if (file) handleFile(file);
+            });
+        });
+
+        function handleFile(file) {
+            if (!file) return;
+            if (file.type !== 'application/pdf') {
+                Swal.fire({ icon: 'error', title: 'Hata!', text: 'Sadece PDF dosyası yükleyebilirsiniz.' });
+                return;
+            }
+            if (file.size > 20 * 1024 * 1024) {
+                Swal.fire({ icon: 'error', title: 'Hata!', text: 'Dosya boyutu 20MB\'dan büyük olamaz.' });
+                return;
+            }
+            var dt = new DataTransfer();
+            dt.items.add(file);
+            document.getElementById('pdfFile').files = dt.files;
+
+            var sizeTxt = file.size < 1024 * 1024
+                ? (file.size / 1024).toFixed(1) + ' KB'
+                : (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = sizeTxt;
+            document.getElementById('dropZoneContent').style.display = 'none';
+            document.getElementById('filePreview').style.display = 'block';
+            document.getElementById('dropZone').classList.add('has-file');
+        }
+
+        function clearFile(e) {
+            e.stopPropagation();
+            document.getElementById('pdfFile').value = '';
+            document.getElementById('dropZoneContent').style.display = 'block';
+            document.getElementById('filePreview').style.display = 'none';
+            document.getElementById('dropZone').classList.remove('has-file');
+        }
+
+        document.getElementById('certForm').addEventListener('submit', function () {
+            document.getElementById('loadingOverlay').classList.add('show');
+            var btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+        });
+    </script>
+}

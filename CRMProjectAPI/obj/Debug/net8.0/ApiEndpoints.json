@@ -225,6 +225,117 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "CRMProjectAPI.Controllers.CertificateController",
+    "Method": "List",
+    "RelativePath": "api/certificate",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CRMProjectAPI.Controllers.CertificateController",
+    "Method": "Create",
+    "RelativePath": "api/certificate",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "CRMProjectAPI.Models.CertificateCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CRMProjectAPI.Controllers.CertificateController",
+    "Method": "GetById",
+    "RelativePath": "api/certificate/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CRMProjectAPI.Controllers.CertificateController",
+    "Method": "Update",
+    "RelativePath": "api/certificate/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "CRMProjectAPI.Models.CertificateUpdateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CRMProjectAPI.Controllers.CertificateController",
+    "Method": "Delete",
+    "RelativePath": "api/certificate/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CRMProjectAPI.Controllers.CertificateController",
+    "Method": "Download",
+    "RelativePath": "api/certificate/{id}/download",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "CRMProjectAPI.Controllers.CertificateController",
+    "Method": "GetByUser",
+    "RelativePath": "api/certificate/user/{userId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "CRMProjectAPI.Controllers.CompanyController",
     "Method": "Get",
     "RelativePath": "api/company",

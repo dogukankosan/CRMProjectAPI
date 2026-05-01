@@ -1,0 +1,738 @@
+﻿@model List<CRMProjectUI.Models.CertificateDto>
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
+@{
+    ViewData["Title"] = "Sertifikalar";
+    Layout = "~/Views/Shared/_adminLayout.cshtml";
+    bool isSuperAdmin = User.IsInRole("SuperAdmin");
+    int currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out int uid) ? uid : 0;
+    string apiBase = Config["ApiSettings:BaseUrl"] ?? "";
+}
+
+<div id="tempDataMessages"
+     data-success="@TempData["Success"]"
+     data-error="@TempData["Error"]">
+</div>
+
+<style>
+    /* ── GENEL ── */
+    .cert-page {
+        padding: 4px 0;
+    }
+
+    /* ── HEADER BANNER ── */
+    .cert-header-banner {
+        background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 50%, #1a4f7a 100%);
+        border-radius: 16px;
+        padding: 28px 32px;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(30,58,95,.25);
+    }
+
+        .cert-header-banner::before {
+            content: '';
+            position: absolute;
+            top: -40px;
+            right: -40px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.06);
+        }
+
+        .cert-header-banner::after {
+            content: '';
+            position: absolute;
+            bottom: -60px;
+            right: 80px;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.04);
+        }
+
+        .cert-header-banner h3 {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin: 0 0 4px;
+        }
+
+        .cert-header-banner p {
+            color: rgba(255,255,255,.7);
+            margin: 0;
+            font-size: .88rem;
+        }
+
+    .cert-stat-pill {
+        background: rgba(255,255,255,.15);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,.2);
+        border-radius: 50px;
+        padding: 8px 20px;
+        color: #fff;
+        font-size: .82rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* ── KART GRID ── */
+    .cert-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 20px;
+    }
+
+    /* ── TEK KART ── */
+    .cert-card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e8edf2;
+        overflow: hidden;
+        transition: transform .2s, box-shadow .2s;
+        position: relative;
+    }
+
+        .cert-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0,0,0,.1);
+        }
+
+    .cert-card-accent {
+        height: 4px;
+        background: linear-gradient(90deg, #2563eb, #7c3aed);
+    }
+
+    .cert-card-body {
+        padding: 20px;
+    }
+
+    /* ── KULLANICI SATIRI ── */
+    .cert-user-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .cert-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        object-fit: cover;
+        flex-shrink: 0;
+        border: 2px solid #e8edf2;
+    }
+
+    .cert-avatar-placeholder {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .cert-user-name {
+        font-weight: 700;
+        font-size: .92rem;
+        color: #0f1117;
+        line-height: 1.2;
+    }
+
+    .cert-user-role {
+        font-size: .72rem;
+        color: #94a3b8;
+        margin-top: 2px;
+    }
+
+    /* ── SERTİFİKA BAŞLIK ── */
+    .cert-title {
+        font-size: .95rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+        line-height: 1.3;
+    }
+
+    /* ── NOT ALANI ── */
+    .cert-notes-box {
+        background: #f8fafd;
+        border-left: 3px solid #2563eb;
+        border-radius: 0 8px 8px 0;
+        padding: 10px 14px;
+        margin-bottom: 14px;
+        font-size: .82rem;
+        color: #4a5568;
+        line-height: 1.5;
+    }
+
+    .cert-notes-empty {
+        font-size: .8rem;
+        color: #cbd5e1;
+        font-style: italic;
+        margin-bottom: 14px;
+        display: block;
+    }
+
+    /* ── META ROW ── */
+    .cert-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: .75rem;
+        color: #94a3b8;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+    .cert-meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #f1f5f9;
+        border-radius: 20px;
+        padding: 3px 10px;
+    }
+
+        .cert-meta-chip.pdf {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .cert-meta-chip.uploader {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .cert-meta-chip.date {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .cert-meta-chip.updated {
+            background: #fefce8;
+            color: #ca8a04;
+        }
+
+    /* ── BUTONLAR ── */
+    .cert-actions {
+        display: flex;
+        gap: 8px;
+        padding-top: 14px;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .cert-btn {
+        flex: 1;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1.5px solid #e2e8f0;
+        background: #fff;
+        font-size: .78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        text-decoration: none;
+    }
+
+        .cert-btn:hover {
+            text-decoration: none;
+        }
+
+    .cert-btn-view {
+        color: #2563eb;
+        border-color: #bfdbfe;
+    }
+
+        .cert-btn-view:hover {
+            background: #eff6ff;
+            border-color: #2563eb;
+            color: #2563eb;
+        }
+
+    .cert-btn-download {
+        color: #dc2626;
+        border-color: #fecaca;
+    }
+
+        .cert-btn-download:hover {
+            background: #fef2f2;
+            border-color: #dc2626;
+            color: #dc2626;
+        }
+
+    .cert-btn-edit {
+        color: #7c3aed;
+        border-color: #ddd6fe;
+    }
+
+        .cert-btn-edit:hover {
+            background: #f5f3ff;
+            border-color: #7c3aed;
+            color: #7c3aed;
+        }
+
+    .cert-btn-delete {
+        color: #dc2626;
+        border-color: #fecaca;
+        flex: 0 0 auto;
+        padding: 8px 10px;
+    }
+
+        .cert-btn-delete:hover {
+            background: #fef2f2;
+            border-color: #dc2626;
+        }
+
+    /* ── YETKİ ROZET ── */
+    .cert-owner-badge {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: .68rem;
+        font-weight: 700;
+        color: #16a34a;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* ── BOŞ DURUM ── */
+    .cert-empty {
+        text-align: center;
+        padding: 70px 20px;
+    }
+
+    .cert-empty-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+
+    /* ── PDF MODAL ── */
+    .pdf-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: rgba(0,0,0,.75);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+        .pdf-modal-overlay.open {
+            display: flex;
+        }
+
+    .pdf-modal-box {
+        background: #fff;
+        border-radius: 16px;
+        overflow: hidden;
+        width: 85vw;
+        max-width: 1000px;
+        height: 85vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 24px 64px rgba(0,0,0,.4);
+        animation: pdfSlideIn .25s ease;
+    }
+
+    @@keyframes pdfSlideIn {
+        from {
+            transform: scale(.95);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .pdf-modal-header {
+        padding: 14px 20px;
+        background: linear-gradient(135deg, #1e3a5f, #2d6a9f);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-shrink: 0;
+    }
+
+    .pdf-modal-title {
+        color: #fff;
+        font-weight: 700;
+        font-size: .9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .pdf-modal-close {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: none;
+        background: rgba(255,255,255,.15);
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .9rem;
+        transition: background .15s;
+    }
+
+        .pdf-modal-close:hover {
+            background: rgba(255,255,255,.25);
+        }
+
+    .pdf-modal-iframe {
+        flex: 1;
+        border: none;
+        width: 100%;
+    }
+
+    /* ── ARAMA ── */
+    .cert-search-bar {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+        .cert-search-bar input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: .88rem;
+            transition: border-color .15s;
+            outline: none;
+        }
+
+            .cert-search-bar input:focus {
+                border-color: #2563eb;
+            }
+
+        .cert-search-bar i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: .85rem;
+        }
+
+    @@media (max-width: 576px) {
+        .cert-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .cert-header-banner {
+            padding: 20px;
+        }
+    }
+</style>
+
+<div class="cert-page">
+
+    <!-- HEADER BANNER -->
+    <div class="cert-header-banner">
+        <div class="d-flex justify-content-between align-items-center flex-wrap" style="gap:12px; position:relative; z-index:1;">
+            <div>
+                <h3><i class="fas fa-award mr-2"></i> Sertifikalar</h3>
+                <p>Ekip üyelerine ait sertifika ve belgeler</p>
+            </div>
+            <div class="d-flex align-items-center flex-wrap" style="gap:10px;">
+                <span class="cert-stat-pill">
+                    <i class="fas fa-certificate"></i>
+                    @Model.Count sertifika
+                </span>
+                <a asp-action="Ekle" asp-controller="AdminSertifikalar"
+                   class="btn btn-light btn-sm font-weight-bold"
+                   style="border-radius:8px; padding:8px 18px;">
+                    <i class="fas fa-plus mr-1"></i> Yeni Sertifika
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card">
+            <div class="card-body cert-empty">
+                <div class="cert-empty-icon">
+                    <i class="fas fa-certificate fa-2x text-primary"></i>
+                </div>
+                <h5 class="font-weight-bold text-dark mb-2">Henüz sertifika eklenmemiş</h5>
+                <p class="text-muted mb-4">Ekibinize ait sertifika ve belgeleri buradan yönetebilirsiniz.</p>
+                <a asp-action="Ekle" asp-controller="AdminSertifikalar" class="btn btn-primary">
+                    <i class="fas fa-plus mr-1"></i> İlk Sertifikayı Ekle
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- ARAMA -->
+        <div class="cert-search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" id="certSearch"
+                   placeholder="Sertifika başlığı, kullanıcı adı veya not ile arayın..." />
+        </div>
+
+        <!-- KART GRID -->
+        <div class="cert-grid" id="certGrid">
+            @foreach (var cert in Model)
+            {
+                bool canEdit = isSuperAdmin || cert.UploadedByUserID == currentUserId;
+                bool isOwn = cert.UploadedByUserID == currentUserId;
+                string sizeText = cert.FileSizeBytes < 1024 * 1024
+                ? (cert.FileSizeBytes / 1024.0).ToString("F1") + " KB"
+                : (cert.FileSizeBytes / (1024.0 * 1024)).ToString("F1") + " MB";
+
+                <div class="cert-card"
+                     data-search="@cert.UserFullName.ToLower() @cert.Title.ToLower() @(cert.Notes?.ToLower() ?? "")">
+
+                    <div class="cert-card-accent"></div>
+
+                    @if (isOwn && !isSuperAdmin)
+                    {
+                        <span class="cert-owner-badge">
+                            <i class="fas fa-user-check"></i> Benim
+                        </span>
+                    }
+
+                    <div class="cert-card-body">
+
+                        <!-- Kullanıcı satırı -->
+                        <div class="cert-user-row">
+                            @if (!string.IsNullOrEmpty(cert.UserPicture))
+                            {
+                                <img src="@apiBase@cert.UserPicture" alt="@cert.UserFullName" class="cert-avatar" />
+                            }
+                            else
+                            {
+                                <div class="cert-avatar-placeholder">
+                                    @cert.UserFullName.FirstOrDefault()
+                                </div>
+                            }
+                            <div>
+                                <div class="cert-user-name">@cert.UserFullName</div>
+                                <div class="cert-user-role">
+                                    <i class="fas fa-user-shield" style="font-size:.65rem;"></i>
+                                    Sertifika Sahibi
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Başlık -->
+                        <div class="cert-title">
+                            <i class="fas fa-award mr-1" style="color:#2563eb; font-size:.8rem;"></i>
+                            @cert.Title
+                        </div>
+
+                        <!-- Not -->
+                        @if (!string.IsNullOrEmpty(cert.Notes))
+                        {
+                            <div class="cert-notes-box">
+                                <i class="fas fa-sticky-note mr-1" style="color:#2563eb; font-size:.75rem;"></i>
+                                @cert.Notes
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="cert-notes-empty">
+                                <i class="fas fa-minus mr-1"></i> Not eklenmemiş
+                            </span>
+                        }
+
+                        <!-- Meta bilgiler -->
+                        <div class="cert-meta-row">
+                            <span class="cert-meta-chip pdf">
+                                <i class="fas fa-file-pdf"></i> PDF · @sizeText
+                            </span>
+                            <span class="cert-meta-chip uploader">
+                                <i class="fas fa-upload"></i> @cert.UploadedByName
+                            </span>
+                            <span class="cert-meta-chip date">
+                                <i class="fas fa-calendar"></i> @cert.CreatedDate.ToString("dd.MM.yyyy")
+                            </span>
+                            @if (cert.UpdatedDate.HasValue)
+                            {
+                                <span class="cert-meta-chip updated">
+                                    <i class="fas fa-edit"></i> @cert.UpdatedDate.Value.ToString("dd.MM.yyyy")
+                                </span>
+                            }
+                        </div>
+
+                        <!-- Butonlar -->
+                        <div class="cert-actions">
+                            <button type="button"
+                                    class="cert-btn cert-btn-view"
+                                    onclick="pdfOnizle('@cert.ID', '@cert.Title', '@cert.OriginalFileName')">
+                                <i class="fas fa-eye"></i> Görüntüle
+                            </button>
+                            <a asp-action="Indir" asp-controller="AdminSertifikalar"
+                               asp-route-id="@cert.ID"
+                               class="cert-btn cert-btn-download">
+                                <i class="fas fa-download"></i> İndir
+                            </a>
+                            @if (canEdit)
+                            {
+                                <a asp-action="Duzenle" asp-controller="AdminSertifikalar"
+                                   asp-route-id="@cert.ID"
+                                   class="cert-btn cert-btn-edit">
+                                    <i class="fas fa-edit"></i> Düzenle
+                                </a>
+                                <button type="button"
+                                        class="cert-btn cert-btn-delete"
+                                        onclick="silConfirm(@cert.ID, '@cert.Title')"
+                                        title="Sil">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            }
+                        </div>
+
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Arama sonucu boş -->
+        <div id="noResult" style="display:none;" class="text-center py-5 text-muted">
+            <i class="fas fa-search fa-2x mb-3"></i>
+            <p>Arama kriterlerine uygun sertifika bulunamadı.</p>
+        </div>
+    }
+</div>
+
+<!-- PDF Önizleme Modal -->
+<div class="pdf-modal-overlay" id="pdfModal" onclick="pdfKapat(event)">
+    <div class="pdf-modal-box" onclick="event.stopPropagation()">
+        <div class="pdf-modal-header">
+            <div class="pdf-modal-title">
+                <i class="fas fa-file-pdf"></i>
+                <span id="pdfModalTitle"></span>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <a id="pdfModalDownload" href="#"
+                   class="btn btn-sm btn-light font-weight-bold"
+                   style="border-radius:7px; font-size:.75rem;">
+                    <i class="fas fa-download mr-1"></i> İndir
+                </a>
+                <button class="pdf-modal-close" onclick="pdfKapatBtn()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <iframe id="pdfModalFrame" class="pdf-modal-iframe" src=""></iframe>
+    </div>
+</div>
+
+<!-- Sil Form -->
+<form id="silForm" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // TempData mesajları
+            var el = document.getElementById('tempDataMessages');
+            var success = el.getAttribute('data-success');
+            var error   = el.getAttribute('data-error');
+            if (success) Swal.fire({ icon: 'success', title: 'Başarılı!', text: success, timer: 3000, showConfirmButton: false });
+            if (error)   Swal.fire({ icon: 'error',   title: 'Hata!',     text: error,   timer: 4000, showConfirmButton: true });
+
+            // Arama
+            var searchInput = document.getElementById('certSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    var q = this.value.toLowerCase().trim();
+                    var cards = document.querySelectorAll('#certGrid .cert-card');
+                    var visibleCount = 0;
+                    cards.forEach(function (card) {
+                        var text = card.getAttribute('data-search') || '';
+                        var show = !q || text.includes(q);
+                        card.style.display = show ? '' : 'none';
+                        if (show) visibleCount++;
+                    });
+                    var noResult = document.getElementById('noResult');
+                    if (noResult) noResult.style.display = visibleCount === 0 ? 'block' : 'none';
+                });
+            }
+        });
+
+        // PDF Önizleme
+    function pdfOnizle(certId, title, fileName) {
+    var url = '/AdminSertifikalar/Goruntule/' + certId;  // Indir → Goruntule
+    document.getElementById('pdfModalTitle').textContent = title;
+    document.getElementById('pdfModalFrame').src = url;
+    document.getElementById('pdfModalDownload').href = '/AdminSertifikalar/Indir/' + certId; // indirme linki ayrı kalır
+    document.getElementById('pdfModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+        function pdfKapatBtn() {
+            document.getElementById('pdfModal').classList.remove('open');
+            document.getElementById('pdfModalFrame').src = '';
+            document.body.style.overflow = '';
+        }
+
+        function pdfKapat(e) {
+            if (e.target === document.getElementById('pdfModal')) {
+                pdfKapatBtn();
+            }
+        }
+
+        // ESC ile kapat
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') pdfKapatBtn();
+        });
+
+        // Sil
+        function silConfirm(id, title) {
+            Swal.fire({
+                title: 'Sertifikayı sil?',
+                html: '<strong>' + title + '</strong><br><small class="text-muted">Bu işlem geri alınamaz.</small>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Evet, sil',
+                cancelButtonText: 'İptal'
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    var form = document.getElementById('silForm');
+                    form.action = '/AdminSertifikalar/Sil/' + id;
+                    form.submit();
+                }
+            });
+        }
+    </script>
+}

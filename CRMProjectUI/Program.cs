@@ -51,6 +51,7 @@ builder.Services.AddHttpClient<TicketApiService>(c => c.BaseAddress = new Uri(ap
 builder.Services.AddHttpClient<KnowledgeBaseApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
 builder.Services.AddHttpClient<LogApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
 builder.Services.AddHttpClient<ErrorLogApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<CertificateApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
 
 
 var app = builder.Build();

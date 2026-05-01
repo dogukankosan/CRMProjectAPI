@@ -1,4 +1,4 @@
-﻿// AnnouncementValidation.cs
+﻿namespace CRMProjectAPI.Validations;
 public static class AnnouncementValidation
 {
     public static List<string> ValidateCreate(AnnouncementCreateDto dto)

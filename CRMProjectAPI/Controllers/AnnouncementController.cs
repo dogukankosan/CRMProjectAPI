@@ -3,6 +3,7 @@ using Azure;
 using CRMProjectAPI.Data;
 using CRMProjectAPI.Helpers;
 using CRMProjectAPI.Hubs;
+using CRMProjectAPI.Validations;
 using Dapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
